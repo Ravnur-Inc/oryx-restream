@@ -3,6 +3,10 @@
 //
 // SPDX-License-Identifier: MIT
 //
+// Alias jest -> vi so legacy CRA tests that call jest.* work under vitest.
+import { vi } from "vitest";
+globalThis.jest = vi;
+
 // Polyfill TextEncoder/TextDecoder for the jsdom test environment. jsdom under
 // jest does not expose them, but react-qr-code's encoder requires TextEncoder.
 import { TextEncoder, TextDecoder } from "util";

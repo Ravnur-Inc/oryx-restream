@@ -51,7 +51,7 @@ export const Locale = {
     return Locale._cache;
   },
   current: () => {
-    return Locale._cache?.lang || process.env.REACT_APP_LOCALE || 'zh';
+    return Locale._cache?.lang || window.REACT_APP_LOCALE || 'zh';
   }
 };
 
