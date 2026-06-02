@@ -1,0 +1,25 @@
+# Upstream docs and tutorials — not part of Ravnur scope
+*.md
+!CLAUDE.md
+!RAVNUR-CHANGES.md
+
+# SRS binary and config — never touch
+/platform/containers/
+/releases/
+
+# Auto-generated
+/platform/go.sum
+node_modules/
+ui/build/
+ui/node_modules/
+
+# Shell scripts outside scope (strip manually)
+/scripts/nginx-hls-cdn/
+/auto/
+
+# Don't read large binary assets
+*.mp4
+*.ts
+*.flv
+*.png
+*.jpg
