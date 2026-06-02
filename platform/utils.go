@@ -300,7 +300,6 @@ const (
 	SRS_HTTPS           = "SRS_HTTPS"
 	SRS_HTTPS_DOMAIN    = "SRS_HTTPS_DOMAIN"
 	SRS_HOOKS           = "SRS_HOOKS"
-	SRS_SYS_OPENAI      = "SRS_SYS_OPENAI"
 )
 
 // GenerateRoomPublishKey to build the redis hashset key from room stream name.

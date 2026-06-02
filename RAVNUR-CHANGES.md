@@ -225,6 +225,23 @@ All seven strip sessions are done. The platform now builds clean for linux with 
 minimal dependency set (go-redis, golang-jwt, google/uuid, godotenv, go-oryx-lib +
 xxhash/go-rendezvous indirect). Remaining platform/*.go: callback, candidate, cert,
 crontab, fastcache, forward, main, service, srs-errors, srs-hooks, trancode, utils,
-utils_test, version. Suggested follow-ups (non-blocking): the OpenAI-config endpoint
-leftover noted above, a UI/docs pass to remove stripped-feature screens, and pruning
-dead error codes in srs-errors.go.
+utils_test, version.
+
+### 2026-06-02 — Follow-up cleanup (post Session 7)
+
+Addresses the non-blocking Go follow-ups flagged after Session 7.
+
+**OpenAI-config endpoint leftover (Session 2 remnant) — removed:**
+- platform/service.go — removed handleMgmtOpenAIQuery + handleMgmtOpenAIUpdate (the /terraform/v1/mgmt/openai/{query,update} endpoints that stored/read OpenAI API key/url/org in redis) and their registrations
+- platform/utils.go — removed the SRS_SYS_OPENAI redis-key const
+
+**srs-errors.go — verified clean, no change:**
+- The file defines a single error code, SrsStackErrorCallbackRecord (=100), which is still referenced by callback.go (a KEEP file, line 422). It is live, not dead, so srs-errors.go was left intact. No dead error codes to prune.
+
+**Still deferred (intentional):**
+- UI references to all stripped-feature screens + the removed mgmt API endpoints (openai/limits/letsencrypt/version) — ui/ is minimal-changes-only; a dedicated UI/docs pass should remove the corresponding screens and locale strings and align the API client.
+- containers/data/.well-known dir (ACME webroot from the LEGO era) — still created; harmless.
+
+**Removed Go dependencies (go.mod):** None — go.mod/go.sum unchanged.
+**Compile verification:** PASS — `GOOS=linux go build ./...` clean. Zero dangling references to handleMgmtOpenAI/SRS_SYS_OPENAI. No vendor changes.
+**Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.
