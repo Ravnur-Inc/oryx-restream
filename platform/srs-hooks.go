@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -325,9 +324,6 @@ func handleOnHls(ctx context.Context, handler *http.ServeMux) error {
 			}
 			if msg.Action != SrsActionOnHls {
 				return errors.Errorf("invalid action=%v", msg.Action)
-			}
-			if _, err := os.Stat(msg.File); err != nil {
-				return errors.Wrapf(err, "invalid ts file %v", msg.File)
 			}
 			logger.Tf(ctx, "on_hls ok, %v", string(b))
 

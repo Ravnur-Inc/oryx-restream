@@ -1,0 +1,9 @@
+name: "Ravnur CodeQL config"
+
+# Exclude vendored / third-party static web assets from analysis. The
+# platform/containers/www tree is SRS's bundled web console and demo players
+# (AngularJS, Bootstrap, jQuery plugins, the WebRTC adapter, srs.sdk.js, and
+# SRS demo HTML) — third-party code we do not maintain. Scanning it only
+# produces noise in upstream libraries.
+paths-ignore:
+  - platform/containers/www
