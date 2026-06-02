@@ -186,22 +186,12 @@ jobs:
       # Create source tar for release. Note that it's for OpenWRT package srs-server, so the filename MUST be
       # srs-server-xxx.tar.gz, because the package is named srs-server.
       # Generate variables like:
-      #   SRS_BT_SOURCE_FILE=oryx.zip
-      #   SRS_BT_SOURCE_MD5=83e38700a80a26e30b2df054e69956e5
+      #   SRS_UBUNTU_EN_SOURCE_FILE=linux-oryx-en.tar.gz
+      #   SRS_UBUNTU_EN_SOURCE_FILE_MD5=83e38700a80a26e30b2df054e69956e5
       #   SRS_SOURCE_PATH=/tmp/oryx-asserts/*.zip
       - name: Create source tar.gz
         run: |
           #
-          # For BT
-          bash scripts/setup-bt/auto/zip.sh --output /tmp/zip-for-bt && SRS_BT_SOURCE_FILE=bt-oryx.zip &&
-          echo "SRS_BT_SOURCE_FILE=${SRS_BT_SOURCE_FILE}" >> $GITHUB_ENV &&
-          echo "SRS_BT_SOURCE_MD5=$(md5sum /tmp/zip-for-bt/${SRS_BT_SOURCE_FILE}| awk '{print $1}')" >> $GITHUB_ENV
-          #
-          # For aaPanel
-          bash scripts/setup-aapanel/auto/zip.sh --output /tmp/zip-for-aapanel  && SRS_AAPANEL_SOURCE_FILE=aapanel-oryx.zip &&
-          echo "SRS_AAPANEL_SOURCE_FILE=${SRS_AAPANEL_SOURCE_FILE}" >> $GITHUB_ENV &&
-          echo "SRS_AAPANEL_SOURCE_MD5=$(md5sum /tmp/zip-for-aapanel/${SRS_AAPANEL_SOURCE_FILE}| awk '{print $1}')" >> $GITHUB_ENV
-          # 
           # For Ubuntu script: zh
           bash scripts/setup-ubuntu/build.sh --output /tmp/zip-for-ubuntu --language zh && SRS_UBUNTU_ZH_SOURCE_FILE=linux-oryx-zh.tar.gz &&
           echo "SRS_UBUNTU_ZH_SOURCE_FILE=${SRS_UBUNTU_ZH_SOURCE_FILE}" >> $GITHUB_ENV &&
@@ -214,8 +204,6 @@ jobs:
           #
           echo "Gather asserts"
           SRS_SOURCE_PATH=/tmp/oryx-asserts && rm -rf $SRS_SOURCE_PATH && mkdir -p $SRS_SOURCE_PATH &&
-          mv /tmp/zip-for-bt/${SRS_BT_SOURCE_FILE} $SRS_SOURCE_PATH &&
-          mv /tmp/zip-for-aapanel/${SRS_AAPANEL_SOURCE_FILE} $SRS_SOURCE_PATH &&
           mv /tmp/zip-for-ubuntu/${SRS_UBUNTU_ZH_SOURCE_FILE} $SRS_SOURCE_PATH &&
           mv /tmp/zip-for-ubuntu/${SRS_UBUNTU_EN_SOURCE_FILE} $SRS_SOURCE_PATH &&
           ls -lh $SRS_SOURCE_PATH &&
@@ -248,7 +236,6 @@ jobs:
             * [docker pull ossrs/oryx:${{ env.SRS_TAG }}](https://ossrs.io/lts/en-us/docs/v5/doc/getting-started-stack#docker)
             * [DigitalOcean](https://marketplace.digitalocean.com/apps/srs): [Tutorial](https://blog.ossrs.io/how-to-setup-a-video-streaming-service-by-1-click-e9fe6f314ac6)
             * Ubuntu Script: ${{ env.SRS_UBUNTU_EN_SOURCE_FILE_MD5 }} [${{ env.SRS_UBUNTU_EN_SOURCE_FILE }}](https://github.com/ossrs/oryx/releases/download/${{ env.SRS_TAG }}/${{ env.SRS_UBUNTU_EN_SOURCE_FILE }})
-            * [aaPanel](https://aapanel.com) Plugin: ${{ env.SRS_AAPANEL_SOURCE_MD5 }} [${{ env.SRS_AAPANEL_SOURCE_FILE }}](https://github.com/ossrs/oryx/releases/download/${{ env.SRS_TAG }}/${{ env.SRS_AAPANEL_SOURCE_FILE }})
             * [Changelog](https://ossrs.io/lts/en-us/faq-oryx#changelog)
             * [Features](https://ossrs.io/lts/en-us/faq-oryx#features)
 
@@ -256,8 +243,6 @@ jobs:
             * [docker pull registry.cn-hangzhou.aliyuncs.com/ossrs/oryx:${{ env.SRS_TAG }}](https://ossrs.net/lts/zh-cn/docs/v5/doc/getting-started-stack#docker)
             * [Lighthouse](https://mp.weixin.qq.com/s/fWmdkw-2AoFD_pEmE_EIkA): [Tutorial](https://www.bilibili.com/video/BV1844y1L7dL)
             * Ubuntu Script: ${{ env.SRS_UBUNTU_ZH_SOURCE_FILE_MD5 }} [${{ env.SRS_UBUNTU_ZH_SOURCE_FILE }}](https://gitee.com/ossrs/oryx/releases/download/${{ env.SRS_TAG }}/${{ env.SRS_UBUNTU_ZH_SOURCE_FILE }})
-            * [BT](https://bt.cn) Plugin: ${{ env.SRS_BT_SOURCE_MD5 }} [${{ env.SRS_BT_SOURCE_FILE }}](https://gitee.com/ossrs/oryx/releases/download/${{ env.SRS_TAG }}/${{ env.SRS_BT_SOURCE_FILE }})
-            * [aaPanel](https://aapanel.com) Plugin: ${{ env.SRS_AAPANEL_SOURCE_MD5 }} [${{ env.SRS_AAPANEL_SOURCE_FILE }}](https://gitee.com/ossrs/oryx/releases/download/${{ env.SRS_TAG }}/${{ env.SRS_AAPANEL_SOURCE_FILE }})
             * [Changelog](https://ossrs.net/lts/zh-cn/faq-oryx#changelog)
             * [Features](https://ossrs.net/lts/zh-cn/faq-oryx#features)
           # TODO: FIXME: If stable release, update it.
