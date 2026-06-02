@@ -13,15 +13,8 @@ import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import ScenarioTutorials from './ScenarioTutorials';
 import {useTranslation} from "react-i18next";
 import {useSrsLanguage} from "../components/LanguageSwitch";
-import ScenarioRecord from "./ScenarioRecord";
-import ScenarioVLive from "./ScenarioVLive";
 import {ScenarioVxOthers} from "./ScenarioOthers";
 import ScenarioTranscode from "./ScenarioTranscode";
-import ScenarioTranscript from "./ScenarioTranscript";
-import ScenarioLiveRoom from "./ScenarioLiveRoom";
-import ScenarioCamera from "./ScenarioCamera";
-import ScenarioDubbing from "./ScenarioDubbing";
-import ScenarioOCR from "./ScenarioOCR";
 
 export default function Scenario() {
   const [searchParams] = useSearchParams();
@@ -30,7 +23,7 @@ export default function Scenario() {
 
   React.useEffect(() => {
     const tab = searchParams.get('tab') || 'tutorials';
-    console.log(`?tab=tutorials|live|stream|record|vlive|camera|transcode|transcript|others, current=${tab}, Select the tab to render`);
+    console.log(`?tab=tutorials|live|forward|transcode|others, current=${tab}, Select the tab to render`);
     setDefaultActiveTab(tab);
   }, [searchParams, language]);
 
@@ -63,32 +56,11 @@ function ScenarioImpl({defaultActiveTab}) {
           <Tab eventKey="live" title={t('scenario.live')}>
             {activeTab === 'live' && <ScenarioLiveStreams {...{urls}} />}
           </Tab>
-          <Tab eventKey="stream" title={t('scenario.stream')}>
-            {activeTab === 'stream' && <ScenarioLiveRoom/>}
-          </Tab>
           <Tab eventKey="forward" title={t('scenario.forward')}>
             {activeTab === 'forward' && <ScenarioForward/>}
           </Tab>
-          <Tab eventKey="record" title={t('scenario.record')}>
-            {activeTab === 'record' && <ScenarioRecord/>}
-          </Tab>
-          <Tab eventKey="vlive" title={t('scenario.vlive')}>
-            {activeTab === 'vlive' && <ScenarioVLive/>}
-          </Tab>
-          <Tab eventKey="camera" title={t('scenario.camera')}>
-            {activeTab === 'camera' && <ScenarioCamera/>}
-          </Tab>
           <Tab eventKey="transcode" title={t('scenario.transcode')}>
             {activeTab === 'transcode' && <ScenarioTranscode {...{urls}} />}
-          </Tab>
-          <Tab eventKey="transcript" title={t('transcript.title')}>
-            {activeTab === 'transcript' && <ScenarioTranscript/>}
-          </Tab>
-          <Tab eventKey="dubbing" title={t('dubb.title')}>
-            {activeTab === 'dubbing' && <ScenarioDubbing/>}
-          </Tab>
-          <Tab eventKey="ocr" title={t('ocr.title')}>
-            {activeTab === 'ocr' && <ScenarioOCR/>}
           </Tab>
           <Tab eventKey="others" title={t('scenario.others')}>
             {activeTab === 'others' && <ScenarioVxOthers {...{urls}} />}
@@ -98,4 +70,3 @@ function ScenarioImpl({defaultActiveTab}) {
     </>
   );
 }
-
