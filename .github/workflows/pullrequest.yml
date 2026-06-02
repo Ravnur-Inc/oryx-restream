@@ -46,9 +46,9 @@ jobs:
           curl --location --output test/source.200kbps.768x320.flv \
             https://github.com/ossrs/srs/raw/develop/trunk/doc/source.200kbps.768x320.flv
       - name: Setup the npm node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: |
             ui/package-lock.json

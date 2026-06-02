@@ -26,14 +26,14 @@
     "recharts": "^2.1.8",
     "semver": "^7.3.5",
     "shell-quote": "^1.7.3",
-    "uuid": "^8.3.2",
+    "uuid": "^11.1.1",
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "jsdom": "^25.0.1",
-    "vite": "^5.4.11",
-    "vitest": "^2.1.8"
+    "vite": "^6.4.2",
+    "vitest": "^4.1.0"
   },
   "scripts": {
     "start": "vite",
