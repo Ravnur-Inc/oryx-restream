@@ -217,14 +217,6 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 		return errors.Wrapf(err, "handle callback")
 	}
 
-	if err := transcriptWorker.Handle(ctx, handler); err != nil {
-		return errors.Wrapf(err, "handle transcript")
-	}
-
-	if err := ocrWorker.Handle(ctx, handler); err != nil {
-		return errors.Wrapf(err, "handle ocr")
-	}
-
 	if err := transcodeWorker.Handle(ctx, handler); err != nil {
 		return errors.Wrapf(err, "handle transcode")
 	}
@@ -243,18 +235,6 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 
 	if err := handleHooksService(ctx, handler); err != nil {
 		return errors.Wrapf(err, "handle hooks")
-	}
-
-	if err := handleLiveRoomService(ctx, handler); err != nil {
-		return errors.Wrapf(err, "handle live room")
-	}
-
-	if err := handleDubbingService(ctx, handler); err != nil {
-		return errors.Wrapf(err, "handle dubbing")
-	}
-
-	if err := handleAITalkService(ctx, handler); err != nil {
-		return errors.Wrapf(err, "handle AI talk")
 	}
 
 	var ep string

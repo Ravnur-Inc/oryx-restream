@@ -763,22 +763,6 @@ func handleOnHls(ctx context.Context, handler *http.ServeMux) error {
 				logger.Tf(ctx, "vod %v", msg.String())
 			}
 
-			// Handle TS file by Transcript task if enabled.
-			if transcriptWorker.Enabled() {
-				if err = transcriptWorker.OnHlsTsMessage(ctx, &msg); err != nil {
-					return errors.Wrapf(err, "feed %v", msg.String())
-				}
-				logger.Tf(ctx, "transcript %v", msg.String())
-			}
-
-			// Handle TS file by OCR task if enabled.
-			if ocrWorker.Enabled() {
-				if err = ocrWorker.OnHlsTsMessage(ctx, &msg); err != nil {
-					return errors.Wrapf(err, "feed %v", msg.String())
-				}
-				logger.Tf(ctx, "ocr %v", msg.String())
-			}
-
 			ohttp.WriteData(ctx, w, r, nil)
 			return nil
 		}(); err != nil {

@@ -201,28 +201,6 @@ func doMain(ctx context.Context) error {
 		return errors.Wrapf(err, "start callback worker")
 	}
 
-	// Create transcript worker for transcription.
-	transcriptWorker = NewTranscriptWorker()
-	defer transcriptWorker.Close()
-	if err := transcriptWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start transcript worker")
-	}
-
-	// Create OCR worker for OCR service.
-	ocrWorker = NewOCRWorker()
-	defer ocrWorker.Close()
-	if err := ocrWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start OCR worker")
-	}
-
-	// Create AI Talk worker for live room.
-	talkServer = NewTalkServer()
-	defer talkServer.Close()
-
-	// Create AI Dubbing server for VoD translation.
-	dubbingServer = NewDubbingServer()
-	defer dubbingServer.Close()
-
 	// Create transcode worker for transcoding.
 	transcodeWorker = NewTranscodeWorker()
 	defer transcodeWorker.Close()
@@ -437,8 +415,7 @@ func initPlatform(ctx context.Context) error {
 		"containers/data/dvr", "containers/data/record", "containers/data/vod",
 		"containers/data/upload", "containers/data/vlive", "containers/data/signals",
 		"containers/data/lego", "containers/data/.well-known", "containers/data/config",
-		"containers/data/transcript", "containers/data/srs-s3-bucket", "containers/data/ai-talk",
-		"containers/data/dubbing", "containers/data/ocr",
+		"containers/data/srs-s3-bucket",
 	} {
 		if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
 			if err = os.MkdirAll(dir, os.ModeDir|os.FileMode(0755)); err != nil {

@@ -61,3 +61,32 @@ Risk Assessment requirements for modified open-source software.
 
 **Compile verification:** PASS — `cd platform && GOOS=linux go build ./...` clean (host Windows build fails only on pre-existing Linux-only syscall.Kill, unrelated to this session). No Go files were modified.
 **go mod tidy:** Skipped intentionally — no Go dependencies changed this session.
+
+### 2026-06-02 — Strip: AI features (Session 2)
+
+**Removed Go source files:**
+- platform/ai-talk.go — AI Talk conversational assistant (TalkServer, Stage, TTS/ASR/Chat services)
+- platform/transcript.go — AI live transcription worker (TranscriptWorker + tasks/queues)
+- platform/ocr.go — OCR worker over HLS (OCRWorker + tasks/queues)
+- platform/dubbing.go — AI dubbing / VoD translation (SrsDubbingServer, projects, tasks)
+- platform/openai.go — OpenAI model capability helpers (gptModelSupport*)
+- platform/live-room.go — AI assistant "live room" (SrsLiveRoom, SrsAssistant config types) — only consumed by the AI files above
+
+**Edited KEEP files to remove wiring to the deleted features:**
+- platform/main.go — removed transcript/OCR/AI-Talk/AI-Dubbing worker creation + defer/Start blocks; removed containers/data/{transcript,ai-talk,dubbing,ocr} from the data-dir bootstrap
+- platform/service.go — removed transcriptWorker.Handle / ocrWorker.Handle registrations and handleLiveRoomService / handleDubbingService / handleAITalkService route registrations
+- platform/srs-hooks.go — removed the HLS-TS dispatch branches that fed transcriptWorker / ocrWorker (record/dvr/vod dispatch retained)
+
+**Removed Go dependencies (go.mod, via go mod tidy + go mod vendor):**
+- github.com/sashabaranov/go-openai — OpenAI client (ASR/chat/TTS/OCR/dubbing)
+- github.com/go-audio/audio, github.com/go-audio/wav — WAV/audio processing for dubbing
+- github.com/go-audio/riff (indirect) — pulled in by go-audio/wav
+- Corresponding vendor/ trees removed (vendor/github.com/sashabaranov, vendor/github.com/go-audio)
+
+**Retained / out of scope:**
+- Shared HLS types SrsOnHlsMessage / SrsOnHlsObject / SrsStream live in utils.go (KEEP) — unaffected
+- UI references to AI features (transcript/OCR/dubbing/AI-talk/live-room screens, locale strings) left for a later docs/UI pass (ui/ is minimal-changes-only)
+- Tencent/cos deps remain (still used by srs-hooks.go + dvr-tencent-*.go) — Session 4
+
+**Compile verification:** PASS — `GOOS=linux go build ./...` clean before and after `go mod tidy`/`go mod vendor`. No remaining references to AI symbols. (Native Windows build still fails only on the pre-existing Linux-only syscall.Kill.)
+**Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.
