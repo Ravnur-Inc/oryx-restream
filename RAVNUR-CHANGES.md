@@ -245,3 +245,21 @@ Addresses the non-blocking Go follow-ups flagged after Session 7.
 **Removed Go dependencies (go.mod):** None — go.mod/go.sum unchanged.
 **Compile verification:** PASS — `GOOS=linux go build ./...` clean. Zero dangling references to handleMgmtOpenAI/SRS_SYS_OPENAI. No vendor changes.
 **Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.
+
+### 2026-06-02 — Security: dependency vulnerability cleanup
+
+Baseline: 147 open Dependabot alerts on the fork (4 critical / 70 high / 58 moderate / 15 low),
+split as npm 130, pip 15, go 2.
+
+**Cleared in this pass (17 alerts → go and pip now at zero):**
+- Deleted scripts/tools/tencent-cloud/ (Tencent CVM provisioning python scripts; unreferenced, unrelated to the restreamer) → clears all 15 pip alerts (requirements.txt)
+- Bumped github.com/golang-jwt/jwt/v4 v4.4.3 → v4.5.2 (go get + go mod tidy + go mod vendor) → clears both go alerts (1 high, 1 low). go build ./... clean.
+
+**Remaining: 130 npm alerts, all in ui/package-lock.json (CRA / react-scripts 5.0.0 app).**
+Breakdown: 46 are direct deps in package.json (axios 23, minimatch 10, http-proxy-middleware 3,
+semver 3, moment 2, loader-utils 2, ejs/uuid/hermes-engine 1 each); 84 are transitive build-tooling
+pulled by react-scripts. The bulk are build-time (webpack/dev-server/etc.) — not shipped in the
+production browser bundle. Fully clearing them requires either npm overrides (fragile) or migrating
+off the deprecated CRA toolchain (react-scripts) to Vite. This needs a node/npm environment (not
+available on the current dev host) and is its own scoped effort in ui/ (minimal-changes zone),
+overlapping the deferred UI feature-pruning. Tracked as a separate follow-up — see PR discussion.
