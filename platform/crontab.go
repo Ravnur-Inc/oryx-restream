@@ -73,24 +73,6 @@ func (v *CrontabWorker) Start(ctx context.Context) error {
 		}
 	}()
 
-	v.wg.Add(1)
-	go func() {
-		defer v.wg.Done()
-
-		for {
-			logger.Tf(ctx, "crontab: start to refresh ssl cert")
-			if err := certManager.refreshSSLCert(ctx); err != nil {
-				logger.Wf(ctx, "crontab: ignore err %v", err)
-			}
-
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(24 * time.Hour):
-			}
-		}
-	}()
-
 	if err := certManager.Initialize(ctx); err != nil {
 		return errors.Wrapf(err, "initialize cert manager")
 	}

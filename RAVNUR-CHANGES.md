@@ -159,3 +159,32 @@ Risk Assessment requirements for modified open-source software.
 
 **Compile verification:** PASS — `GOOS=linux go build ./...` clean. Zero dangling references to vLiveWorker/VLiveTask/envYtdlProxy/dirVLivePath/youtube-dl. No vendor changes.
 **Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.
+
+### 2026-06-02 — Strip: LEGO / Let's Encrypt automation (Session 6)
+
+Scope per plan: "binary exec removal only". LEGO is an external binary invoked
+via exec("lego"), not a Go module. cert.go is NOT removed — CertManager also
+provides self-signed and manually-uploaded SSL cert handling that the HTTPS API
+server depends on. Only the Let's Encrypt/LEGO automation was excised.
+
+**Edited platform/cert.go (KEEP file — surgical removal):**
+- Removed updateLetsEncrypt() and renewLetsEncrypt() (the two exec("lego") call sites) and refreshSSLCert() (the periodic renewal driver that called renewLetsEncrypt)
+- Removed now-unused imports "bytes" and "fmt" ("os/exec" retained — still used by updateSslFiles for rm)
+
+**Edited other KEEP files to remove LEGO wiring:**
+- platform/crontab.go — removed the 24h goroutine that called certManager.refreshSSLCert (the cert-file reload cron and certManager.Initialize retained)
+- platform/service.go — removed the /terraform/v1/mgmt/letsencrypt handler (handleMgmtLetsEncrypt) and its registration
+- platform/main.go — removed containers/data/lego from the data-dir bootstrap
+
+**Removed Go dependencies (go.mod):**
+- None — LEGO is an external binary (exec), not a Go module. go.mod/go.sum unchanged.
+
+**Retained (HTTPS still works without Let's Encrypt):**
+- CertManager + createSelfSignCertificate, updateSslFiles, QueryCertificate, ReloadCertificate, reloadCertificateFile, Initialize
+- service.go handlers handleMgmtAutoSelfSignedCertificate, handleMgmtSsl (manual upload), handleMgmtCertQuery
+- SRS_HTTPS / SRS_HTTPS_DOMAIN redis constants (still used by SSL handlers)
+- containers/data/.well-known dir kept (ACME http-01 webroot; harmless empty dir, may be referenced by generated nginx config) — noted for a later nginx/UI pass
+- UI Let's Encrypt screen + any nginx-config references left for a later docs/UI pass (ui/ is minimal-changes-only)
+
+**Compile verification:** PASS — `GOOS=linux go build ./...` clean. Zero dangling references to lego/letsencrypt/refreshSSLCert. No vendor changes.
+**Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.

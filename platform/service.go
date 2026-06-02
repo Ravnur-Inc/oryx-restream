@@ -258,7 +258,6 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 	handleMgmtHlsLowLatencyQuery(ctx, handler)
 	handleMgmtAutoSelfSignedCertificate(ctx, handler)
 	handleMgmtSsl(ctx, handler)
-	handleMgmtLetsEncrypt(ctx, handler)
 	handleMgmtCertQuery(ctx, handler)
 	handleMgmtStreamsQuery(ctx, handler)
 	handleMgmtStreamsKickoff(ctx, handler)
@@ -1423,55 +1422,6 @@ func handleMgmtSsl(ctx context.Context, handler *http.ServeMux) {
 
 			ohttp.WriteData(ctx, w, r, nil)
 			logger.Tf(ctx, "nginx ssl file ok, key=%vB, crt=%vB, token=%vB", len(key), len(crt), len(token))
-			return nil
-		}(); err != nil {
-			ohttp.WriteError(ctx, w, r, err)
-		}
-	})
-}
-
-func handleMgmtLetsEncrypt(ctx context.Context, handler *http.ServeMux) {
-	ep := "/terraform/v1/mgmt/letsencrypt"
-	logger.Tf(ctx, "Handle %v", ep)
-	handler.HandleFunc(ep, func(w http.ResponseWriter, r *http.Request) {
-		if err := func() error {
-			var token string
-			var domain string
-			if err := ParseBody(ctx, r.Body, &struct {
-				Token  *string `json:"token"`
-				Domain *string `json:"domain"`
-			}{
-				Token: &token, Domain: &domain,
-			}); err != nil {
-				return errors.Wrapf(err, "parse body")
-			}
-
-			apiSecret := envApiSecret()
-			if err := Authenticate(ctx, apiSecret, token, r.Header); err != nil {
-				return errors.Wrapf(err, "authenticate")
-			}
-
-			if domain = strings.TrimSpace(domain); domain == "" {
-				return errors.New("empty domain")
-			}
-
-			if err := certManager.updateLetsEncrypt(ctx, domain); err != nil {
-				return errors.Wrapf(err, "updateSslFiles domain=%v", domain)
-			}
-
-			if err := rdb.Set(ctx, SRS_HTTPS, "lets", 0).Err(); err != nil && err != redis.Nil {
-				return errors.Wrapf(err, "set %v %v", SRS_HTTPS, "lets")
-			}
-			if err := rdb.Set(ctx, SRS_HTTPS_DOMAIN, domain, 0).Err(); err != nil && err != redis.Nil {
-				return errors.Wrapf(err, "set %v %v", SRS_HTTPS_DOMAIN, domain)
-			}
-
-			if err := nginxGenerateConfig(ctx); err != nil {
-				return errors.Wrapf(err, "nginx config and reload")
-			}
-
-			ohttp.WriteData(ctx, w, r, nil)
-			logger.Tf(ctx, "nginx letsencrypt ok, domain=%v, token=%vB", domain, len(token))
 			return nil
 		}(); err != nil {
 			ohttp.WriteError(ctx, w, r, err)
