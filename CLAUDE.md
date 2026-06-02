@@ -25,14 +25,18 @@ restreams RTMP to YouTube and Facebook via FFmpeg forward tasks.
 - usr/lib/systemd/system/ — systemd units (hardening only)
 - ui/ — React frontend (minimal changes only)
 
-## What we are stripping (one session per group)
-Session 1: scripts/nginx-hls-cdn/, focal/, aaPanel/BT references
-Session 2: youtube-dl (scripts + any Go references)
-Session 3: Let's Encrypt / LEGO (Go platform code)
-Session 4: Tencent Cloud (tencentcloud-sdk-go, cos-go-sdk-v5)
-Session 5: DVR / recording features
-Session 6: Virtual live / vlive features
-Session 7: OpenAI / AI transcription / AI Talk / OCR / Whisper
+## Strip session order (revised per Session 0 audit)
+Session 1: scripts/nginx-hls-cdn/, focal/, aaPanel/BT shell references
+Session 2: AI features — ai-talk.go, transcript.go, ocr.go, dubbing.go,
+           openai.go, live-room.go + go-openai, go-audio deps
+Session 3: DVR local disk — dvr-local-disk.go
+Session 4: Tencent Cloud — dvr-tencent-cos.go, dvr-tencent-vod.go,
+           Tencent branches in srs-hooks.go, constants in utils.go,
+           tencentcloud-sdk-go + cos-go-sdk-v5 from go.mod
+Session 5: Virtual live + youtube-dl — virtual-live-stream.go
+Session 6: LEGO / cert.go — binary exec removal only
+Session 7: Cleanup — camera-live-stream.go, candidate.go,
+           fastcache.go, report.go (verify each against forward.go first)
 
 ## Never
 - Delete files that are shared between kept and stripped features
