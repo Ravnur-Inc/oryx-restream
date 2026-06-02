@@ -1,0 +1,3 @@
+[allowlist]
+  description = "Upstream ossrs example values in documentation"
+  commits = ["c4f19a51a7f127caaf26caea500aed9be9a83cbd"]
