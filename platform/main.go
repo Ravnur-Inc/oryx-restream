@@ -129,16 +129,13 @@ func doMain(ctx context.Context) error {
 
 	// For system limit.
 	setEnvDefault("SRS_FORWARD_LIMIT", "10")
-	setEnvDefault("SRS_VLIVE_LIMIT", "10")
-	setEnvDefault("SRS_CAMERA_LIMIT", "10")
 
 	logger.Tf(ctx, "load .env as MGMT_PASSWORD=%vB, GO_PPROF=%v, "+
 		"SRS_PLATFORM_SECRET=%vB, CLOUD=%v, REGION=%v, SOURCE=%v, SRT_PORT=%v, RTC_PORT=%v, "+
 		"NODE_ENV=%v, LOCAL_RELEASE=%v, REDIS_DATABASE=%v, REDIS_HOST=%v, REDIS_PASSWORD=%vB, REDIS_PORT=%v, RTMP_PORT=%v, "+
 		"PUBLIC_URL=%v, BUILD_PATH=%v, REACT_APP_LOCALE=%v, PLATFORM_LISTEN=%v, HTTP_PORT=%v, "+
 		"REGISTRY=%v, MGMT_LISTEN=%v, HTTPS_LISTEN=%v, AUTO_SELF_SIGNED_CERTIFICATE=%v, "+
-		"NAME_LOOKUP=%v, PLATFORM_DOCKER=%v, SRS_FORWARD_LIMIT=%v, SRS_VLIVE_LIMIT=%v, "+
-		"SRS_CAMERA_LIMIT=%v",
+		"NAME_LOOKUP=%v, PLATFORM_DOCKER=%v, SRS_FORWARD_LIMIT=%v",
 		len(envMgmtPassword()), envGoPprof(), len(envApiSecret()), envCloud(),
 		envRegion(), envSource(), envSrtListen(), envRtcListen(),
 		envNodeEnv(), envLocalRelease(),
@@ -147,8 +144,7 @@ func doMain(ctx context.Context) error {
 		envBuildPath(), envReactAppLocale(), envPlatformListen(), envHttpPort(),
 		envRegistry(), envMgmtListen(), envHttpListen(),
 		envSelfSignedCertificate(), envNameLookup(),
-		envPlatformDocker(), envForwardLimit(), envVLiveLimit(),
-		envCameraLimit(),
+		envPlatformDocker(), envForwardLimit(),
 	)
 
 	// Start the Go pprof if enabled.
@@ -213,13 +209,6 @@ func doMain(ctx context.Context) error {
 	defer forwardWorker.Close()
 	if err := forwardWorker.Start(ctx); err != nil {
 		return errors.Wrapf(err, "start forward worker")
-	}
-
-	// Create worker for IP camera.
-	cameraWorker = NewCameraWorker()
-	defer cameraWorker.Close()
-	if err := cameraWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start IP camera worker")
 	}
 
 	// Create worker for crontab.
@@ -420,9 +409,6 @@ func initPlatform(ctx context.Context) error {
 		logger.Tf(ctx, "boot already done, v=%v, key=%v", bootRelease, SRS_FIRST_BOOT)
 	}
 
-	// For development, request the releases from itself which proxy to the releases service.
-	go refreshLatestVersion(ctx)
-
 	// Disable srs-dev, only enable srs-server.
 	if srsDevEnabled, err := rdb.HGet(ctx, SRS_CONTAINER_DISABLED, srsDevDockerName).Result(); err != nil && err != redis.Nil {
 		return errors.Wrapf(err, "hget %v %v", SRS_CONTAINER_DISABLED, srsDevDockerName)
@@ -524,34 +510,3 @@ func initMmgt(ctx context.Context) error {
 	return nil
 }
 
-// Refresh the latest version when startup.
-func refreshLatestVersion(ctx context.Context) error {
-	versionsCtx, versionsCancel := context.WithCancel(context.Background())
-	go func() {
-		ctx := logger.WithContext(ctx)
-		for ctx.Err() == nil {
-			versions, err := queryLatestVersion(ctx)
-			if err == nil && versions != nil && versions.Latest != "" {
-				logger.Tf(ctx, "query version ok, result is %v", versions.String())
-				conf.Versions = *versions
-				versionsCancel()
-
-				// CrontabWorker will start a goroutine to refresh the version.
-				break
-			}
-
-			// Retry for error.
-			select {
-			case <-ctx.Done():
-			case <-time.After(3 * time.Minute):
-			}
-		}
-	}()
-
-	select {
-	case <-ctx.Done():
-	case <-versionsCtx.Done():
-	}
-
-	return nil
-}

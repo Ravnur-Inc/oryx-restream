@@ -188,3 +188,43 @@ server depends on. Only the Let's Encrypt/LEGO automation was excised.
 
 **Compile verification:** PASS — `GOOS=linux go build ./...` clean. Zero dangling references to lego/letsencrypt/refreshSSLCert. No vendor changes.
 **Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.
+
+### 2026-06-02 — Strip: Cleanup — IP camera, version report, limits API (Session 7)
+
+Per plan, each cleanup-candidate file was verified against forward.go and the
+other KEEP files first. Two of the four candidates were KEPT because they are
+core HTTP-service infrastructure, not standalone features:
+- candidate.go — CandidateWorker.Resolve(host) is used by the WebRTC (WHIP/WHEP) proxy path in service.go to compute the eip param. RETAINED.
+- fastcache.go — FastCache.HLSHighPerformance/HLSLowLatency drive HLS .m3u8 delivery caching in service.go and a crontab refresh. RETAINED.
+
+**Removed Go source files:**
+- platform/camera-live-stream.go — IP camera worker (CameraWorker, cameraWorker, CameraTask, CameraConfigure); ingested an IP camera source and republished it
+- platform/report.go — queryLatestVersion (upgrade-check stub returning hardcoded version strings)
+
+**Edited KEEP files:**
+- platform/main.go — removed CameraWorker bootstrap; removed `go refreshLatestVersion(ctx)` and the refreshLatestVersion function; removed SRS_VLIVE_LIMIT/SRS_CAMERA_LIMIT setEnvDefaults and their startup env-log entries (SRS_FORWARD_LIMIT retained)
+- platform/service.go — removed cameraWorker.Handle; removed vLiveLimit/cameraLimit from handleMgmtEnvs (forwardLimit retained); removed handleMgmtLimitsQuery + handleMgmtLimitsUpdate (the /terraform/v1/mgmt/limits/{query,update} endpoints, purely vLive+camera) and their registrations
+- platform/crontab.go — removed the periodic queryLatestVersion goroutine (fastCache.Refresh and cert reload goroutines retained)
+- platform/utils.go — NewConfig now seeds Versions from the `version` const (was "v0.0.0") so the status API still reports the app version without the upgrade poll; removed envVLiveLimit/envCameraLimit, SrsSysLimitsVLive/SrsSysLimitsCamera, SRS_SYS_LIMITS const, and the dead dirDubbingPath var (Session 2 leftover)
+
+**Removed Go dependencies (go.mod):**
+- None — all removed code used shared deps. go.mod/go.sum unchanged.
+
+**Deferred / out of scope (noted for a follow-up pass):**
+- OpenAI config endpoints handleMgmtOpenAIQuery/handleMgmtOpenAIUpdate + SRS_SYS_OPENAI const — AI-config leftovers from Session 2 (store/read OpenAI settings in redis; harmless without the AI workers). Left untouched to keep Session 7 scoped; flagged for a small follow-up cleanup.
+- UI references to camera / vLive / limits screens and the mgmt/limits + version-check API contract — ui/ is minimal-changes-only; a dedicated UI/docs pass should remove the corresponding screens/strings.
+- containers/data/.well-known dir (ACME webroot from the LEGO era) — still created; harmless.
+
+**Compile verification:** PASS — `GOOS=linux go build ./...` clean at every stage. Zero dangling references to cameraWorker/queryLatestVersion/refreshLatestVersion/handleMgmtLimits/envVLiveLimit/envCameraLimit/SrsSysLimits/dirDubbingPath. candidate.go and fastcache.go confirmed retained. No vendor changes.
+**Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.
+
+---
+
+## Strip plan complete (Sessions 1–7)
+All seven strip sessions are done. The platform now builds clean for linux with a
+minimal dependency set (go-redis, golang-jwt, google/uuid, godotenv, go-oryx-lib +
+xxhash/go-rendezvous indirect). Remaining platform/*.go: callback, candidate, cert,
+crontab, fastcache, forward, main, service, srs-errors, srs-hooks, trancode, utils,
+utils_test, version. Suggested follow-ups (non-blocking): the OpenAI-config endpoint
+leftover noted above, a UI/docs pass to remove stripped-feature screens, and pruning
+dead error codes in srs-errors.go.

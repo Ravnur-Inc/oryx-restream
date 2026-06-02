@@ -70,9 +70,9 @@ func NewConfig() *Config {
 		ipv4:     net.IPv4zero,
 		IsDarwin: runtime.GOOS == "darwin",
 		Versions: Versions{
-			Version: "v0.0.0",
-			Latest:  "v0.0.0",
-			Stable:  "v0.0.0",
+			Version: version,
+			Latest:  version,
+			Stable:  version,
 		},
 	}
 }
@@ -300,7 +300,6 @@ const (
 	SRS_HTTPS           = "SRS_HTTPS"
 	SRS_HTTPS_DOMAIN    = "SRS_HTTPS_DOMAIN"
 	SRS_HOOKS           = "SRS_HOOKS"
-	SRS_SYS_LIMITS      = "SRS_SYS_LIMITS"
 	SRS_SYS_OPENAI      = "SRS_SYS_OPENAI"
 )
 
@@ -308,12 +307,6 @@ const (
 func GenerateRoomPublishKey(roomStreamName string) string {
 	return fmt.Sprintf("room-pub-%v", roomStreamName)
 }
-
-// Default limit to 5Mbps for virtual live streaming.
-const SrsSysLimitsVLive = 5 * 1000
-
-// Default limit to 5Mbps for IP camera streaming.
-const SrsSysLimitsCamera = 5 * 1000
 
 // FFprobeSourceType defines the source type of virtual live or camera live,
 // which use ffprobe to retrieve information.
@@ -324,9 +317,8 @@ const FFprobeSourceTypeFile FFprobeSourceType = "file"
 const FFprobeSourceTypeYTDL FFprobeSourceType = "ytdl"
 const FFprobeSourceTypeStream FFprobeSourceType = "stream"
 
-// For vLive upload directory.
+// For upload directory.
 var dirUploadPath = path.Join(".", "upload")
-var dirDubbingPath = path.Join(".", "dub")
 
 // For Oryx to use the files.
 const serverDataDirectory = "/data"
@@ -452,14 +444,6 @@ func envPath() string {
 
 func envForwardLimit() string {
 	return os.Getenv("SRS_FORWARD_LIMIT")
-}
-
-func envVLiveLimit() string {
-	return os.Getenv("SRS_VLIVE_LIMIT")
-}
-
-func envCameraLimit() string {
-	return os.Getenv("SRS_CAMERA_LIMIT")
 }
 
 func envGoPprof() string {

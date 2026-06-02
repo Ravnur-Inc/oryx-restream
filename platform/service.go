@@ -225,10 +225,6 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 		return errors.Wrapf(err, "handle forward")
 	}
 
-	if err := cameraWorker.Handle(ctx, handler); err != nil {
-		return errors.Wrapf(err, "handle IP camera")
-	}
-
 	if err := handleHooksService(ctx, handler); err != nil {
 		return errors.Wrapf(err, "handle hooks")
 	}
@@ -245,8 +241,6 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 	handleMgmtLogin(ctx, handler)
 	handleMgmtStatus(ctx, handler)
 	handleMgmtBilibili(ctx, handler)
-	handleMgmtLimitsQuery(ctx, handler)
-	handleMgmtLimitsUpdate(ctx, handler)
 	handleMgmtOpenAIQuery(ctx, handler)
 	handleMgmtOpenAIUpdate(ctx, handler)
 	handleMgmtBeianQuery(ctx, handler)
@@ -585,24 +579,6 @@ func handleMgmtEnvs(ctx context.Context, handler *http.ServeMux) {
 				}
 			}
 
-			var vLiveLimit int
-			if envVLiveLimit() != "" {
-				if iv, err := strconv.ParseInt(envVLiveLimit(), 10, 64); err != nil {
-					return errors.Wrapf(err, "parse env virtual live limit %v", envVLiveLimit())
-				} else {
-					vLiveLimit = int(iv)
-				}
-			}
-
-			var cameraLimit int
-			if envCameraLimit() != "" {
-				if iv, err := strconv.ParseInt(envCameraLimit(), 10, 64); err != nil {
-					return errors.Wrapf(err, "parse env camera limit %v", envCameraLimit())
-				} else {
-					cameraLimit = int(iv)
-				}
-			}
-
 			platformDocker := envPlatformDocker() != "off"
 			candidate := envCandidate() != ""
 			ohttp.WriteData(ctx, w, r, &struct {
@@ -622,10 +598,6 @@ func handleMgmtEnvs(ctx context.Context, handler *http.ServeMux) {
 				RTCPort string `json:"rtcPort"`
 				// The limit of the number of forwarding streams.
 				ForwardLimit int `json:"forwardLimit"`
-				// The limit of the number of vLive streams.
-				VLiveLimit int `json:"vLiveLimit"`
-				// The limit of the number of IP camera streams.
-				CameraLimit int `json:"cameraLimit"`
 			}{
 				// Whether in docker.
 				MgmtDocker: true,
@@ -643,15 +615,11 @@ func handleMgmtEnvs(ctx context.Context, handler *http.ServeMux) {
 				RTCPort: envRtcListen(),
 				// The limit of the number of forwarding streams.
 				ForwardLimit: forwardLimit,
-				// The limit of the number of vLive streams.
-				VLiveLimit: vLiveLimit,
-				// The limit of the number of IP camera streams.
-				CameraLimit: cameraLimit,
 			})
 
-			logger.Tf(ctx, "mgmt envs ok, locale=%v, platformDocker=%v, candidate=%v, rtmpPort=%v, httpPort=%v, srtPort=%v, rtcPort=%v, forwardLimit=%v, vLiveLimit=%v, cameraLimit=%v",
+			logger.Tf(ctx, "mgmt envs ok, locale=%v, platformDocker=%v, candidate=%v, rtmpPort=%v, httpPort=%v, srtPort=%v, rtcPort=%v, forwardLimit=%v",
 				locale, platformDocker, candidate, envRtmpPort(), envHttpPort(),
-				envSrtListen(), envRtcListen(), forwardLimit, vLiveLimit, cameraLimit,
+				envSrtListen(), envRtcListen(), forwardLimit,
 			)
 			return nil
 		}(); err != nil {
@@ -1000,101 +968,6 @@ func handleMgmtOpenAIUpdate(ctx context.Context, handler *http.ServeMux) {
 
 			ohttp.WriteData(ctx, w, r, nil)
 			logger.Tf(ctx, "limits: Update ok, key=%vB, url=%v, org=%v", len(aiSecretKey), aiBaseURL, aiOrganization)
-			return nil
-		}(); err != nil {
-			ohttp.WriteError(ctx, w, r, err)
-		}
-	})
-}
-
-func handleMgmtLimitsQuery(ctx context.Context, handler *http.ServeMux) {
-	ep := "/terraform/v1/mgmt/limits/query"
-	logger.Tf(ctx, "Handle %v", ep)
-	handler.HandleFunc(ep, func(w http.ResponseWriter, r *http.Request) {
-		if err := func() error {
-			var token string
-			if err := ParseBody(ctx, r.Body, &struct {
-				Token *string `json:"token"`
-			}{
-				Token: &token,
-			}); err != nil {
-				return errors.Wrapf(err, "parse body")
-			}
-
-			apiSecret := envApiSecret()
-			if err := Authenticate(ctx, apiSecret, token, r.Header); err != nil {
-				return errors.Wrapf(err, "authenticate")
-			}
-
-			vLiveLimits, err := rdb.HGet(ctx, SRS_SYS_LIMITS, "vlive").Int64()
-			if err != nil && err != redis.Nil {
-				return errors.Wrapf(err, "hget %v vlive", SRS_SYS_LIMITS)
-			} else if vLiveLimits == 0 {
-				vLiveLimits = SrsSysLimitsVLive
-			}
-
-			ipCameraLimits, err := rdb.HGet(ctx, SRS_SYS_LIMITS, "camera").Int64()
-			if err != nil && err != redis.Nil {
-				return errors.Wrapf(err, "hget %v camera", SRS_SYS_LIMITS)
-			} else if ipCameraLimits == 0 {
-				ipCameraLimits = SrsSysLimitsCamera
-			}
-
-			ohttp.WriteData(ctx, w, r, &struct {
-				// The limits for virtual live streaming.
-				VLive int64 `json:"vlive"`
-				// The limits for IP camera streaming.
-				IPCamera int64 `json:"camera"`
-			}{
-				VLive: vLiveLimits, IPCamera: ipCameraLimits,
-			})
-
-			logger.Tf(ctx, "limits: query ok")
-			return nil
-		}(); err != nil {
-			ohttp.WriteError(ctx, w, r, err)
-		}
-	})
-}
-
-func handleMgmtLimitsUpdate(ctx context.Context, handler *http.ServeMux) {
-	ep := "/terraform/v1/mgmt/limits/update"
-	logger.Tf(ctx, "Handle %v", ep)
-	handler.HandleFunc(ep, func(w http.ResponseWriter, r *http.Request) {
-		if err := func() error {
-			var token string
-			var vlive, camera int64
-			if err := ParseBody(ctx, r.Body, &struct {
-				Token    *string `json:"token"`
-				VLive    *int64  `json:"vlive"`
-				IPCamera *int64  `json:"camera"`
-			}{
-				Token: &token, VLive: &vlive, IPCamera: &camera,
-			}); err != nil {
-				return errors.Wrapf(err, "parse body")
-			}
-
-			apiSecret := envApiSecret()
-			if err := Authenticate(ctx, apiSecret, token, r.Header); err != nil {
-				return errors.Wrapf(err, "authenticate")
-			}
-
-			if vlive <= 0 {
-				return errors.Errorf("invalid vlive %v", vlive)
-			}
-			if camera <= 0 {
-				return errors.Errorf("invalid vlive %v", vlive)
-			}
-
-			if err := rdb.HSet(ctx, SRS_SYS_LIMITS, "vlive", vlive).Err(); err != nil && err != redis.Nil {
-				return errors.Wrapf(err, "hset %v vlive %v", SRS_SYS_LIMITS, vlive)
-			}
-			if err := rdb.HSet(ctx, SRS_SYS_LIMITS, "camera", camera).Err(); err != nil && err != redis.Nil {
-				return errors.Wrapf(err, "hset %v camera %v", SRS_SYS_LIMITS, camera)
-			}
-
-			ohttp.WriteData(ctx, w, r, nil)
-			logger.Tf(ctx, "limits: Update ok, vlive=%v, camera=%v", vlive, camera)
 			return nil
 		}(); err != nil {
 			ohttp.WriteError(ctx, w, r, err)

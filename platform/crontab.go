@@ -45,34 +45,6 @@ func (v *CrontabWorker) Start(ctx context.Context) error {
 		}
 	}()
 
-	v.wg.Add(1)
-	go func() {
-		defer v.wg.Done()
-
-		// Start the crontab when system startup for a while.
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(5 * time.Minute):
-		}
-
-		for {
-			logger.Tf(ctx, "crontab: start to query latest version")
-			if versions, err := queryLatestVersion(ctx); err != nil {
-				logger.Wf(ctx, "crontab: ignore err %v", err)
-			} else if versions != nil && versions.Latest != "" {
-				conf.Versions = *versions
-				logger.Tf(ctx, "crontab: query version ok, result is %v", versions.String())
-			}
-
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(15 * time.Minute):
-			}
-		}
-	}()
-
 	if err := certManager.Initialize(ctx); err != nil {
 		return errors.Wrapf(err, "initialize cert manager")
 	}
