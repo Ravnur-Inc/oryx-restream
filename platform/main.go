@@ -208,13 +208,6 @@ func doMain(ctx context.Context) error {
 		return errors.Wrapf(err, "start transcode worker")
 	}
 
-	// Create worker for RECORD, covert live stream to local file.
-	recordWorker = NewRecordWorker()
-	defer recordWorker.Close()
-	if err := recordWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start record worker")
-	}
-
 	// Create worker for DVR, covert live stream to local file.
 	dvrWorker = NewDvrWorker()
 	defer dvrWorker.Close()
@@ -493,7 +486,6 @@ func initPlatform(ctx context.Context) error {
 		PVK string
 		CVK string
 	}{
-		{"SRS_RECORD_M3U8_METADATA", SRS_RECORD_M3U8_ARTIFACT},
 		{"SRS_DVR_M3U8_METADATA", SRS_DVR_M3U8_ARTIFACT},
 		{"SRS_VOD_M3U8_METADATA", SRS_VOD_M3U8_ARTIFACT},
 	} {
