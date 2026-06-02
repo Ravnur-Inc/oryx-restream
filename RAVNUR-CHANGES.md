@@ -111,3 +111,29 @@ Risk Assessment requirements for modified open-source software.
 
 **Compile verification:** PASS — `GOOS=linux go build ./...` clean. The Tencent DVR/VoD files were verified to have no dependency on dvr-local-disk.go before removal.
 **Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.
+
+### 2026-06-02 — Strip: Tencent Cloud (DVR/COS, VoD, CAM) (Session 4)
+
+**Removed Go source files:**
+- platform/dvr-tencent-cos.go — DvrWorker: DVR live streams to Tencent COS (DvrWorker, dvrWorker, DvrM3u8Stream)
+- platform/dvr-tencent-vod.go — VodWorker: live → Tencent VoD (VodWorker, vodWorker, VodM3u8Stream, VodCosToken)
+
+**Edited KEEP files to remove Tencent branches + wiring:**
+- platform/srs-hooks.go — removed the entire `/terraform/v1/tencent/cam/secret` HTTP handler (~390 lines of CAM/COS/VoD provisioning), the `/terraform/v1/tencent/versions` alias registration, the DVR/VoD HLS-TS dispatch branches, the dvrWorker/vodWorker `.Handle` registrations, and the now-unused tencentcloud (cam/common/profile/vod) + cos-go-sdk-v5 imports and stdlib imports (math/rand, net/url, strconv)
+- platform/main.go — removed DvrWorker/VodWorker bootstrap; removed DVR/VoD version-migration loop; removed containers/data/{dvr,vod,srs-s3-bucket} from data-dir bootstrap and dvr/vod from the reset-dirs list
+- platform/utils.go — removed orphaned redis-key constants (SRS_TENCENT_CAM/COS/VOD, SRS_DVR_*, SRS_VOD_*, SRS_VOD_COS_TOKEN) and the TENCENT_CLOUD_CAM/VOD_ENDPOINT consts. Also removed the now-orphaned SRS_RECORD_* constants left over from Session 3 (verified orphaned across the tree)
+
+**Removed Go dependencies (go.mod, via go mod tidy + go mod vendor):**
+- github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/{cam,common,vod}
+- github.com/tencentyun/cos-go-sdk-v5
+- Orphaned indirects auto-dropped: github.com/clbanning/mxj, github.com/google/go-querystring, github.com/mozillazg/go-httpheader, github.com/mitchellh/mapstructure
+- Corresponding vendor/ trees removed. go.mod now only requires go-redis/redis (+xxhash, go-rendezvous indirect), golang-jwt, google/uuid, godotenv, go-oryx-lib
+
+**Retained / out of scope (intentional):**
+- SRS_TENCENT_LH constant + Tencent Lighthouse cloud/region auto-detection (metadata.tencentyun.com probes) in utils.go — still referenced by main.go/service.go for general cloud-environment detection (not DVR/VoD); removing it would expand scope into those KEEP files
+- Shared type M3u8VoDArtifact + m3u8-builder helpers in utils.go — still used by callback.go (KEEP); left in place
+- on_hls callback endpoint (handleOnHls) kept as a validating pass-through — SRS may still POST to it; it no longer dispatches anywhere
+- containers/data/record dir + "record" reset-dir entry — Session 3 scope, left as-is
+
+**Compile verification:** PASS — `GOOS=linux go build ./...` clean before and after `go mod tidy`/`go mod vendor`. Zero dangling references to dvrWorker/vodWorker/recordWorker or any removed Tencent constant. Vendor trees for tencentcloud/tencentyun/clbanning/mozillazg/mitchellh confirmed removed.
+**Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.

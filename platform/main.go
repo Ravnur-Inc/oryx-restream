@@ -208,20 +208,6 @@ func doMain(ctx context.Context) error {
 		return errors.Wrapf(err, "start transcode worker")
 	}
 
-	// Create worker for DVR, covert live stream to local file.
-	dvrWorker = NewDvrWorker()
-	defer dvrWorker.Close()
-	if err := dvrWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start dvr worker")
-	}
-
-	// Create worker for VoD, covert live stream to local file.
-	vodWorker = NewVodWorker()
-	defer vodWorker.Close()
-	if err := vodWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start vod worker")
-	}
-
 	// Create worker for forwarding.
 	forwardWorker = NewForwardWorker()
 	defer forwardWorker.Close()
@@ -402,13 +388,10 @@ func initPlatform(ctx context.Context) error {
 	}
 
 	// Create directories for data, allow user to link it.
-	// Keep in mind that the containers/data/srs-s3-bucket maybe mount by user, because user should generate
-	// and mount it if they wish to save recordings to cloud storage.
 	for _, dir := range []string{
-		"containers/data/dvr", "containers/data/record", "containers/data/vod",
+		"containers/data/record",
 		"containers/data/upload", "containers/data/vlive", "containers/data/signals",
 		"containers/data/lego", "containers/data/.well-known", "containers/data/config",
-		"containers/data/srs-s3-bucket",
 	} {
 		if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
 			if err = os.MkdirAll(dir, os.ModeDir|os.FileMode(0755)); err != nil {
@@ -481,26 +464,6 @@ func initPlatform(ctx context.Context) error {
 		}
 	}
 
-	// Migrate from previous versions.
-	for _, migrate := range []struct {
-		PVK string
-		CVK string
-	}{
-		{"SRS_DVR_M3U8_METADATA", SRS_DVR_M3U8_ARTIFACT},
-		{"SRS_VOD_M3U8_METADATA", SRS_VOD_M3U8_ARTIFACT},
-	} {
-		pv, _ := rdb.HLen(ctx, migrate.PVK).Result()
-		cv, _ := rdb.HLen(ctx, migrate.CVK).Result()
-		if pv > 0 && cv == 0 {
-			if vs, err := rdb.HGetAll(ctx, migrate.PVK).Result(); err == nil {
-				for k, v := range vs {
-					_ = rdb.HSet(ctx, migrate.CVK, k, v)
-				}
-				logger.Tf(ctx, "migrate %v to %v with %v keys", migrate.PVK, migrate.CVK, len(vs))
-			}
-		}
-	}
-
 	// Cancel upgrading.
 	if upgrading, err := rdb.HGet(ctx, SRS_UPGRADING, "upgrading").Result(); err != nil && err != redis.Nil {
 		return errors.Wrapf(err, "hget %v upgrading", SRS_UPGRADING)
@@ -534,7 +497,7 @@ func initMmgt(ctx context.Context) error {
 		}
 	}
 
-	dirs := []string{"redis", "config", "dvr", "record", "vod", "upload", "vlive"}
+	dirs := []string{"redis", "config", "record", "upload", "vlive"}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(filepath.Join(dataDir, dir), 0755); err != nil {
 			return errors.Wrapf(err, "create dir %s", dir)

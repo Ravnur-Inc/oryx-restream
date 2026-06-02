@@ -255,24 +255,6 @@ const (
 	// For SRS stream status.
 	SRS_HP_HLS = "SRS_HP_HLS"
 	SRS_LL_HLS = "SRS_LL_HLS"
-	// For tencent cloud products.
-	SRS_TENCENT_CAM = "SRS_TENCENT_CAM"
-	SRS_TENCENT_COS = "SRS_TENCENT_COS"
-	SRS_TENCENT_VOD = "SRS_TENCENT_VOD"
-	// For local record.
-	SRS_RECORD_PATTERNS      = "SRS_RECORD_PATTERNS"
-	SRS_RECORD_M3U8_WORKING  = "SRS_RECORD_M3U8_WORKING"
-	SRS_RECORD_M3U8_ARTIFACT = "SRS_RECORD_M3U8_ARTIFACT"
-	// For cloud storage.
-	SRS_DVR_PATTERNS      = "SRS_DVR_PATTERNS"
-	SRS_DVR_M3U8_WORKING  = "SRS_DVR_M3U8_WORKING"
-	SRS_DVR_M3U8_ARTIFACT = "SRS_DVR_M3U8_ARTIFACT"
-	// For cloud VoD.
-	SRS_VOD_PATTERNS      = "SRS_VOD_PATTERNS"
-	SRS_VOD_M3U8_WORKING  = "SRS_VOD_M3U8_WORKING"
-	SRS_VOD_M3U8_ARTIFACT = "SRS_VOD_M3U8_ARTIFACT"
-	// The cos token and file information for cloud VoD, to upload files.
-	SRS_VOD_COS_TOKEN = "SRS_VOD_COS_TOKEN"
 	// For stream forwarding by FFmpeg.
 	SRS_FORWARD_CONFIG = "SRS_FORWARD_CONFIG"
 	SRS_FORWARD_TASK   = "SRS_FORWARD_TASK"
@@ -332,12 +314,6 @@ const SrsSysLimitsVLive = 5 * 1000
 
 // Default limit to 5Mbps for IP camera streaming.
 const SrsSysLimitsCamera = 5 * 1000
-
-// Tencent cloud consts.
-const (
-	TENCENT_CLOUD_CAM_ENDPOINT = "cam.tencentcloudapi.com"
-	TENCENT_CLOUD_VOD_ENDPOINT = "vod.tencentcloudapi.com"
-)
 
 // FFprobeSourceType defines the source type of virtual live or camera live,
 // which use ffprobe to retrieve information.
