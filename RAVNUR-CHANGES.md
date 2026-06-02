@@ -137,3 +137,25 @@ Risk Assessment requirements for modified open-source software.
 
 **Compile verification:** PASS — `GOOS=linux go build ./...` clean before and after `go mod tidy`/`go mod vendor`. Zero dangling references to dvrWorker/vodWorker/recordWorker or any removed Tencent constant. Vendor trees for tencentcloud/tencentyun/clbanning/mozillazg/mitchellh confirmed removed.
 **Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.
+
+### 2026-06-02 — Strip: Virtual live + youtube-dl (Session 5)
+
+**Removed Go source files:**
+- platform/virtual-live-stream.go — virtual live worker (VLiveWorker, vLiveWorker, VLiveTask, VLiveConfigure); ingested a file/stream/youtube-dl source and republished it as a live stream. Contained the only `youtube-dl` invocation (exec.CommandContext "youtube-dl").
+
+**Edited KEEP files to remove vLive + youtube-dl wiring:**
+- platform/main.go — removed VLiveWorker bootstrap; removed envYtdlProxy() (and YTDL_PROXY=%v) from the startup env log; removed containers/data/vlive from data-dir bootstrap and "vlive" from the reset-dirs list
+- platform/service.go — removed vLiveWorker.Handle registration
+- platform/utils.go — removed envYtdlProxy() (YTDL_PROXY getter, youtube-dl only) and the dirVLivePath var (vlive-only, orphaned after file removal)
+
+**Removed Go dependencies (go.mod):**
+- None — youtube-dl is an external binary invoked via exec, not a Go module; virtual-live-stream.go used only shared deps. go.mod/go.sum unchanged.
+
+**Retained / deferred (intentional):**
+- The shared vLive+IP-camera limits API (handleMgmtEnvs vLiveLimit field, handleMgmtLimitsQuery/Update vlive entries) plus envVLiveLimit() and SrsSysLimitsVLive — co-owned with IP camera (Session 7). Deferred so both limit features are removed together rather than editing the UI-facing limits contract piecemeal. These compile fine without the worker.
+- FFprobeSourceTypeYTDL enum member kept with the shared FFprobeSourceType enum (FFprobeSource/FFprobeSourceType are used by camera-live-stream.go) — harmless unused const; no source of that type can be created now
+- dirDubbingPath var in utils.go — dead leftover from Session 2 (dubbing); unused package var, harmless; noted for a later utils pass
+- UI references to vLive screens left for a later docs/UI pass (ui/ is minimal-changes-only)
+
+**Compile verification:** PASS — `GOOS=linux go build ./...` clean. Zero dangling references to vLiveWorker/VLiveTask/envYtdlProxy/dirVLivePath/youtube-dl. No vendor changes.
+**Test verification:** Not run — code is Linux-only (syscall.Kill); cross-compiled tests build but cannot execute on the Windows dev host.

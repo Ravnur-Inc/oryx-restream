@@ -138,7 +138,7 @@ func doMain(ctx context.Context) error {
 		"PUBLIC_URL=%v, BUILD_PATH=%v, REACT_APP_LOCALE=%v, PLATFORM_LISTEN=%v, HTTP_PORT=%v, "+
 		"REGISTRY=%v, MGMT_LISTEN=%v, HTTPS_LISTEN=%v, AUTO_SELF_SIGNED_CERTIFICATE=%v, "+
 		"NAME_LOOKUP=%v, PLATFORM_DOCKER=%v, SRS_FORWARD_LIMIT=%v, SRS_VLIVE_LIMIT=%v, "+
-		"SRS_CAMERA_LIMIT=%v, YTDL_PROXY=%v",
+		"SRS_CAMERA_LIMIT=%v",
 		len(envMgmtPassword()), envGoPprof(), len(envApiSecret()), envCloud(),
 		envRegion(), envSource(), envSrtListen(), envRtcListen(),
 		envNodeEnv(), envLocalRelease(),
@@ -148,7 +148,7 @@ func doMain(ctx context.Context) error {
 		envRegistry(), envMgmtListen(), envHttpListen(),
 		envSelfSignedCertificate(), envNameLookup(),
 		envPlatformDocker(), envForwardLimit(), envVLiveLimit(),
-		envCameraLimit(), envYtdlProxy(),
+		envCameraLimit(),
 	)
 
 	// Start the Go pprof if enabled.
@@ -213,13 +213,6 @@ func doMain(ctx context.Context) error {
 	defer forwardWorker.Close()
 	if err := forwardWorker.Start(ctx); err != nil {
 		return errors.Wrapf(err, "start forward worker")
-	}
-
-	// Create worker for vLive.
-	vLiveWorker = NewVLiveWorker()
-	defer vLiveWorker.Close()
-	if err := vLiveWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start vLive worker")
 	}
 
 	// Create worker for IP camera.
@@ -390,7 +383,7 @@ func initPlatform(ctx context.Context) error {
 	// Create directories for data, allow user to link it.
 	for _, dir := range []string{
 		"containers/data/record",
-		"containers/data/upload", "containers/data/vlive", "containers/data/signals",
+		"containers/data/upload", "containers/data/signals",
 		"containers/data/lego", "containers/data/.well-known", "containers/data/config",
 	} {
 		if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
@@ -497,7 +490,7 @@ func initMmgt(ctx context.Context) error {
 		}
 	}
 
-	dirs := []string{"redis", "config", "record", "upload", "vlive"}
+	dirs := []string{"redis", "config", "record", "upload"}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(filepath.Join(dataDir, dir), 0755); err != nil {
 			return errors.Wrapf(err, "create dir %s", dir)

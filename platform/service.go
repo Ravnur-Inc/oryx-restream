@@ -225,10 +225,6 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 		return errors.Wrapf(err, "handle forward")
 	}
 
-	if err := vLiveWorker.Handle(ctx, handler); err != nil {
-		return errors.Wrapf(err, "handle vLive")
-	}
-
 	if err := cameraWorker.Handle(ctx, handler); err != nil {
 		return errors.Wrapf(err, "handle IP camera")
 	}

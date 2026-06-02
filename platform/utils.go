@@ -326,7 +326,6 @@ const FFprobeSourceTypeStream FFprobeSourceType = "stream"
 
 // For vLive upload directory.
 var dirUploadPath = path.Join(".", "upload")
-var dirVLivePath = path.Join(".", "vlive")
 var dirDubbingPath = path.Join(".", "dub")
 
 // For Oryx to use the files.
@@ -465,10 +464,6 @@ func envCameraLimit() string {
 
 func envGoPprof() string {
 	return os.Getenv("GO_PPROF")
-}
-
-func envYtdlProxy() string {
-	return os.Getenv("YTDL_PROXY")
 }
 
 // rdb is a global redis client object.
