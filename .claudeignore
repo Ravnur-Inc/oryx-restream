@@ -14,7 +14,6 @@ ui/build/
 ui/node_modules/
 
 # Shell scripts outside scope (strip manually)
-/scripts/nginx-hls-cdn/
 /auto/
 
 # Don't read large binary assets

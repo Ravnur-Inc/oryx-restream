@@ -70,9 +70,9 @@ func NewConfig() *Config {
 		ipv4:     net.IPv4zero,
 		IsDarwin: runtime.GOOS == "darwin",
 		Versions: Versions{
-			Version: "v0.0.0",
-			Latest:  "v0.0.0",
-			Stable:  "v0.0.0",
+			Version: version,
+			Latest:  version,
+			Stable:  version,
 		},
 	}
 }
@@ -255,24 +255,6 @@ const (
 	// For SRS stream status.
 	SRS_HP_HLS = "SRS_HP_HLS"
 	SRS_LL_HLS = "SRS_LL_HLS"
-	// For tencent cloud products.
-	SRS_TENCENT_CAM = "SRS_TENCENT_CAM"
-	SRS_TENCENT_COS = "SRS_TENCENT_COS"
-	SRS_TENCENT_VOD = "SRS_TENCENT_VOD"
-	// For local record.
-	SRS_RECORD_PATTERNS      = "SRS_RECORD_PATTERNS"
-	SRS_RECORD_M3U8_WORKING  = "SRS_RECORD_M3U8_WORKING"
-	SRS_RECORD_M3U8_ARTIFACT = "SRS_RECORD_M3U8_ARTIFACT"
-	// For cloud storage.
-	SRS_DVR_PATTERNS      = "SRS_DVR_PATTERNS"
-	SRS_DVR_M3U8_WORKING  = "SRS_DVR_M3U8_WORKING"
-	SRS_DVR_M3U8_ARTIFACT = "SRS_DVR_M3U8_ARTIFACT"
-	// For cloud VoD.
-	SRS_VOD_PATTERNS      = "SRS_VOD_PATTERNS"
-	SRS_VOD_M3U8_WORKING  = "SRS_VOD_M3U8_WORKING"
-	SRS_VOD_M3U8_ARTIFACT = "SRS_VOD_M3U8_ARTIFACT"
-	// The cos token and file information for cloud VoD, to upload files.
-	SRS_VOD_COS_TOKEN = "SRS_VOD_COS_TOKEN"
 	// For stream forwarding by FFmpeg.
 	SRS_FORWARD_CONFIG = "SRS_FORWARD_CONFIG"
 	SRS_FORWARD_TASK   = "SRS_FORWARD_TASK"
@@ -318,26 +300,12 @@ const (
 	SRS_HTTPS           = "SRS_HTTPS"
 	SRS_HTTPS_DOMAIN    = "SRS_HTTPS_DOMAIN"
 	SRS_HOOKS           = "SRS_HOOKS"
-	SRS_SYS_LIMITS      = "SRS_SYS_LIMITS"
-	SRS_SYS_OPENAI      = "SRS_SYS_OPENAI"
 )
 
 // GenerateRoomPublishKey to build the redis hashset key from room stream name.
 func GenerateRoomPublishKey(roomStreamName string) string {
 	return fmt.Sprintf("room-pub-%v", roomStreamName)
 }
-
-// Default limit to 5Mbps for virtual live streaming.
-const SrsSysLimitsVLive = 5 * 1000
-
-// Default limit to 5Mbps for IP camera streaming.
-const SrsSysLimitsCamera = 5 * 1000
-
-// Tencent cloud consts.
-const (
-	TENCENT_CLOUD_CAM_ENDPOINT = "cam.tencentcloudapi.com"
-	TENCENT_CLOUD_VOD_ENDPOINT = "vod.tencentcloudapi.com"
-)
 
 // FFprobeSourceType defines the source type of virtual live or camera live,
 // which use ffprobe to retrieve information.
@@ -348,10 +316,8 @@ const FFprobeSourceTypeFile FFprobeSourceType = "file"
 const FFprobeSourceTypeYTDL FFprobeSourceType = "ytdl"
 const FFprobeSourceTypeStream FFprobeSourceType = "stream"
 
-// For vLive upload directory.
+// For upload directory.
 var dirUploadPath = path.Join(".", "upload")
-var dirVLivePath = path.Join(".", "vlive")
-var dirDubbingPath = path.Join(".", "dub")
 
 // For Oryx to use the files.
 const serverDataDirectory = "/data"
@@ -479,20 +445,8 @@ func envForwardLimit() string {
 	return os.Getenv("SRS_FORWARD_LIMIT")
 }
 
-func envVLiveLimit() string {
-	return os.Getenv("SRS_VLIVE_LIMIT")
-}
-
-func envCameraLimit() string {
-	return os.Getenv("SRS_CAMERA_LIMIT")
-}
-
 func envGoPprof() string {
 	return os.Getenv("GO_PPROF")
-}
-
-func envYtdlProxy() string {
-	return os.Getenv("YTDL_PROXY")
 }
 
 // rdb is a global redis client object.

@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -13,7 +12,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -217,131 +215,5 @@ func (v *CertManager) updateSslFiles(ctx context.Context, key, crt string) error
 		return errors.Wrapf(err, "write crt %vB to %v", len(crt), crtFile)
 	}
 
-	return nil
-}
-
-// updateLetsEncrypt request letsencrypt and update the ssl files.
-func (v *CertManager) updateLetsEncrypt(ctx context.Context, domain string) error {
-	v.certFileLock.Lock()
-	defer v.certFileLock.Unlock()
-
-	defer v.ReloadCertificate(ctx)
-
-	if true {
-		args := []string{
-			"--email", "srs.stack@gmail.com", "--domains", domain,
-			"--http.webroot", path.Join(conf.Pwd, "containers/data"), "--http", "--accept-tos",
-			"run",
-		}
-		cmd := exec.CommandContext(ctx, "lego", args...)
-		cmd.Dir = path.Join(conf.Pwd, "containers/data/lego")
-
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-
-		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "run lego %v in %v, stdout %v, stderr %v",
-				args, cmd.Dir, stdout.String(), stderr.String())
-		}
-		logger.Tf(ctx, "run lego %v in %v ok, stdout %v, stderr %v",
-			args, cmd.Dir, stdout.String(), stderr.String(),
-		)
-	}
-
-	keyFile := path.Join(conf.Pwd, fmt.Sprintf("containers/data/lego/.lego/certificates/%v.key", domain))
-	if _, err := os.Stat(keyFile); err != nil {
-		return errors.Wrapf(err, "stat %v", keyFile)
-	}
-
-	crtFile := path.Join(conf.Pwd, fmt.Sprintf("containers/data/lego/.lego/certificates/%v.crt", domain))
-	if _, err := os.Stat(crtFile); err != nil {
-		return errors.Wrapf(err, "stat %v", crtFile)
-	}
-
-	targetKeyFile := path.Join(conf.Pwd, "containers/data/config/nginx.key")
-	targetCrtFile := path.Join(conf.Pwd, "containers/data/config/nginx.crt")
-	if err := exec.CommandContext(ctx, "rm", "-f", targetKeyFile, targetCrtFile).Run(); err != nil {
-		return errors.Wrapf(err, "rm -f %v %v", targetKeyFile, targetCrtFile)
-	}
-
-	if true {
-		source := fmt.Sprintf("../lego/.lego/certificates/%v.key", domain)
-		cmd := exec.CommandContext(ctx, "ln", "-sf", source, "nginx.key")
-		cmd.Dir = path.Join(conf.Pwd, "containers/data/config")
-		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "run %v in %v", cmd.Args, cmd.Dir)
-		}
-	}
-
-	if true {
-		source := fmt.Sprintf("../lego/.lego/certificates/%v.crt", domain)
-		cmd := exec.CommandContext(ctx, "ln", "-sf", source, "nginx.crt")
-		cmd.Dir = path.Join(conf.Pwd, "containers/data/config")
-		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "run %v in %v", cmd.Args, cmd.Dir)
-		}
-	}
-
-	return nil
-}
-
-// renewLetsEncrypt request letsencrypt and update the ssl files.
-func (v *CertManager) renewLetsEncrypt(ctx context.Context, domain string) error {
-	defer v.ReloadCertificate(ctx)
-
-	args := []string{
-		"--email", "srs.stack@gmail.com", "--domains", domain,
-		"--http.webroot", path.Join(conf.Pwd, "containers/data"), "--http",
-		"renew", "--days", "30",
-	}
-	cmd := exec.CommandContext(ctx, "lego", args...)
-	cmd.Dir = path.Join(conf.Pwd, "containers/data/lego")
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "run lego %v in %v, stdout %v, stderr %v",
-			args, cmd.Dir, stdout.String(), stderr.String())
-	}
-	logger.Tf(ctx, "run lego %v in %v ok, stdout %v, stderr %v",
-		args, cmd.Dir, stdout.String(), stderr.String(),
-	)
-
-	return nil
-}
-
-func (v *CertManager) refreshSSLCert(ctx context.Context) error {
-	provider, err := rdb.Get(ctx, SRS_HTTPS).Result()
-	if err != nil && err != redis.Nil {
-		return err
-	}
-	if provider != "lets" {
-		logger.Tf(ctx, "cert: ignore ssl provider %v", provider)
-		return nil
-	}
-
-	domain, err := rdb.Get(ctx, SRS_HTTPS_DOMAIN).Result()
-	if err != nil && err != redis.Nil {
-		return err
-	}
-	if domain == "" {
-		logger.Tf(ctx, "cert: ignore ssl domain empty")
-		return nil
-	}
-
-	if err := v.renewLetsEncrypt(ctx, domain); err != nil {
-		return err
-	} else {
-		logger.Tf(ctx, "cert: renew ssl cert ok")
-	}
-
-	if err := nginxGenerateConfig(ctx); err != nil {
-		return errors.Wrapf(err, "nginx config and reload")
-	}
-
-	logger.Tf(ctx, "cert: refresh ssl cert ok")
 	return nil
 }

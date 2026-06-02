@@ -129,16 +129,13 @@ func doMain(ctx context.Context) error {
 
 	// For system limit.
 	setEnvDefault("SRS_FORWARD_LIMIT", "10")
-	setEnvDefault("SRS_VLIVE_LIMIT", "10")
-	setEnvDefault("SRS_CAMERA_LIMIT", "10")
 
 	logger.Tf(ctx, "load .env as MGMT_PASSWORD=%vB, GO_PPROF=%v, "+
 		"SRS_PLATFORM_SECRET=%vB, CLOUD=%v, REGION=%v, SOURCE=%v, SRT_PORT=%v, RTC_PORT=%v, "+
 		"NODE_ENV=%v, LOCAL_RELEASE=%v, REDIS_DATABASE=%v, REDIS_HOST=%v, REDIS_PASSWORD=%vB, REDIS_PORT=%v, RTMP_PORT=%v, "+
 		"PUBLIC_URL=%v, BUILD_PATH=%v, REACT_APP_LOCALE=%v, PLATFORM_LISTEN=%v, HTTP_PORT=%v, "+
 		"REGISTRY=%v, MGMT_LISTEN=%v, HTTPS_LISTEN=%v, AUTO_SELF_SIGNED_CERTIFICATE=%v, "+
-		"NAME_LOOKUP=%v, PLATFORM_DOCKER=%v, SRS_FORWARD_LIMIT=%v, SRS_VLIVE_LIMIT=%v, "+
-		"SRS_CAMERA_LIMIT=%v, YTDL_PROXY=%v",
+		"NAME_LOOKUP=%v, PLATFORM_DOCKER=%v, SRS_FORWARD_LIMIT=%v",
 		len(envMgmtPassword()), envGoPprof(), len(envApiSecret()), envCloud(),
 		envRegion(), envSource(), envSrtListen(), envRtcListen(),
 		envNodeEnv(), envLocalRelease(),
@@ -147,8 +144,7 @@ func doMain(ctx context.Context) error {
 		envBuildPath(), envReactAppLocale(), envPlatformListen(), envHttpPort(),
 		envRegistry(), envMgmtListen(), envHttpListen(),
 		envSelfSignedCertificate(), envNameLookup(),
-		envPlatformDocker(), envForwardLimit(), envVLiveLimit(),
-		envCameraLimit(), envYtdlProxy(),
+		envPlatformDocker(), envForwardLimit(),
 	)
 
 	// Start the Go pprof if enabled.
@@ -201,28 +197,6 @@ func doMain(ctx context.Context) error {
 		return errors.Wrapf(err, "start callback worker")
 	}
 
-	// Create transcript worker for transcription.
-	transcriptWorker = NewTranscriptWorker()
-	defer transcriptWorker.Close()
-	if err := transcriptWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start transcript worker")
-	}
-
-	// Create OCR worker for OCR service.
-	ocrWorker = NewOCRWorker()
-	defer ocrWorker.Close()
-	if err := ocrWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start OCR worker")
-	}
-
-	// Create AI Talk worker for live room.
-	talkServer = NewTalkServer()
-	defer talkServer.Close()
-
-	// Create AI Dubbing server for VoD translation.
-	dubbingServer = NewDubbingServer()
-	defer dubbingServer.Close()
-
 	// Create transcode worker for transcoding.
 	transcodeWorker = NewTranscodeWorker()
 	defer transcodeWorker.Close()
@@ -230,46 +204,11 @@ func doMain(ctx context.Context) error {
 		return errors.Wrapf(err, "start transcode worker")
 	}
 
-	// Create worker for RECORD, covert live stream to local file.
-	recordWorker = NewRecordWorker()
-	defer recordWorker.Close()
-	if err := recordWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start record worker")
-	}
-
-	// Create worker for DVR, covert live stream to local file.
-	dvrWorker = NewDvrWorker()
-	defer dvrWorker.Close()
-	if err := dvrWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start dvr worker")
-	}
-
-	// Create worker for VoD, covert live stream to local file.
-	vodWorker = NewVodWorker()
-	defer vodWorker.Close()
-	if err := vodWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start vod worker")
-	}
-
 	// Create worker for forwarding.
 	forwardWorker = NewForwardWorker()
 	defer forwardWorker.Close()
 	if err := forwardWorker.Start(ctx); err != nil {
 		return errors.Wrapf(err, "start forward worker")
-	}
-
-	// Create worker for vLive.
-	vLiveWorker = NewVLiveWorker()
-	defer vLiveWorker.Close()
-	if err := vLiveWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start vLive worker")
-	}
-
-	// Create worker for IP camera.
-	cameraWorker = NewCameraWorker()
-	defer cameraWorker.Close()
-	if err := cameraWorker.Start(ctx); err != nil {
-		return errors.Wrapf(err, "start IP camera worker")
 	}
 
 	// Create worker for crontab.
@@ -431,14 +370,10 @@ func initPlatform(ctx context.Context) error {
 	}
 
 	// Create directories for data, allow user to link it.
-	// Keep in mind that the containers/data/srs-s3-bucket maybe mount by user, because user should generate
-	// and mount it if they wish to save recordings to cloud storage.
 	for _, dir := range []string{
-		"containers/data/dvr", "containers/data/record", "containers/data/vod",
-		"containers/data/upload", "containers/data/vlive", "containers/data/signals",
-		"containers/data/lego", "containers/data/.well-known", "containers/data/config",
-		"containers/data/transcript", "containers/data/srs-s3-bucket", "containers/data/ai-talk",
-		"containers/data/dubbing", "containers/data/ocr",
+		"containers/data/record",
+		"containers/data/upload", "containers/data/signals",
+		"containers/data/.well-known", "containers/data/config",
 	} {
 		if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
 			if err = os.MkdirAll(dir, os.ModeDir|os.FileMode(0755)); err != nil {
@@ -474,9 +409,6 @@ func initPlatform(ctx context.Context) error {
 		logger.Tf(ctx, "boot already done, v=%v, key=%v", bootRelease, SRS_FIRST_BOOT)
 	}
 
-	// For development, request the releases from itself which proxy to the releases service.
-	go refreshLatestVersion(ctx)
-
 	// Disable srs-dev, only enable srs-server.
 	if srsDevEnabled, err := rdb.HGet(ctx, SRS_CONTAINER_DISABLED, srsDevDockerName).Result(); err != nil && err != redis.Nil {
 		return errors.Wrapf(err, "hget %v %v", SRS_CONTAINER_DISABLED, srsDevDockerName)
@@ -508,27 +440,6 @@ func initPlatform(ctx context.Context) error {
 		}
 		if err = rdb.Set(ctx, SRS_SECRET_PUBLISH, publish, 0).Err(); err != nil && err != redis.Nil {
 			return errors.Wrapf(err, "set %v %v", SRS_SECRET_PUBLISH, publish)
-		}
-	}
-
-	// Migrate from previous versions.
-	for _, migrate := range []struct {
-		PVK string
-		CVK string
-	}{
-		{"SRS_RECORD_M3U8_METADATA", SRS_RECORD_M3U8_ARTIFACT},
-		{"SRS_DVR_M3U8_METADATA", SRS_DVR_M3U8_ARTIFACT},
-		{"SRS_VOD_M3U8_METADATA", SRS_VOD_M3U8_ARTIFACT},
-	} {
-		pv, _ := rdb.HLen(ctx, migrate.PVK).Result()
-		cv, _ := rdb.HLen(ctx, migrate.CVK).Result()
-		if pv > 0 && cv == 0 {
-			if vs, err := rdb.HGetAll(ctx, migrate.PVK).Result(); err == nil {
-				for k, v := range vs {
-					_ = rdb.HSet(ctx, migrate.CVK, k, v)
-				}
-				logger.Tf(ctx, "migrate %v to %v with %v keys", migrate.PVK, migrate.CVK, len(vs))
-			}
 		}
 	}
 
@@ -565,7 +476,7 @@ func initMmgt(ctx context.Context) error {
 		}
 	}
 
-	dirs := []string{"redis", "config", "dvr", "record", "vod", "upload", "vlive"}
+	dirs := []string{"redis", "config", "record", "upload"}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(filepath.Join(dataDir, dir), 0755); err != nil {
 			return errors.Wrapf(err, "create dir %s", dir)
@@ -599,34 +510,3 @@ func initMmgt(ctx context.Context) error {
 	return nil
 }
 
-// Refresh the latest version when startup.
-func refreshLatestVersion(ctx context.Context) error {
-	versionsCtx, versionsCancel := context.WithCancel(context.Background())
-	go func() {
-		ctx := logger.WithContext(ctx)
-		for ctx.Err() == nil {
-			versions, err := queryLatestVersion(ctx)
-			if err == nil && versions != nil && versions.Latest != "" {
-				logger.Tf(ctx, "query version ok, result is %v", versions.String())
-				conf.Versions = *versions
-				versionsCancel()
-
-				// CrontabWorker will start a goroutine to refresh the version.
-				break
-			}
-
-			// Retry for error.
-			select {
-			case <-ctx.Done():
-			case <-time.After(3 * time.Minute):
-			}
-		}
-	}()
-
-	select {
-	case <-ctx.Done():
-	case <-versionsCtx.Done():
-	}
-
-	return nil
-}
