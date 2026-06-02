@@ -53,19 +53,6 @@ RUN echo "Before UPX for $TARGETARCH" && \
     echo "After UPX for $TARGETARCH" && \
     ls -lh /usr/local/srs/objs/srs /usr/local/oryx/platform/platform
 
-# For youtube-dl, see https://github.com/ytdl-org/ytdl-nightly
-FROM ${ARCH}python:3.9-slim-bullseye AS ytdl
-
-RUN apt-get update -y && apt-get install -y binutils curl unzip && \
-    pip install pyinstaller
-
-WORKDIR /g
-RUN curl -O -L https://github.com/ytdl-org/youtube-dl/archive/refs/heads/master.zip && \
-    unzip -q master.zip && cd youtube-dl-master && \
-    pyinstaller --onefile --clean --noconfirm --name youtube-dl youtube_dl/__main__.py && \
-    cp dist/youtube-dl /usr/local/bin/ && \
-    ldd /usr/local/bin/youtube-dl
-
 # http://releases.ubuntu.com/focal/
 #FROM ${ARCH}ubuntu:focal AS dist
 FROM ${ARCH}ossrs/oryx:focal-1 AS dist
@@ -76,7 +63,6 @@ EXPOSE 2022 2443 1935 8080 5060 9000 8000/udp 10080/udp
 # Copy files from build.
 COPY --from=build /usr/local/oryx /usr/local/oryx
 COPY --from=build /usr/local/srs /usr/local/srs
-COPY --from=ytdl /usr/local/bin/youtube-dl /usr/local/bin/
 
 # Prepare data directory.
 RUN mkdir -p /data && \
