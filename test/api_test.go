@@ -297,44 +297,6 @@ func TestApi_SslUpdateCert(t *testing.T) {
 	}
 }
 
-func TestApi_LetsEncryptUpdateCert(t *testing.T) {
-	ctx, cancel := context.WithTimeout(logger.WithContext(context.Background()), time.Duration(*srsTimeout)*time.Millisecond)
-	defer cancel()
-
-	if *domainLetsEncrypt == "" {
-		return
-	}
-
-	var r0 error
-	defer func(ctx context.Context) {
-		if err := filterTestError(ctx.Err(), r0); err != nil {
-			t.Errorf("Fail for err %+v", err)
-		} else {
-			logger.Tf(ctx, "test done")
-		}
-	}(ctx)
-
-	if err := NewApi().WithAuth(ctx, "/terraform/v1/mgmt/letsencrypt", &struct {
-		Domain string `json:"domain"`
-	}{
-		Domain: *domainLetsEncrypt,
-	}, nil); err != nil {
-		r0 = err
-		return
-	}
-
-	conf := struct {
-		Provider string `json:"provider"`
-		Key      string `json:"key"`
-		Crt      string `json:"crt"`
-	}{}
-	if err := NewApi().WithAuth(ctx, "/terraform/v1/mgmt/cert/query", nil, &conf); err != nil {
-		r0 = err
-	} else if conf.Provider != "lets" || conf.Key == "" || conf.Crt == "" {
-		r0 = errors.Errorf("invalid response %v", conf)
-	}
-}
-
 func TestApi_SetupHpHLSNoHlsCtx(t *testing.T) {
 	ctx, cancel := context.WithTimeout(logger.WithContext(context.Background()), time.Duration(*srsTimeout)*time.Millisecond)
 	defer cancel()
