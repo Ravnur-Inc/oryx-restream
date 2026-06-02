@@ -263,3 +263,48 @@ production browser bundle. Fully clearing them requires either npm overrides (fr
 off the deprecated CRA toolchain (react-scripts) to Vite. This needs a node/npm environment (not
 available on the current dev host) and is its own scoped effort in ui/ (minimal-changes zone),
 overlapping the deferred UI feature-pruning. Tracked as a separate follow-up — see PR discussion.
+
+### 2026-06-02 — UI/CI modernization + full vulnerability remediation (PRs #5–#12)
+
+Completes the dependency/security work to **0 open Dependabot alerts (from 147) and `npm audit` = 0**.
+Done as reviewed PRs, each gated on green CI (build + unit + EN/ZH docker integration tests).
+
+**CI revival (PR #5).** The fork's CI was non-functional. Fixed a chain of retired dependencies:
+- Runners: `ubuntu-20.04` (retired image, jobs queued forever) → `ubuntu-latest`.
+- `actions/upload-artifact`/`download-artifact` v3 (GitHub auto-fails them) → v4.
+- Dropped `python` from the repo CodeQL matrix (no Python remains after the strip).
+- Added a jsdom `TextEncoder` polyfill (setupTests) and pruned the integration test suite of
+  removed-feature tests (camera/liveroom/openai whole files; vLive/record/letsencrypt cases).
+
+**npm Tier-1 remediation (PR #6): 130 → ~25 alerts.**
+- `npm audit fix` (non-breaking) — clears axios (largest cluster) and many transitives.
+- Bumped `react-qr-code` 2.0.3 → 2.0.21, which dropped its `react-native-svg → react-native@0.67`
+  tree (~522 packages), eliminating both criticals (hermes-engine, react-native) and the metro/RN
+  subtree. Removed unused cruft deps `hermes-engine` + `simple-plist`.
+
+**UI feature-pruning (PR #7).** Removed 18 dead React files (screens/components) for stripped
+features (AI talk/transcript/OCR/dubbing/live-room, DVR/record/VoD/COS, virtual-live, IP camera)
+and the dead mgmt endpoints they called (openai/limits/letsencrypt). Kept the restreamer surface
+(forward, transcode, live, SRT, manual SSL, callback, streams, auth, system). Inert i18n keys for
+removed features left in ui/locale.json (0 refs, harmless).
+
+**Toolchain + runtime modernization (PRs #8, #12): remaining alerts → 0.**
+- Migrated ui/ from the deprecated/EOL Create-React-App (`react-scripts`) to **Vite 6 + Vitest 4**
+  (removed ~1254 npm packages). New ui/vite.config.js (JSX-in-.js esbuild loader, PUBLIC_URL→base,
+  BUILD_PATH→outDir, dev proxy ported from setupProxy, %PUBLIC_URL%/%REACT_APP_LOCALE% HTML tokens).
+  Build/serve contract unchanged (build/{en,zh}; served by handleMgmtUI generically).
+- **Node 18 (EOL 2025-04) → Node 22**: Dockerfile UI build stage `ossrs/node:18` → official
+  `node:22` (`ossrs/node` has no :22 tag); CI `setup-node` v3→v4, node 18→22.
+- Cleared the last advisories: `uuid` 8→11.1.1 (runtime), and `vite`/`vitest`/`esbuild` to patched
+  versions (6.4.3 / 4.1.8 / 0.25.12) that resolve the Vite-toolchain dev-server advisories.
+
+**Final state:** Dependabot **0** open alerts; `npm audit` **0**. No critical, no shipped-runtime,
+no dev-tooling. go.mod minimal (go-redis, golang-jwt v4.5.2, google/uuid, godotenv, go-oryx-lib +
+xxhash/go-rendezvous indirect). CI green end-to-end on `ubuntu-latest` + Node 22.
+
+**Note (org-side, resolved):** the org-level "Code Quality" CodeQL workflow was reporting a
+false-positive python failure on this repo (no Python after the strip); the org config was updated
+to skip python.
+
+**Verification:** All PRs merged on green CI (docker build + EN/ZH image + installer integration).
+Native test execution remains Linux-only; the CI integration jobs are the authoritative run.
