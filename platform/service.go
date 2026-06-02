@@ -570,10 +570,10 @@ func handleMgmtEnvs(ctx context.Context, handler *http.ServeMux) {
 
 			var forwardLimit int
 			if envForwardLimit() != "" {
-				if iv, err := strconv.ParseInt(envForwardLimit(), 10, 64); err != nil {
+				if iv, err := strconv.Atoi(envForwardLimit()); err != nil {
 					return errors.Wrapf(err, "parse env forward limit %v", envForwardLimit())
 				} else {
-					forwardLimit = int(iv)
+					forwardLimit = iv
 				}
 			}
 
