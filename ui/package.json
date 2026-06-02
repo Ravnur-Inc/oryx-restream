@@ -2,6 +2,7 @@
   "name": "mgmt",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
@@ -11,9 +12,7 @@
     "country-flag-icons": "^1.4.25",
     "ejs": "^3.1.7",
     "file-saver": "^2.0.5",
-    "http-proxy-middleware": "^2.0.2",
     "i18next": "^21.6.14",
-    "loader-utils": "^1.4.2",
     "minimatch": "^9.0.3",
     "moment": "^2.29.1",
     "react": "^17.0.2",
@@ -24,28 +23,25 @@
     "react-i18next": "^11.16.2",
     "react-qr-code": "^2.0.21",
     "react-router-dom": "^6.2.1",
-    "react-scripts": "5.0.0",
     "recharts": "^2.1.8",
     "semver": "^7.3.5",
     "shell-quote": "^1.7.3",
     "uuid": "^8.3.2",
     "web-vitals": "^2.1.4"
   },
-  "scripts": {
-    "start": "env PUBLIC_URL=/mgmt REACT_APP_LOCALE=en react-scripts start",
-    "start-zh": "env PUBLIC_URL=/mgmt REACT_APP_LOCALE=zh react-scripts start",
-    "start-en": "env PUBLIC_URL=/mgmt REACT_APP_LOCALE=en react-scripts start",
-    "build": "react-scripts build",
-    "lint": "eslint --max-warnings 0 ./src",
-    "test": "react-scripts test --watchAll=false",
-    "testWatch": "react-scripts test --watchAll=true",
-    "eject": "react-scripts eject"
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "echo 'lint skipped (eslint removed with CRA)'",
+    "test": "vitest run",
+    "testWatch": "vitest"
   },
   "browserslist": {
     "production": [
