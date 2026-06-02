@@ -14,7 +14,6 @@ import {useTranslation} from "react-i18next";
 import {TutorialsButton, useTutorials} from "../components/TutorialsButton";
 import moment from "moment";
 import PopoverConfirm from "../components/PopoverConfirm";
-import {OpenAISecretSettings} from "../components/OpenAISettings";
 
 export default function Systems() {
   return (
@@ -30,7 +29,7 @@ function SystemsImpl() {
 
   React.useEffect(() => {
     const tab = searchParams.get('tab') || 'auth';
-    console.log(`?tab=https|hls|auth|beian|limits|llm|callback|platform, current=${tab}, Select the tab to render`);
+    console.log(`?tab=auth|https|hls|beian|streams|callback|api, current=${tab}, Select the tab to render`);
     setDefaultActiveTab(tab);
   }, [searchParams]);
 
@@ -78,12 +77,6 @@ function SettingsImpl2({defaultActiveTab}) {
           </Tab>
           <Tab eventKey="beian" title={t('settings.tabFooter')}>
             <SettingBeian />
-          </Tab>
-          <Tab eventKey="limits" title={t('settings.tabLimits')}>
-            <SettingLimits />
-          </Tab>
-          <Tab eventKey="llm" title={t('settings.tabLLM')}>
-            <SettingLLM />
           </Tab>
           <Tab eventKey="streams" title={t('settings.tabStreams')}>
             <SettingStreams />
@@ -496,116 +489,6 @@ function SettingStreams() {
   );
 }
 
-function SettingLLM() {
-  const {t} = useTranslation();
-  const handleError = useErrorHandler();
-
-  const [aiSecretKey, setAiSecretKey] = React.useState();
-  const [aiBaseURL, setAiBaseURL] = React.useState();
-  const [aiOrganization, setAiOrganization] = React.useState();
-
-  React.useEffect(() => {
-    axios.post('/terraform/v1/mgmt/openai/query', null, {
-      headers: Token.loadBearerHeader(),
-    }).then(res => {
-      const data = res.data.data;
-      setAiSecretKey(data.aiSecretKey);
-      setAiBaseURL(data.aiBaseURL);
-      setAiOrganization(data.aiOrganization);
-      console.log(`Setting: Query open ai ok, data=${JSON.stringify(data)}`);
-    }).catch(handleError);
-  }, [handleError, setAiSecretKey, setAiBaseURL, setAiOrganization]);
-
-  const updateOpenAI = React.useCallback((e) => {
-    e.preventDefault();
-
-    axios.post('/terraform/v1/mgmt/openai/update', {
-      aiSecretKey, aiBaseURL, aiOrganization,
-    }, {
-      headers: Token.loadBearerHeader(),
-    }).then(res => {
-      alert(t('helper.setOk'));
-      console.log(`Setting: Update open ai ok`);
-    }).catch(handleError);
-  }, [t, handleError, aiSecretKey, aiBaseURL, aiOrganization]);
-
-  return <>
-    <Accordion defaultActiveKey={["1"]} alwaysOpen>
-      <Accordion.Item eventKey="1">
-        <Accordion.Header>{t('settings.openaiTitle')}</Accordion.Header>
-        <Accordion.Body>
-          <Form>
-            <OpenAISecretSettings {...{
-              baseURL: aiBaseURL, setBaseURL: setAiBaseURL,
-              secretKey: aiSecretKey, setSecretKey: setAiSecretKey,
-              organization: aiOrganization, setOrganization: setAiOrganization,
-            }} />
-            <p></p>
-            <Button variant="primary" type="submit" onClick={(e) => updateOpenAI(e)}>
-              {t('helper.submit')}
-            </Button>
-          </Form>
-        </Accordion.Body>
-      </Accordion.Item>
-    </Accordion>
-  </>;
-}
-
-function SettingLimits() {
-  const handleError = useErrorHandler();
-  const {t} = useTranslation();
-  const [vLiveBitrate, setVLiveBitrate] = React.useState();
-  const [ipCameraBitrate, setIpCameraBitrate] = React.useState();
-
-  React.useEffect(() => {
-    axios.post('/terraform/v1/mgmt/limits/query', {
-    }, {
-      headers: Token.loadBearerHeader(),
-    }).then(res => {
-      if (res.data.data?.vlive) setVLiveBitrate(res.data.data.vlive);
-      if (res.data.data?.camera) setIpCameraBitrate(res.data.data.camera);
-      console.log(`Limits: query ${JSON.stringify(res.data.data)}`);
-    }).catch(handleError);
-  }, [handleError, setVLiveBitrate, setIpCameraBitrate]);
-
-  const updateLimits = React.useCallback((e) => {
-    e.preventDefault();
-
-    axios.post('/terraform/v1/mgmt/limits/update', {
-      vlive: parseInt(vLiveBitrate), camera: parseInt(ipCameraBitrate),
-    }, {
-      headers: Token.loadBearerHeader(),
-    }).then(res => {
-      alert(t('helper.setOk'));
-    }).catch(handleError);
-  }, [handleError, vLiveBitrate, ipCameraBitrate, t]);
-
-  return (
-    <Accordion defaultActiveKey={["1"]} alwaysOpen>
-      <Accordion.Item eventKey="1">
-        <Accordion.Header>{t('settings.limitsTitle')}</Accordion.Header>
-        <Accordion.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>{t('settings.limitsVLive')}</Form.Label>
-              <Form.Text> * in Kbps</Form.Text>
-              <Form.Control as="input" defaultValue={vLiveBitrate} onChange={(e) => setVLiveBitrate(e.target.value)}/>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>{t('settings.limitsCamera')}</Form.Label>
-              <Form.Text> * in Kbps</Form.Text>
-              <Form.Control as="input" defaultValue={ipCameraBitrate} onChange={(e) => setIpCameraBitrate(e.target.value)}/>
-            </Form.Group>
-            <Button variant="primary" type="submit" onClick={(e) => updateLimits(e)}>
-              {t('helper.submit')}
-            </Button>
-          </Form>
-        </Accordion.Body>
-      </Accordion.Item>
-    </Accordion>
-  );
-}
-
 function SettingBeian() {
   const [beian, setBeian] = React.useState();
   const [siteTitle, setSiteTitle] = React.useState();
@@ -835,63 +718,9 @@ function SettingHttpsImpl({config}) {
     }).catch(handleError).finally(setOperating);
   }, [handleError, key, crt, t, setOperating]);
 
-  const requestLetsEncrypt = React.useCallback((e) => {
-    e.preventDefault();
-
-    const port = window.location.port;
-    if (port && port !== '80' && port !== '3000') {
-      return alert(`${t('settings.sslInvalidPort')} ${port} (${window.location.host})`);
-    }
-
-    if (!domainRegex.test(window.location.hostname)) {
-      return alert(`${t('settings.sslInvalidHost')} "${window.location.hostname}", ${t('settings.sslInvalidHost3')}`);
-    }
-
-    if (!domain) {
-      return alert(t('settings.sslNoDomain'));
-    }
-
-    if (!domainRegex.test(domain)) {
-      return alert(t('settings.sslInvalidDomain'));
-    }
-
-    if (window.location.hostname !== domain) {
-      return alert(`${t('settings.sslInvalidHost')} "${window.location.hostname}", ${t('settings.sslInvalidHost2')} "${domain}"`);
-    }
-
-    setOperating(true);
-
-    axios.post('/terraform/v1/mgmt/letsencrypt', {
-      domain,
-    }, {
-      headers: Token.loadBearerHeader(),
-    }).then(res => {
-      alert(t('settings.sslLetsOk'));
-      console.log(`SSL: Let's Encrypt SSL ok`);
-    }).catch(handleError).finally(setOperating);
-  }, [handleError, domain, t, setOperating, domainRegex]);
-
-  const defaultKey = config?.provider === 'ssl' ? '1' : '0';
   return (
-    <Accordion defaultActiveKey={[defaultKey]} alwaysOpen>
+    <Accordion defaultActiveKey={["0"]} alwaysOpen>
       <Accordion.Item eventKey="0">
-        <Accordion.Header>{t('settings.letsTitle')}</Accordion.Header>
-        <Accordion.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>{t('settings.letsDomain')}</Form.Label>
-              <Form.Text> * {t('settings.letsDomainTip')}</Form.Text>
-              <Form.Control as="input" defaultValue={domain} onChange={(e) => setDomain(e.target.value)} />
-            </Form.Group>
-            <Button variant="primary" type="submit" disabled={operating} onClick={(e) => requestLetsEncrypt(e)}>
-              {t('settings.letsDomainSubmit')}
-            </Button> &nbsp;
-            <TutorialsButton prefixLine={true} tutorials={sslTutorials} /> &nbsp;
-            {operating && <Spinner animation="border" variant="success" style={{verticalAlign: 'middle'}} />}
-          </Form>
-        </Accordion.Body>
-      </Accordion.Item>
-      <Accordion.Item eventKey="1">
         <Accordion.Header>{t('settings.sslFileTitle')}</Accordion.Header>
         <Accordion.Body>
           <Form>

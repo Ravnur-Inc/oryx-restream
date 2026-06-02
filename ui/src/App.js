@@ -6,9 +6,6 @@
 import React from 'react';
 import axios from "axios";
 import './App.css';
-import './ai-talk.css';
-import './ai-dubbing.css';
-import './ai-ocr.css';
 import {Container} from "react-bootstrap";
 import {
   BrowserRouter,
@@ -34,7 +31,6 @@ import {ErrorBoundary, useErrorHandler} from 'react-error-boundary';
 import {SrsErrorBoundary} from "./components/SrsErrorBoundary";
 import resources from "./resources/locale.json";
 import {SrsEnvContext} from "./components/SrsEnvContext";
-import Popouts from "./pages/Popouts";
 
 function App() {
   const [env, setEnv] = React.useState(null);
@@ -149,7 +145,6 @@ function AppRoute({initialized, setInitialized}) {
                 <Route path="routers-components" element={<Components/>}/>
                 <Route path="routers-logout" element={<Logout onLogout={() => setTokenUpdated(!tokenUpdated)}/>}/>
               </>}
-              {initialized === 1 && <Route path="routers-popout" element={<Popouts/>}/>}
             </Route>
           </React.Fragment>}
       </Routes>
