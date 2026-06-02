@@ -3,6 +3,12 @@
 //
 // SPDX-License-Identifier: MIT
 //
+// Polyfill TextEncoder/TextDecoder for the jsdom test environment. jsdom under
+// jest does not expose them, but react-qr-code's encoder requires TextEncoder.
+import { TextEncoder, TextDecoder } from "util";
+if (typeof global.TextEncoder === "undefined") global.TextEncoder = TextEncoder;
+if (typeof global.TextDecoder === "undefined") global.TextDecoder = TextDecoder;
+
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
