@@ -31,7 +31,7 @@
 set -euo pipefail
 
 DOMAIN="${DOMAIN:?set DOMAIN to your fully-qualified hostname (A record -> this VM)}"
-EMAIL="${EMAIL:?set EMAIL for Let's Encrypt expiry notices}"
+EMAIL="${EMAIL:?set EMAIL for certificate expiry notices}"
 DATA_DIR="${DATA_DIR:-$HOME/oryx-data}"
 CONTAINER="${CONTAINER:-oryx}"
 
