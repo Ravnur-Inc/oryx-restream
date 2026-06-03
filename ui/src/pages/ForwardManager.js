@@ -139,9 +139,10 @@ function Stats({log}) {
 }
 
 // ── Nav + action bar ─────────────────────────────────────────────────────────
-// Streams (Phase 3) and Users (Phase 5) are added in their respective phases.
+// Users (Phase 5) is added with the Entra UI work.
 const ALL_NAV_ITEMS = [
   {to: '/routers-forward',    text: 'Forward'},
+  {to: '/routers-streams',    text: 'Streams'},
   {to: '/routers-scenario',   text: 'Scenario',   ownerOnly: true},
   {to: '/routers-settings',   text: 'System',     ownerOnly: true},
   {to: '/routers-components', text: 'Components', ownerOnly: true},

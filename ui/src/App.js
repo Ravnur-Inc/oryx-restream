@@ -25,6 +25,7 @@ import Setup from './pages/Setup';
 import {Locale, Token} from "./utils";
 import Components from "./pages/Components";
 import ForwardManager from "./pages/ForwardManager";
+import Streams from "./pages/Streams";
 import Scenario from "./pages/Scenario";
 import Settings from "./pages/Settings";
 import Contact from "./pages/Contact";
@@ -141,6 +142,7 @@ function AppRoute({initialized, setInitialized}) {
                 <Route path="*" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
                 <Route path="routers-login" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
                 <Route path="routers-forward" element={<ForwardManager/>}/>
+                <Route path="routers-streams" element={<Streams/>}/>
                 <Route path="routers-scenario" element={<Scenario/>}/>
                 <Route path="routers-settings" element={<Settings/>}/>
                 <Route path="routers-contact" element={<Contact/>}/>
