@@ -51,11 +51,12 @@ See [RAVNUR-CHANGES.md](./RAVNUR-CHANGES.md) for the full change log with per-se
 |------|----------|---------|
 | `1935` | TCP | RTMP ingest |
 | `10080` | UDP | SRT ingest |
-| `2443` | TCP | Management UI (HTTPS) — restrict to trusted IPs |
-| `2022` | TCP | Management UI (HTTP) — restrict to trusted IPs |
+| `443` | TCP | Management UI (HTTPS) — restrict to trusted IPs |
+| `2022` | TCP | Management UI (HTTP, internal) — restrict to trusted IPs |
+| `80` | TCP | Let's Encrypt HTTP-01 (cert issue/renew) |
 | `8000` | UDP | WebRTC preview (optional) |
 
-Restrict the management UI ports (`2022`/`2443`) to trusted IP ranges at your
+Restrict the management UI ports (`443`/`2022`) to trusted IP ranges at your
 firewall or cloud NSG. `8000/udp` is only needed for the in-browser WebRTC
 preview and can be closed if unused.
 
@@ -69,7 +70,7 @@ newest release; or pin a version like `:1.0.0`):
 ```bash
 docker run -d --name oryx --restart always \
   -p 1935:1935 -p 10080:10080/udp \
-  -p 2022:2022 -p 2443:2443 -p 8000:8000/udp \
+  -p 2022:2022 -p 443:2443 -p 8000:8000/udp \
   -v $HOME/oryx-data:/data \
   ghcr.io/ravnur-inc/oryx-restream:latest
 ```
@@ -90,7 +91,7 @@ docker build -t oryx-restream -f Dockerfile .
 # then `docker run ... oryx-restream` with the ports/volume shown above
 ```
 
-Open `https://<vm-ip>:2443/mgmt` (accept the self-signed cert) and set the
+Open `https://<vm-ip>/mgmt` (accept the self-signed cert) and set the
 management password on first run. For firewall/NSG rules, recommended OBS/SRT
 settings, and auto-renewing TLS, see the
 [deployment guide](./deploy/azure-vm/README.md).
@@ -197,7 +198,7 @@ Redis binds to `127.0.0.1` only and requires a password. These are enforced by t
 Set a publish secret in the management UI under **System → Auth**. This prevents unauthorized sources from publishing to your ingest endpoint.
 
 ### Management UI
-Restrict ports `2022`/`2443` to trusted IP ranges at your firewall or cloud NSG. Do not expose the management UI to the public internet.
+Restrict ports `443`/`2022` to trusted IP ranges at your firewall or cloud NSG. Do not expose the management UI to the public internet.
 
 ### HTTPS / TLS
 The management UI serves a **self-signed** certificate by default. For a trusted,

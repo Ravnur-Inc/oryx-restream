@@ -38,14 +38,15 @@ RG=<resource-group> NSG=<nsg-name> MY_IP=<your-ip> ENCODER_IP=<encoder-ip> \
 |------|-------|---------|--------|
 | 10080 | UDP | SRT ingest | your encoder |
 | 1935 | TCP | RTMP ingest | your encoder |
-| 2443 | TCP | mgmt UI / API | your IP |
+| 443 | TCP | mgmt UI / API (HTTPS) | your IP |
+| 80 | TCP | Let's Encrypt HTTP-01 (cert issue/renew) | any |
 | 8000 | UDP | WebRTC preview (optional) | your encoder |
 
 SSH (22) is covered by Azure's default rules. Forwarding **out** to
 YouTube/Facebook (443/1935) is outbound and allowed by default.
 
 ## 3. Use it
-1. Open `https://<vm-ip>:2443/mgmt` (accept the self-signed cert) and set the
+1. Open `https://<vm-ip>/mgmt` (accept the self-signed cert) and set the
    mgmt password.
 2. In the **Scenario** tab, copy the **SRT publish URL** and push a stream
    (OBS, or `ffmpeg -re -stream_loop -1 -i input.mp4 -c copy -f mpegts "<SRT-URL>"`).
@@ -128,7 +129,7 @@ Manual alternatives:
 - Paste a cert yourself in the mgmt UI → **Settings → HTTPS → SSL file** (private
   key + full-chain). Simple, but you must re-upload every ~90 days.
 - Terminate TLS in front of the VM with **Azure Application Gateway** / a reverse
-  proxy that forwards to `:2443` (or `:2022`).
+  proxy that forwards to the VM's `:443` (HTTPS) or `:2022` (HTTP).
 
 ## Notes
 - Config, redis state, and the mgmt password persist in `~/oryx-data`.
