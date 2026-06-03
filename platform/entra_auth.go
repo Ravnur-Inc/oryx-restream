@@ -69,7 +69,21 @@ func (v *EntraAuth) Handle(ctx context.Context, handler *http.ServeMux) error {
 				}
 			}
 			if matched == nil {
-				return errors.Errorf("user %v is not authorized to access this application", email)
+				// First-run bootstrap: auto-provision the single configured admin
+				// email as an owner so a freshly deployed instance (empty user
+				// store) is usable without a separate seeding step. Only the exact
+				// ENTRA_BOOTSTRAP_EMAIL qualifies; everyone else is rejected.
+				bootstrap := strings.ToLower(strings.TrimSpace(envEntraBootstrapEmail()))
+				if bootstrap != "" && bootstrap == email {
+					created, err := userManager.bootstrapOwner(ctx, email)
+					if err != nil {
+						return errors.Wrapf(err, "bootstrap owner %v", email)
+					}
+					matched = created
+					logger.Tf(ctx, "Entra bootstrap: provisioned owner %v", email)
+				} else {
+					return errors.Errorf("user %v is not authorized to access this application", email)
+				}
 			}
 
 			// Issue an Oryx-compatible session JWT so all existing API calls work unchanged.

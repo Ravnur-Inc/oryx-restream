@@ -349,6 +349,13 @@ func envEntraClientID() string {
 	return os.Getenv("ENTRA_CLIENT_ID")
 }
 
+// envEntraBootstrapEmail is the email auto-provisioned as an owner on its first
+// Entra sign-in when no matching user exists yet. This bootstraps a freshly
+// deployed instance (empty user store). Empty disables bootstrap.
+func envEntraBootstrapEmail() string {
+	return os.Getenv("ENTRA_BOOTSTRAP_EMAIL")
+}
+
 func envSelfSignedCertificate() string {
 	return os.Getenv("AUTO_SELF_SIGNED_CERTIFICATE")
 }
