@@ -34,7 +34,8 @@ create() { # name priority protocol port source
 echo "Adding NSG rules to $NSG (rg=$RG)..."
 create Allow-SRT        1001 Udp 10080 "$ENCODER_IP"   # SRT ingest
 create Allow-RTMP       1002 Tcp 1935  "$ENCODER_IP"   # RTMP ingest
-create Allow-Mgmt-HTTPS 1003 Tcp 2443  "$MY_IP"        # mgmt UI / API
+create Allow-Mgmt-HTTPS 1003 Tcp 443   "$MY_IP"        # mgmt UI / API (HTTPS)
 create Allow-WebRTC     1004 Udp 8000  "$ENCODER_IP"   # WebRTC preview (optional)
+create Allow-HTTP       1005 Tcp 80     '*'            # Let's Encrypt HTTP-01 (certbot issue/renew)
 echo "Done. (SSH/22 is allowed by the Azure default rules; outbound RTMP to"
 echo "YouTube/Facebook on 443/1935 is allowed by default — no rule needed.)"

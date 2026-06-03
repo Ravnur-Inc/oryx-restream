@@ -78,7 +78,7 @@ fi
 
 cat <<EOF
 
-Done. https://${DOMAIN}:2443/mgmt now serves a trusted Let's Encrypt cert.
+Done. https://${DOMAIN}/mgmt now serves a trusted Let's Encrypt cert.
 Auto-renewal is handled by the certbot systemd timer; verify with:
   systemctl list-timers certbot.timer
   sudo certbot renew --dry-run

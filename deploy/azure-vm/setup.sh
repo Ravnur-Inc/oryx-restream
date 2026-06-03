@@ -77,8 +77,12 @@ echo "==> Starting container: $NAME"
 # enable it; leave them unset to keep the password-only login. ENTRA_CLIENT_ID
 # is the Azure app registration (client) ID; ENTRA_BOOTSTRAP_EMAIL is the email
 # auto-provisioned as owner on its first sign-in (so the first login works).
+# Mgmt UI HTTPS is published on host port 443 (-> container 2443) so it is
+# reachable at https://<host>/mgmt with no port in the URL. This also makes the
+# MSAL redirect origin match an app-registration redirect of https://<host>
+# (no port). Port 80 is intentionally left unmapped for certbot HTTP-01 renewals.
 $DOCKER run -d --name "$NAME" --restart always \
-  -p 2022:2022 -p 2443:2443 -p 1935:1935 \
+  -p 2022:2022 -p 443:2443 -p 1935:1935 \
   -p 8000:8000/udp -p 10080:10080/udp \
   -e ENTRA_CLIENT_ID="${ENTRA_CLIENT_ID:-}" \
   -e ENTRA_BOOTSTRAP_EMAIL="${ENTRA_BOOTSTRAP_EMAIL:-}" \
@@ -91,13 +95,13 @@ echo
 echo "================================================================"
 $DOCKER ps --filter "name=$NAME"
 echo "----------------------------------------------------------------"
-echo "Mgmt UI:  https://${ip}:2443/mgmt   (accept the self-signed cert)"
+echo "Mgmt UI:  https://${ip}/mgmt   (accept the self-signed cert)"
 echo "Logs:     ${DOCKER} logs -f ${NAME}"
 echo "Data:     ${DATA_DIR}  (config/redis/password persist here)"
 echo
 echo "Open these INBOUND ports on the Azure NSG (see deploy/azure-vm/nsg-rules.sh):"
 echo "  10080/udp  SRT ingest"
 echo "  1935/tcp   RTMP ingest"
-echo "  2443/tcp   mgmt UI (restrict to your IP)"
+echo "  443/tcp    mgmt UI HTTPS (restrict to your IP)"
 echo "  8000/udp   WebRTC preview (optional)"
 echo "================================================================"
