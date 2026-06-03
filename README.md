@@ -34,7 +34,8 @@ This fork removes everything not required for RTMP/SRT → RTMP restreaming:
 - OpenAI / AI transcription / AI Talk / OCR
 - DVR / local recording
 - Virtual live (file-to-live broadcast)
-- Let's Encrypt / LEGO auto-HTTPS
+- Let's Encrypt / LEGO *in-app* auto-HTTPS — replaced by host-level `certbot`
+  auto-renewal (see the [deployment guide](./deploy/azure-vm/README.md#https--real-tls-certificate-for-the-mgmt-ui))
 - youtube-dl
 - aaPanel / BT panel integration
 - HLS CDN scripts
@@ -50,26 +51,43 @@ See [RAVNUR-CHANGES.md](./RAVNUR-CHANGES.md) for the full change log with per-se
 |------|----------|---------|
 | `1935` | TCP | RTMP ingest |
 | `10080` | UDP | SRT ingest |
-| `80` / `443` | TCP | Management UI (restrict to trusted IPs) |
+| `2443` | TCP | Management UI (HTTPS) — restrict to trusted IPs |
+| `2022` | TCP | Management UI (HTTP) — restrict to trusted IPs |
+| `8000` | UDP | WebRTC preview (optional) |
 
-Close `8000/udp` (WebRTC) — it is not used by this fork.
+Restrict the management UI ports (`2022`/`2443`) to trusted IP ranges at your
+firewall or cloud NSG. `8000/udp` is only needed for the in-browser WebRTC
+preview and can be closed if unused.
 
 ---
 
 ## Quick Start
 
+No image is published to a registry yet — build and run from source. On a fresh
+Linux VM (Ubuntu 22.04/24.04 with Docker), the one-shot script clones, builds,
+and runs the container with the correct ports and a persistent volume:
+
 ```bash
-docker run --restart always -d -it --name oryx-restream \
-  -v $HOME/data:/data \
-  -p 1935:1935 \
-  -p 10080:10080/udp \
-  -p 80:2022 \
-  ravnur/oryx-restream:latest
+curl -fsSL https://raw.githubusercontent.com/Ravnur-Inc/oryx-restream/main/deploy/azure-vm/setup.sh | bash
 ```
 
-Open `http://localhost` in your browser to access the management UI.
+Or build and run it manually:
 
-> **Note:** Set `MGMT_PASSWORD` on first run or configure it in `/data/config/.env`.
+```bash
+git clone https://github.com/Ravnur-Inc/oryx-restream.git
+cd oryx-restream
+docker build -t oryx-restream -f Dockerfile .
+docker run -d --name oryx --restart always \
+  -p 1935:1935 -p 10080:10080/udp \
+  -p 2022:2022 -p 2443:2443 -p 8000:8000/udp \
+  -v $HOME/oryx-data:/data \
+  oryx-restream
+```
+
+Open `https://<host>:2443/mgmt` (accept the self-signed cert) and set the
+management password on first run. For firewall/NSG rules, recommended OBS/SRT
+settings, and auto-renewing TLS, see the
+[deployment guide](./deploy/azure-vm/README.md).
 
 ### Publish a stream
 
@@ -78,17 +96,31 @@ Open `http://localhost` in your browser to access the management UI.
 rtmp://<host>/live/<stream-key>
 ```
 
-**SRT ingest:**
+**SRT ingest** (see the [deployment guide](./deploy/azure-vm/README.md#recommended-obs--srt-settings)
+for the full URL with recommended latency/buffer params):
 ```
-srt://<host>:10080?streamid=live/<stream-key>
+srt://<host>:10080?streamid=#!::r=live/<stream-key>,m=publish
 ```
 
 ### Configure a restream destination
 
 1. Open the management UI
-2. Navigate to **Scenarios → Restream**
-3. Add a destination RTMP URL (e.g. `rtmp://a.rtmp.youtube.com/live2/<key>`)
+2. Navigate to **Scenario → Forward**
+3. Add a destination RTMP URL (e.g. `rtmp://a.rtmp.youtube.com/live2/<key>`) —
+   add more than one for simultaneous restreaming to several platforms
 4. Start publishing — the forward task fires automatically on ingest
+
+---
+
+## Deployment
+
+For a complete production deployment — one-shot setup script, NSG/firewall
+rules, recommended OBS/SRT encoder settings, SRT tuning for lossy ingest,
+multiple restream destinations, and auto-renewing Let's Encrypt TLS — see
+**[deploy/azure-vm/README.md](./deploy/azure-vm/README.md)**.
+
+> Run it on a **VM** (or Azure Container Instances), **not** Azure App Service:
+> SRT needs UDP ingress, which App Service does not provide.
 
 ---
 
@@ -96,14 +128,15 @@ srt://<host>:10080?streamid=live/<stream-key>
 
 **Requirements**
 - Go 1.21+
-- Node.js 18+
+- Node.js 22+
 - FFmpeg (system package recommended — see [Security](#security))
 
 ```bash
-git clone https://github.com/ravnur/oryx-restream.git
+git clone https://github.com/Ravnur-Inc/oryx-restream.git
 cd oryx-restream
 
-# Build the Go platform backend
+# Build the Go platform backend (Linux-only — it uses syscall.Kill;
+# on macOS/Windows cross-compile with GOOS=linux)
 cd platform
 go build ./...
 
@@ -137,7 +170,14 @@ Redis binds to `127.0.0.1` only and requires a password. These are enforced by t
 Set a publish secret in the management UI under **System → Auth**. This prevents unauthorized sources from publishing to your ingest endpoint.
 
 ### Management UI
-Restrict ports `80`/`443` to trusted IP ranges at your firewall or cloud NSG. Do not expose the management UI to the public internet.
+Restrict ports `2022`/`2443` to trusted IP ranges at your firewall or cloud NSG. Do not expose the management UI to the public internet.
+
+### HTTPS / TLS
+The management UI serves a **self-signed** certificate by default. For a trusted,
+auto-renewing certificate, run [`deploy/azure-vm/certbot-setup.sh`](./deploy/azure-vm/certbot-setup.sh)
+— host-level `certbot` plus Oryx's built-in cert hot-reload, so renewals apply
+with zero downtime. Details in the
+[deployment guide](./deploy/azure-vm/README.md#https--real-tls-certificate-for-the-mgmt-ui).
 
 ---
 
