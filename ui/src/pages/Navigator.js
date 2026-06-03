@@ -5,73 +5,31 @@
 //
 import React from 'react';
 import Container from "react-bootstrap/Container";
-import {Navbar, Nav} from 'react-bootstrap';
-import {Link, useLocation} from "react-router-dom";
-import logo from '../resources/logo.svg';
-import LanguageSwitch from "../components/LanguageSwitch";
-import {useTranslation} from "react-i18next";
+import {Navbar} from 'react-bootstrap';
+import {Link} from 'react-router-dom';
+import logo from '../resources/ravnur-logo.svg';
 
-export default function Navigator({initialized, token, localChanged}) {
-  const [activekey, setActiveKey] = React.useState(1);
-  const [navs, setNavs] = React.useState([]);
-  const location = useLocation();
-  const {t} = useTranslation();
-
-  React.useEffect(() => {
-    if (!initialized) return setNavs([]);
-
-    if (!token) {
-      return setNavs([{to:'/routers-login', text: t('nav.login'), className: 'text-light'}]);
-    }
-
-    const r0 = `${location.pathname}${location.search}`;
-    setNavs([
-      {eventKey: '2', to: '/routers-scenario', text: t('nav.scenario')},
-      {eventKey: '3', to: '/routers-settings', text: t('nav.system')},
-      {eventKey: '4', to: '/routers-components', text: t('nav.component')},
-      {eventKey: '5', to: '/routers-contact', text: t('nav.contact')},
-      {eventKey: '6', to: '/routers-logout', text: t('nav.logout')},
-    ].map(e => {
-      if (r0.indexOf(e.to) >= 0) {
-        e.className = 'text-light';
-        setActiveKey(e.eventKey);
-      }
-      return e;
-    }));
-  }, [initialized, token, location, t]);
-
+// Ravnur-branded header. Page-level navigation lives in each screen's own NavBar
+// (Forward/Streams/Users); this header is a consistent brand lockup that links
+// home. Props are accepted for backward compatibility but unused.
+export default function Navigator() {
   return (<>
     <Navbar>
-      <Container fluid className={{color:'#fff'}}>
-        <Navbar.Brand>
+      <Container fluid>
+        <Navbar.Brand as={Link} to="/routers-forward" style={{display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none'}}>
           <img
             src={logo}
-            width="64"
-            height="30"
-            className="d-inline-block align-top"
-            alt="Oryx"
+            height="36"
+            style={{width: 'auto'}}
+            className="d-inline-block align-middle"
+            alt="Ravnur"
           />
+          <span style={{display: 'inline-block', verticalAlign: 'middle', lineHeight: 1.25}}>
+            <span style={{display: 'block', fontWeight: 800, fontSize: 14, letterSpacing: '-0.02em', color: '#111111'}}>FORWARD</span>
+            <span style={{display: 'block', fontSize: 9, color: '#6b6865', letterSpacing: '0.1em'}}>RAVNUR SIMULCAST MANAGER</span>
+          </span>
         </Navbar.Brand>
-        <Nav className='me-auto' variant="pills" activeKey={activekey}>
-          {navs.map((e, index) => {
-            return (
-              <Nav.Link
-                as={Link}
-                eventKey={e.eventKey}
-                to={e.to}
-                key={index}
-                className={e.className}
-              >
-                {e.text}
-              </Nav.Link>
-            );
-          })}
-        </Nav>
-        <Navbar.Collapse className="justify-content-end">
-          <LanguageSwitch localChanged={localChanged} />
-        </Navbar.Collapse>
       </Container>
     </Navbar>
   </>);
 }
-

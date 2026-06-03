@@ -34,6 +34,14 @@ export const Token = {
     const o = JSON.parse(info || '{}');
     return o?.bearer ? {'Authorization': `Bearer ${o?.bearer}`} : {};
   },
+  // The authenticated user, populated by Entra login (Phase 5). Until then there
+  // is no per-user identity (single mgmt password), so this returns null, which
+  // callers treat as owner-level access.
+  loadUser: () => {
+    const info = localStorage.getItem(SRS_TERRAFORM_TOKEN);
+    const o = JSON.parse(info || '{}');
+    return o?.user || null;
+  },
   remove: () => {
     localStorage.removeItem(SRS_TERRAFORM_TOKEN);
   },
