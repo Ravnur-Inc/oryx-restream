@@ -36,6 +36,10 @@ if ! docker info >/dev/null 2>&1; then
   fi
 fi
 
+# Ensure the Docker daemon starts on boot, so the container's --restart always
+# brings Oryx back after a VM reboot.
+sudo systemctl enable docker >/dev/null 2>&1 || true
+
 # 1. Get the source: build in place if we're inside the repo, else clone/update.
 if [ -f "./Dockerfile" ] && [ -d "./platform" ]; then
   SRC_DIR="$(pwd)"
