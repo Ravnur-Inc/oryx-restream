@@ -308,3 +308,26 @@ to skip python.
 
 **Verification:** All PRs merged on green CI (docker build + EN/ZH image + installer integration).
 Native test execution remains Linux-only; the CI integration jobs are the authoritative run.
+---
+
+## 2026-06-03 — Container image publishing to GHCR (PR pending)
+
+Added `.github/workflows/ghcr-publish.yml`: builds the image and pushes it to
+**GitHub Container Registry** (`ghcr.io/ravnur-inc/oryx-restream`) on every `v*`
+release tag (and on-demand via workflow_dispatch). Auth uses the built-in
+`GITHUB_TOKEN` (`packages: write`) — no extra secrets. Tags: `{{version}}`,
+`{{major}}.{{minor}}`, and `latest`. amd64-only (the image compiles SRS/Go/UI
+from source; the deploy target is amd64 — arm64 can be added to `platforms`
+later). Uses GitHub Actions layer cache (`type=gha`).
+
+Neutralized the upstream ossrs release paths that fired on `v*` tags and would
+fail/conflict for this fork:
+- Deleted `.github/workflows/release.yml` (published to Docker Hub `ossrs/oryx`
+  + Aliyun ACR, required `DOCKER_*`/`ACR_*` secrets, ossrs.io release notes).
+- `.github/workflows/test-online.yml` → `workflow_dispatch` only (was `v*` tags);
+  upstream online tests are not wired for this fork.
+
+README Quick Start now leads with `docker run ghcr.io/ravnur-inc/oryx-restream:latest`.
+
+NOTE: the first publish creates a **private** GHCR package; set it Public once in
+the org Packages settings for anonymous `docker pull`.
