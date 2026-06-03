@@ -48,7 +48,7 @@ function LoginImpl({onLogin}) {
         headers: Token.loadBearerHeader(),
       }).then(res => {
         console.log(`Login: Done, token is ${Tools.mask(token)}`);
-        navigate('/routers-scenario');
+        navigate('/routers-forward');
       });
     }).catch(handleError);
   }, [navigate, handleError]);
@@ -76,7 +76,7 @@ function LoginImpl({onLogin}) {
       Token.save(data);
 
       onLogin && onLogin();
-      navigate('/routers-scenario');
+      navigate('/routers-forward');
     }).catch(handleError).finally(setOperating);
   }, [password, handleError, onLogin, navigate, setOperating]);
 
