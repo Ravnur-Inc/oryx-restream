@@ -98,6 +98,22 @@ settings, and auto-renewing TLS, see the
 > Images are published by [`ghcr-publish.yml`](./.github/workflows/ghcr-publish.yml)
 > on every `v*` release tag.
 
+## Management UI
+
+A modern React UI (Vite) for managing simulcasting:
+
+- **Forward** — card-based destination manager: add / edit / **delete** RTMP
+  destinations with custom names, live FFmpeg stats (FPS / bitrate / uptime),
+  search and status filters, and any number of simultaneous outputs.
+- **Streams** — live ingest monitoring (codec / resolution / FPS / uptime),
+  in-browser preview, and per-stream reset.
+- **Users** — owner/editor user management (owner-only).
+
+**Authentication** is password-based by default, or **Microsoft Entra ID**
+(Azure AD) sign-in with role-based access. To enable Entra, set `ENTRA_CLIENT_ID`
+and `ENTRA_BOOTSTRAP_EMAIL` (the email auto-provisioned as owner on first
+sign-in) — see the [deployment guide](./deploy/azure-vm/README.md#authentication--microsoft-entra-id-optional).
+
 ### Publish a stream
 
 The `<stream>` name and `<key>` (publish secret) come from the management UI.

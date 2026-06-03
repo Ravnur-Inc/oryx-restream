@@ -331,3 +331,33 @@ README Quick Start now leads with `docker run ghcr.io/ravnur-inc/oryx-restream:l
 
 NOTE: the first publish creates a **private** GHCR package; set it Public once in
 the org Packages settings for anonymous `docker pull`.
+
+---
+
+## 2026-06-03 — Modern UI merge: Forward manager, Streams, Entra ID auth (PRs #24–#29)
+
+Transplanted the modern management UI from the sibling fork (Ravnur Simulcast
+Manager) onto this Vite-6 / zero-vuln base, plus the backend deltas it needs.
+Six phases, each a branch + PR on green CI:
+
+- **#24 forward API:** `delete` action on `/ffmpeg/forward/secret`; arbitrary
+  custom platform keys via `isValidPlatformKey` (dropped the wx/bilibili/kuaishou
+  allow-list + `forwarding-` rule); `ForwardTask.Stop()` disables the in-memory
+  config to fix a restart-after-delete bug for enabled destinations.
+- **#25 Forward UI:** `ForwardManager.js` (card UI, live stats, search/filter,
+  add/edit/delete, custom keys + labels, unlimited destinations); Ravnur logo
+  header; Public Sans; landing → Forward.
+- **#26 Streams:** `Streams.js` live monitoring (UI-only; backend already had
+  streams/query + kickoff + the `/api/` SRS proxy).
+- **#27 Entra backend:** `entra_auth.go` (multi-tenant OIDC/JWKS validation,
+  audience == `ENTRA_CLIENT_ID`) + `users.go` (owner/editor RBAC, `SIMULCAST_USERS`).
+  No new Go deps (reuses golang-jwt/jwt/v4).
+- **#28 Entra UI:** Microsoft sign-in (`Login.js`/`msalInstance.js`), `Users.js`
+  admin, `RequireOwner` routing, `Forbidden`/`Logout`. New UI dep
+  `@azure/msal-browser` (npm audit clean). Secure first-run bootstrap:
+  `ENTRA_BOOTSTRAP_EMAIL` auto-provisions one owner on first sign-in.
+- **#29 deploy/docs:** `setup.sh` passes `ENTRA_CLIENT_ID` + `ENTRA_BOOTSTRAP_EMAIL`;
+  deploy guide + root README document the UI and Entra setup.
+
+Note: `@azure/msal-browser` is a deliberate new dependency — the strip phase
+(no-new-deps) is complete; the project is now in a feature-add phase.

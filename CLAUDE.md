@@ -5,6 +5,14 @@ This is a Ravnur fork of ossrs/oryx used exclusively as an
 SRT → RTMP restreamer. It ingests SRT on port 10080/udp and
 restreams RTMP to YouTube and Facebook via FFmpeg forward tasks.
 
+## Phase status (2026-06-03)
+The strip is **complete**. The project is now in a **feature-add phase**: a modern
+management UI (Forward/Streams/Users) and Microsoft Entra ID auth were merged in
+from the sibling fork. The strip-era "Never add new dependencies" rule no longer
+applies as an absolute — deliberate, reviewed dependencies are allowed (e.g.
+`@azure/msal-browser` for Entra). Keep deps minimal and vuln-free (npm audit / go
+build clean) and prefer reusing what's already vendored.
+
 ## Working rules — READ BEFORE EVERY ACTION
 1. Work on ONE feature group per session
 2. After every file deletion run: go build ./...

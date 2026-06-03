@@ -73,9 +73,15 @@ fi
 mkdir -p "$DATA_DIR"
 $DOCKER rm -f "$NAME" >/dev/null 2>&1 || true
 echo "==> Starting container: $NAME"
+# Microsoft Entra ID sign-in (optional). Set both env vars before running to
+# enable it; leave them unset to keep the password-only login. ENTRA_CLIENT_ID
+# is the Azure app registration (client) ID; ENTRA_BOOTSTRAP_EMAIL is the email
+# auto-provisioned as owner on its first sign-in (so the first login works).
 $DOCKER run -d --name "$NAME" --restart always \
   -p 2022:2022 -p 2443:2443 -p 1935:1935 \
   -p 8000:8000/udp -p 10080:10080/udp \
+  -e ENTRA_CLIENT_ID="${ENTRA_CLIENT_ID:-}" \
+  -e ENTRA_BOOTSTRAP_EMAIL="${ENTRA_BOOTSTRAP_EMAIL:-}" \
   -v "$DATA_DIR:/data" \
   "$IMAGE"
 
