@@ -84,22 +84,24 @@ docker run -d --name oryx --restart always \
   oryx-restream
 ```
 
-Open `https://<host>:2443/mgmt` (accept the self-signed cert) and set the
+Open `https://<vm-ip>:2443/mgmt` (accept the self-signed cert) and set the
 management password on first run. For firewall/NSG rules, recommended OBS/SRT
 settings, and auto-renewing TLS, see the
 [deployment guide](./deploy/azure-vm/README.md).
 
 ### Publish a stream
 
+The `<stream>` name and `<key>` (publish secret) come from the management UI.
+
 **RTMP ingest:**
 ```
-rtmp://<host>/live/<stream-key>
+rtmp://<vm-ip>/live/<stream>?secret=<key>
 ```
 
-**SRT ingest** (see the [deployment guide](./deploy/azure-vm/README.md#recommended-obs--srt-settings)
-for the full URL with recommended latency/buffer params):
+**SRT ingest** (full URL with the recommended latency/buffer params — identical to
+the [deployment guide](./deploy/azure-vm/README.md#recommended-obs--srt-settings)):
 ```
-srt://<host>:10080?streamid=#!::r=live/<stream-key>,m=publish
+srt://<vm-ip>:10080?mode=caller&latency=1000&pkt_size=1316&rcvbuf=8388608&streamid=#!::r=live/<stream>?secret=<key>,m=publish
 ```
 
 ### Configure a restream destination
