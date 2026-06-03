@@ -82,13 +82,26 @@ service on boot, so Oryx comes back automatically after a VM reboot. Verify:
 `sudo systemctl is-enabled docker` and, after a reboot, `docker ps`.
 
 ## HTTPS / real TLS certificate for the mgmt UI
-The mgmt UI uses a **self-signed** cert by default. For a trusted cert:
-- Obtain one for your domain (e.g. `certbot certonly` on a host that controls
-  the DNS, or your CA), then in the mgmt UI go to **Settings → HTTPS → SSL file**
-  and paste the **private key** and **full-chain certificate**. (Automated
-  Let's Encrypt was removed in this fork; manual upload is the supported path.)
-- Or terminate TLS in front of the VM with **Azure Application Gateway** / a
-  reverse proxy that forwards to `:2443` (or `:2022`).
+The mgmt UI uses a **self-signed** cert by default. For a trusted, **auto-renewing**
+cert (recommended for anything long-lived):
+
+```bash
+DOMAIN=oryx.example.com EMAIL=you@example.com ./deploy/azure-vm/certbot-setup.sh
+```
+This installs **certbot**, obtains a Let's Encrypt cert, and writes a renewal
+deploy-hook that drops the cert into Oryx's cert files
+(`~/oryx-data/config/nginx.{key,crt}`). Oryx's kept cert-reload picks it up, and
+certbot's systemd timer renews it twice-daily — **no manual re-upload, no
+container restart** on renewal (live streams keep running). Requires a DNS name
+pointing at the VM and **inbound TCP 80 open** on the NSG (HTTP-01 standalone is
+used at issuance and each renewal). The app's built-in Let's Encrypt automation
+was removed in this fork, so renewal is driven from the host this way.
+
+Manual alternatives:
+- Paste a cert yourself in the mgmt UI → **Settings → HTTPS → SSL file** (private
+  key + full-chain). Simple, but you must re-upload every ~90 days.
+- Terminate TLS in front of the VM with **Azure Application Gateway** / a reverse
+  proxy that forwards to `:2443` (or `:2022`).
 
 ## Notes
 - Config, redis state, and the mgmt password persist in `~/oryx-data`.
