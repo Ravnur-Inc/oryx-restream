@@ -1,9 +1,9 @@
 name: Test Online Environment
 
 on:
-  push:
-    tags:
-      - v*
+  # Upstream ossrs online tests — not wired for this fork; manual-only so it
+  # doesn't auto-run (and fail) on our release tags. Image publishing is handled
+  # by ghcr-publish.yml.
   # See https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow
   workflow_dispatch:
 

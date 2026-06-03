@@ -63,31 +63,40 @@ preview and can be closed if unused.
 
 ## Quick Start
 
-No image is published to a registry yet — build and run from source. On a fresh
-Linux VM (Ubuntu 22.04/24.04 with Docker), the one-shot script clones, builds,
-and runs the container with the correct ports and a persistent volume:
+Pull the published image from GitHub Container Registry (`latest` tracks the
+newest release; or pin a version like `:1.0.0`):
+
+```bash
+docker run -d --name oryx --restart always \
+  -p 1935:1935 -p 10080:10080/udp \
+  -p 2022:2022 -p 2443:2443 -p 8000:8000/udp \
+  -v $HOME/oryx-data:/data \
+  ghcr.io/ravnur-inc/oryx-restream:latest
+```
+
+On a fresh Linux VM (Ubuntu 22.04/24.04 with Docker), the one-shot script clones,
+builds, and runs the container with the correct ports and a persistent volume:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ravnur-Inc/oryx-restream/main/deploy/azure-vm/setup.sh | bash
 ```
 
-Or build and run it manually:
+Or build the image yourself:
 
 ```bash
 git clone https://github.com/Ravnur-Inc/oryx-restream.git
 cd oryx-restream
 docker build -t oryx-restream -f Dockerfile .
-docker run -d --name oryx --restart always \
-  -p 1935:1935 -p 10080:10080/udp \
-  -p 2022:2022 -p 2443:2443 -p 8000:8000/udp \
-  -v $HOME/oryx-data:/data \
-  oryx-restream
+# then `docker run ... oryx-restream` with the ports/volume shown above
 ```
 
 Open `https://<vm-ip>:2443/mgmt` (accept the self-signed cert) and set the
 management password on first run. For firewall/NSG rules, recommended OBS/SRT
 settings, and auto-renewing TLS, see the
 [deployment guide](./deploy/azure-vm/README.md).
+
+> Images are published by [`ghcr-publish.yml`](./.github/workflows/ghcr-publish.yml)
+> on every `v*` release tag.
 
 ### Publish a stream
 
