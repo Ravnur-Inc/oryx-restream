@@ -26,6 +26,8 @@ import {Locale, Token} from "./utils";
 import Components from "./pages/Components";
 import ForwardManager from "./pages/ForwardManager";
 import Streams from "./pages/Streams";
+import Users from "./pages/Users";
+import Forbidden from "./pages/Forbidden";
 import Scenario from "./pages/Scenario";
 import Settings from "./pages/Settings";
 import Contact from "./pages/Contact";
@@ -143,10 +145,12 @@ function AppRoute({initialized, setInitialized}) {
                 <Route path="routers-login" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
                 <Route path="routers-forward" element={<ForwardManager/>}/>
                 <Route path="routers-streams" element={<Streams/>}/>
-                <Route path="routers-scenario" element={<Scenario/>}/>
-                <Route path="routers-settings" element={<Settings/>}/>
-                <Route path="routers-contact" element={<Contact/>}/>
-                <Route path="routers-components" element={<Components/>}/>
+                <Route path="routers-forbidden" element={<Forbidden/>}/>
+                <Route path="routers-scenario" element={<RequireOwner><Scenario/></RequireOwner>}/>
+                <Route path="routers-settings" element={<RequireOwner><Settings/></RequireOwner>}/>
+                <Route path="routers-contact" element={<RequireOwner><Contact/></RequireOwner>}/>
+                <Route path="routers-components" element={<RequireOwner><Components/></RequireOwner>}/>
+                <Route path="routers-users" element={<RequireOwner><Users/></RequireOwner>}/>
                 <Route path="routers-logout" element={<Logout onLogout={() => setTokenUpdated(!tokenUpdated)}/>}/>
               </>}
             </Route>
@@ -155,6 +159,21 @@ function AppRoute({initialized, setInitialized}) {
       {isPopout === -1 && <Footer/> }
     </>
   );
+}
+
+// Redirects editors away from owner-only routes.
+// A null user (admin-password login, or pre-Entra) is treated as owner-level.
+function RequireOwner({children}) {
+  const navigate = useNavigate();
+  const user = Token.loadUser();
+  const isOwner = !user || user.role === 'owner';
+
+  React.useEffect(() => {
+    if (!isOwner) navigate('/routers-forward');
+  }, [isOwner, navigate]);
+
+  if (!isOwner) return null;
+  return children;
 }
 
 function AppLocale() {

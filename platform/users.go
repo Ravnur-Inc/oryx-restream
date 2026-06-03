@@ -283,3 +283,30 @@ func (v *UserManager) listUsers(ctx context.Context) ([]*SimulcastUser, error) {
 	})
 	return users, nil
 }
+
+// bootstrapOwner provisions the given email as an owner. Used for first-run
+// bootstrap (ENTRA_BOOTSTRAP_EMAIL) when no matching user exists yet. The display
+// name is derived from the email's local part and can be edited later in the UI.
+func (v *UserManager) bootstrapOwner(ctx context.Context, email string) (*SimulcastUser, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	local := email
+	if i := strings.Index(email, "@"); i > 0 {
+		local = email[:i]
+	}
+	user := &SimulcastUser{
+		ID:        uuid.NewString(),
+		FirstName: local,
+		LastName:  "(bootstrap admin)",
+		Email:     email,
+		Role:      RoleOwner,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	}
+	b, err := json.Marshal(user)
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshal user")
+	}
+	if err := rdb.HSet(ctx, SIMULCAST_USERS, user.ID, string(b)).Err(); err != nil && err != redis.Nil {
+		return nil, errors.Wrapf(err, "hset %v %v", SIMULCAST_USERS, user.ID)
+	}
+	return user, nil
+}
