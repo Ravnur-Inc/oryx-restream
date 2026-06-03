@@ -225,6 +225,14 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 		return errors.Wrapf(err, "handle forward")
 	}
 
+	if err := userManager.Handle(ctx, handler); err != nil {
+		return errors.Wrapf(err, "handle users")
+	}
+
+	if err := entraAuth.Handle(ctx, handler); err != nil {
+		return errors.Wrapf(err, "handle entra auth")
+	}
+
 	if err := handleHooksService(ctx, handler); err != nil {
 		return errors.Wrapf(err, "handle hooks")
 	}

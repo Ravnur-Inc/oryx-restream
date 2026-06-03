@@ -277,6 +277,8 @@ const (
 	SRS_STREAM_ACTIVE     = "SRS_STREAM_ACTIVE"
 	SRS_STREAM_SRT_ACTIVE = "SRS_STREAM_SRT_ACTIVE"
 	SRS_STREAM_RTC_ACTIVE = "SRS_STREAM_RTC_ACTIVE"
+	// For simulcast users (Entra-authenticated), hash keyed by user uuid.
+	SIMULCAST_USERS = "SIMULCAST_USERS"
 	// For feature statistics.
 	SRS_STAT_COUNTER = "SRS_STAT_COUNTER"
 	// For container and images.
@@ -339,6 +341,12 @@ func envNodeEnv() string {
 
 func envMgmtPassword() string {
 	return os.Getenv("MGMT_PASSWORD")
+}
+
+// envEntraClientID is the Microsoft Entra ID application (client) ID used to
+// validate the audience of incoming Entra ID tokens. Empty disables Entra login.
+func envEntraClientID() string {
+	return os.Getenv("ENTRA_CLIENT_ID")
 }
 
 func envSelfSignedCertificate() string {
