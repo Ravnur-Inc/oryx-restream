@@ -81,6 +81,33 @@ The container runs with `--restart always`, and `setup.sh` enables the Docker
 service on boot, so Oryx comes back automatically after a VM reboot. Verify:
 `sudo systemctl is-enabled docker` and, after a reboot, `docker ps`.
 
+## Authentication — Microsoft Entra ID (optional)
+By default the mgmt UI uses a single password (`MGMT_PASSWORD`). To sign in with
+**Microsoft Entra ID** (Azure AD) and manage authorized users with owner/editor
+roles, set two env vars before running `setup.sh`:
+
+```bash
+export ENTRA_CLIENT_ID=<your-app-registration-client-id>
+export ENTRA_BOOTSTRAP_EMAIL=<your-admin-email>
+./deploy/azure-vm/setup.sh
+```
+
+- **Azure app registration:** add a **Single-page application (SPA)** platform with
+  the redirect URI matching your mgmt URL (e.g. `https://restreamer.ravnur.net`),
+  and grant the `openid`, `profile`, `email` delegated permissions. The validator
+  is multi-tenant (`/common`) and checks the token audience against `ENTRA_CLIENT_ID`.
+- **First-run bootstrap:** with an empty user store, the first Microsoft sign-in is
+  auto-provisioned as an **owner only if the email equals `ENTRA_BOOTSTRAP_EMAIL`**
+  (everyone else is rejected). Sign in once with that email, then add teammates in
+  the **Users** screen. After bootstrap you can leave `ENTRA_BOOTSTRAP_EMAIL` set
+  (it's a no-op once that user exists) or remove it.
+- **Requires HTTPS** (Entra redirects to an https origin) — see the TLS section below.
+
+The management UI itself now has **Forward** (card-based simulcast manager:
+add/edit/delete destinations, custom keys, live stats), **Streams** (live
+monitoring), and **Users** (owner-only), with the legacy SRT/transcode/system
+screens kept under owner-only tabs.
+
 ## HTTPS / real TLS certificate for the mgmt UI
 The mgmt UI uses a **self-signed** cert by default. For a trusted, **auto-renewing**
 cert (recommended for anything long-lived):
