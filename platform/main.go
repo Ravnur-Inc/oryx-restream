@@ -211,6 +211,10 @@ func doMain(ctx context.Context) error {
 		return errors.Wrapf(err, "start forward worker")
 	}
 
+	// Create managers for simulcast users and Entra authentication.
+	userManager = NewUserManager()
+	entraAuth = NewEntraAuth()
+
 	// Create worker for crontab.
 	crontabWorker = NewCrontabWorker()
 	defer crontabWorker.Close()
