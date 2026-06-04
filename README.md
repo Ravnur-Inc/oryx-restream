@@ -106,6 +106,10 @@ A modern React UI (Vite) for managing simulcasting:
 - **Forward** — card-based destination manager: add / edit / **delete** RTMP
   destinations with custom names, live FFmpeg stats (FPS / bitrate / uptime),
   search and status filters, and any number of simultaneous outputs.
+- **Ingest** — copy-ready RTMP & SRT publish URLs for any stream name (tuned SRT
+  params, optional AES passphrase, HLS playback URL, owner-only key rotation).
+- **Channels** — saved, named ingests for repeat use: a stable stream name with
+  its ready-to-copy ingest URLs and the Forward destinations bound to it.
 - **Streams** — live ingest monitoring (codec / resolution / FPS / uptime),
   in-browser preview, and per-stream reset.
 - **Users** — owner/editor user management (owner-only).

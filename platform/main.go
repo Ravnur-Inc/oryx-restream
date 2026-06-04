@@ -214,6 +214,7 @@ func doMain(ctx context.Context) error {
 	// Create managers for simulcast users and Entra authentication.
 	userManager = NewUserManager()
 	entraAuth = NewEntraAuth()
+	channelManager = NewChannelManager()
 
 	// Create worker for crontab.
 	crontabWorker = NewCrontabWorker()

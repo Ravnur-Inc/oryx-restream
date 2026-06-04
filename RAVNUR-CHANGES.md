@@ -361,3 +361,26 @@ Six phases, each a branch + PR on green CI:
 
 Note: `@azure/msal-browser` is a deliberate new dependency — the strip phase
 (no-new-deps) is complete; the project is now in a feature-add phase.
+
+---
+
+## 2026-06-04 — Channels: saved, reusable ingests (PR pending)
+
+Adds a Channel concept so operators can save a named ingest and reuse it across
+repeat streams (keeping Forward source bindings stable and shared across the team,
+not per-browser).
+
+- platform/channels.go (new): ChannelManager + `/terraform/v1/mgmt/channels`
+  (create/update/delete/list); Channel{id,name,label,description,createdAt};
+  Redis hash `SRS_CHANNELS`; unique stream name, alnum/-/_ validation. Authed
+  (any signed-in user); no SRS/forward changes.
+- ui Channels screen (new, route /routers-channels, NavBar tab, all roles): CRUD
+  cards showing each channel's ready-to-copy RTMP/SRT/HLS ingest URLs and the
+  Forward destinations bound to it (matched by source stream name).
+- ui/src/components/ingestUrls.js (new): shared URL builder; Ingest.js refactored
+  to use it (one source of truth for the tuned SRT params + optional passphrase).
+
+v1 scope: channels are saved ingest profiles + binding *visibility*. Deferred:
+a channel directly owning/creating its Forward destinations (v2).
+
+GOOS=linux go build ./... + vite build + 12 vitest pass.
