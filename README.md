@@ -130,6 +130,10 @@ the [deployment guide](./deploy/azure-vm/README.md#recommended-obs--srt-settings
 srt://<vm-ip>:10080?mode=caller&latency=1000&pkt_size=1316&rcvbuf=8388608&streamid=#!::r=live/<stream>?secret=<key>,m=publish
 ```
 
+> Optional **AES encryption** for SRT: set `SRT_PASSPHRASE` (and `SRT_PBKEYLEN`)
+> on the server — the Ingest screen then shows the passphrase and the per-encoder
+> fields. See the [deployment guide](./deploy/azure-vm/README.md#srt-encryption-optional-aes).
+
 ### Configure a restream destination
 
 1. Open the management UI

@@ -198,14 +198,22 @@ function IngestImpl() {
   const host = window.location.hostname;
   const srtPort = env?.srtPort || "10080";
 
+  // Optional SRT AES encryption (set server-side via SRT_PASSPHRASE).
+  const srtPassphrase = secret?.srtPassphrase || "";
+  const srtPbkeylen = secret?.srtPbkeylen || "16";
+  const srtEncrypted = !!srtPassphrase;
+
   // RTMP: server (port 1935 is default, omitted) + stream key.
   const rtmpServer = `rtmp://${host}/live/`;
   const rtmpKey = pub ? `${name}?secret=${pub}` : name;
 
   // SRT publish URL — includes the proven latency/buffer params for lossy ingest
-  // (matches the deployment guide), so it works correctly first time.
+  // (matches the deployment guide), so it works correctly first time. When SRT
+  // encryption is enabled, the passphrase/pbkeylen are embedded too (for OBS and
+  // other clients that take a single URL).
   const secretQ = pub ? `?secret=${pub}` : "";
-  const srtUrl = `srt://${host}:${srtPort}?mode=caller&latency=1000&pkt_size=1316&rcvbuf=8388608&streamid=#!::r=live/${name}${secretQ},m=publish`;
+  const encQ = srtEncrypted ? `&passphrase=${srtPassphrase}&pbkeylen=${srtPbkeylen}` : "";
+  const srtUrl = `srt://${host}:${srtPort}?mode=caller&latency=1000&pkt_size=1316&rcvbuf=8388608${encQ}&streamid=#!::r=live/${name}${secretQ},m=publish`;
 
   // Playback (HLS) for verifying the stream is live.
   const hlsUrl = `${window.location.origin}/live/${name}.m3u8`;
@@ -274,12 +282,29 @@ function IngestImpl() {
             </Section>
 
             {/* SRT */}
-            <Section title="SRT">
+            <Section title={srtEncrypted ? `SRT  ·  encrypted (AES-${{16:128,24:192,32:256}[srtPbkeylen] || srtPbkeylen})` : "SRT"}>
               <CopyField
                 label="Publish URL"
                 value={srtUrl}
-                hint="In OBS: Service: Custom → paste the whole URL as Server, leave Stream Key blank. Tuned latency/buffer params are included for lossy networks."
+                hint={srtEncrypted
+                  ? "OBS / single-URL clients: paste the whole URL as Server (it includes the passphrase). Hardware encoders (Teradek, Haivision): use the fields below instead."
+                  : "In OBS: Service: Custom → paste the whole URL as Server, leave Stream Key blank. Tuned latency/buffer params are included for lossy networks."}
               />
+              {srtEncrypted ? (
+                <>
+                  <CopyField label="Stream ID" value={`#!::r=live/${name}${secretQ},m=publish`} hint="Hardware encoders: paste into the SRT Stream ID field." />
+                  <CopyField
+                    label={`Passphrase (AES-${{16:128,24:192,32:256}[srtPbkeylen] || srtPbkeylen})`}
+                    value={srtPassphrase}
+                    hint="Hardware encoders: enter in the SRT Passphrase / Encryption field — NOT a place for the stream key. Address: this host, Port: 10080, Mode: Caller."
+                  />
+                </>
+              ) : (
+                <span style={{...mono, fontSize: 11, color: MUTED, display: "block"}}>
+                  SRT encryption is <b>off</b> — publishing is authorized by the stream key only.
+                  To require AES encryption, set <code>SRT_PASSPHRASE</code> on the server.
+                </span>
+              )}
             </Section>
 
             {/* Playback */}
