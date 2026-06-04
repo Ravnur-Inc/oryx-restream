@@ -214,7 +214,10 @@ function IngestImpl() {
     if (!window.confirm(
       "Rotate the publish key?\n\nEvery existing ingest URL (and any encoders already configured) will STOP working until updated with the new key. Continue?"
     )) return;
-    const next = Array.from({length: 32}, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+    // Generate the publish secret with a CSPRNG (16 bytes -> 32 hex chars).
+    const rnd = new Uint8Array(16);
+    crypto.getRandomValues(rnd);
+    const next = Array.from(rnd, b => b.toString(16).padStart(2, "0")).join("");
     try {
       await axios.post('/terraform/v1/hooks/srs/secret/update', {secret: next}, {headers: Token.loadBearerHeader()});
       loadSecret();
