@@ -279,6 +279,8 @@ const (
 	SRS_STREAM_RTC_ACTIVE = "SRS_STREAM_RTC_ACTIVE"
 	// For simulcast users (Entra-authenticated), hash keyed by user uuid.
 	SIMULCAST_USERS = "SIMULCAST_USERS"
+	// For saved ingest channels, hash keyed by channel uuid.
+	SRS_CHANNELS = "SRS_CHANNELS"
 	// For feature statistics.
 	SRS_STAT_COUNTER = "SRS_STAT_COUNTER"
 	// For container and images.

@@ -9,6 +9,7 @@ import {Link, useLocation} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {SrsEnvContext} from "../components/SrsEnvContext";
+import {buildIngestUrls} from "../components/ingestUrls";
 
 export default function Ingest() {
   return (
@@ -121,6 +122,7 @@ function Section({title, children}) {
 const ALL_NAV_ITEMS = [
   {to: '/routers-forward',    text: 'Forward'},
   {to: '/routers-ingest',     text: 'Ingest'},
+  {to: '/routers-channels',   text: 'Channels'},
   {to: '/routers-streams',    text: 'Streams'},
   {to: '/routers-scenario',   text: 'Scenario',   ownerOnly: true},
   {to: '/routers-settings',   text: 'System',     ownerOnly: true},
@@ -203,20 +205,11 @@ function IngestImpl() {
   const srtPbkeylen = secret?.srtPbkeylen || "16";
   const srtEncrypted = !!srtPassphrase;
 
-  // RTMP: server (port 1935 is default, omitted) + stream key.
-  const rtmpServer = `rtmp://${host}/live/`;
-  const rtmpKey = pub ? `${name}?secret=${pub}` : name;
-
-  // SRT publish URL — includes the proven latency/buffer params for lossy ingest
-  // (matches the deployment guide), so it works correctly first time. When SRT
-  // encryption is enabled, the passphrase/pbkeylen are embedded too (for OBS and
-  // other clients that take a single URL).
-  const secretQ = pub ? `?secret=${pub}` : "";
-  const encQ = srtEncrypted ? `&passphrase=${srtPassphrase}&pbkeylen=${srtPbkeylen}` : "";
-  const srtUrl = `srt://${host}:${srtPort}?mode=caller&latency=1000&pkt_size=1316&rcvbuf=8388608${encQ}&streamid=#!::r=live/${name}${secretQ},m=publish`;
-
-  // Playback (HLS) for verifying the stream is live.
-  const hlsUrl = `${window.location.origin}/live/${name}.m3u8`;
+  const urls = buildIngestUrls({
+    host, srtPort, name, secret: pub, srtPassphrase, srtPbkeylen,
+    origin: window.location.origin,
+  });
+  const {rtmpServer, rtmpKey, srtUrl, hlsUrl} = urls;
 
   const rotateSecret = async () => {
     if (!window.confirm(
@@ -292,7 +285,7 @@ function IngestImpl() {
               />
               {srtEncrypted ? (
                 <>
-                  <CopyField label="Stream ID" value={`#!::r=live/${name}${secretQ},m=publish`} hint="Hardware encoders: paste into the SRT Stream ID field." />
+                  <CopyField label="Stream ID" value={urls.srtStreamId} hint="Hardware encoders: paste into the SRT Stream ID field." />
                   <CopyField
                     label={`Passphrase (AES-${{16:128,24:192,32:256}[srtPbkeylen] || srtPbkeylen})`}
                     value={srtPassphrase}

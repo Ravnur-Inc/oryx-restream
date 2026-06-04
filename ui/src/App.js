@@ -26,6 +26,7 @@ import {Locale, Token} from "./utils";
 import Components from "./pages/Components";
 import ForwardManager from "./pages/ForwardManager";
 import Ingest from "./pages/Ingest";
+import Channels from "./pages/Channels";
 import Streams from "./pages/Streams";
 import Users from "./pages/Users";
 import Forbidden from "./pages/Forbidden";
@@ -146,6 +147,7 @@ function AppRoute({initialized, setInitialized}) {
                 <Route path="routers-login" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
                 <Route path="routers-forward" element={<ForwardManager/>}/>
                 <Route path="routers-ingest" element={<Ingest/>}/>
+                <Route path="routers-channels" element={<Channels/>}/>
                 <Route path="routers-streams" element={<Streams/>}/>
                 <Route path="routers-forbidden" element={<Forbidden/>}/>
                 <Route path="routers-scenario" element={<RequireOwner><Scenario/></RequireOwner>}/>
