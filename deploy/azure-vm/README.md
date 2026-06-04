@@ -82,6 +82,30 @@ The container runs with `--restart always`, and `setup.sh` enables the Docker
 service on boot, so Oryx comes back automatically after a VM reboot. Verify:
 `sudo systemctl is-enabled docker` and, after a reboot, `docker ps`.
 
+## SRT encryption (optional, AES)
+By default SRT publishing is authorized by the stream key (`?secret=`) but the
+media travels **unencrypted**. To require **AES encryption** on the SRT ingest
+(common for contribution over the public internet), set a passphrase before
+running `setup.sh`:
+
+```bash
+export SRT_PASSPHRASE='a-strong-passphrase-10-to-79-chars'
+export SRT_PBKEYLEN=16     # optional: 16=AES-128 (default), 24=AES-192, 32=AES-256
+./deploy/azure-vm/setup.sh
+```
+
+- It's a **single passphrase for the whole SRT port** (listener-wide), combined
+  with the per-stream `?secret=` for auth. Once set, **every** SRT publisher must
+  use it; RTMP publishers are unaffected.
+- The encoder enters it in its **Passphrase / SRT encryption** field — *not* the
+  stream-key/stream-id field. The **Ingest** screen shows the passphrase and
+  embeds it in the OBS SRT URL, and lists the decomposed fields (address / port /
+  Stream ID / passphrase) for hardware encoders (Teradek, Haivision).
+- Implemented via SRS's `SRS_SRT_SERVER_PASSPHRASE` / `SRS_SRT_SERVER_PBKEYLEN`
+  env overrides — no config-file edit; unset = unencrypted (prior behavior).
+- Only the **ingest** leg is affected; the forward pipeline (local RTMP → FFmpeg
+  → YouTube/Facebook) and HLS playback are unchanged.
+
 ## Authentication — Microsoft Entra ID (optional)
 By default the mgmt UI uses a single password (`MGMT_PASSWORD`). To sign in with
 **Microsoft Entra ID** (Azure AD) and manage authorized users with owner/editor

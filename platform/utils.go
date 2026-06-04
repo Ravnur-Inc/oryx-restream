@@ -356,6 +356,23 @@ func envEntraBootstrapEmail() string {
 	return os.Getenv("ENTRA_BOOTSTRAP_EMAIL")
 }
 
+// envSrtPassphrase is the optional SRT encryption passphrase (AES). It is read
+// from the same env SRS uses (SRS_SRT_SERVER_PASSPHRASE), so the platform can
+// surface it to the Ingest UI. Empty means SRT encryption is off.
+func envSrtPassphrase() string {
+	return os.Getenv("SRS_SRT_SERVER_PASSPHRASE")
+}
+
+// envSrtPbkeylen is the SRT AES key length (16/24/32) paired with the passphrase;
+// defaults to 16 (AES-128) when a passphrase is set but no length is given.
+func envSrtPbkeylen() string {
+	v := os.Getenv("SRS_SRT_SERVER_PBKEYLEN")
+	if v == "" && os.Getenv("SRS_SRT_SERVER_PASSPHRASE") != "" {
+		return "16"
+	}
+	return v
+}
+
 func envSelfSignedCertificate() string {
 	return os.Getenv("AUTO_SELF_SIGNED_CERTIFICATE")
 }

@@ -77,6 +77,16 @@ echo "==> Starting container: $NAME"
 # enable it; leave them unset to keep the password-only login. ENTRA_CLIENT_ID
 # is the Azure app registration (client) ID; ENTRA_BOOTSTRAP_EMAIL is the email
 # auto-provisioned as owner on its first sign-in (so the first login works).
+# Optional SRT encryption (AES). Set SRT_PASSPHRASE (10-79 chars) to enable it;
+# every SRT publisher must then use this passphrase. SRT_PBKEYLEN selects the AES
+# strength (16=AES-128 default, 24, 32). Mapped to the env names SRS reads. Unset
+# leaves SRT unencrypted (stream-key auth only).
+srt_enc_args=()
+if [ -n "${SRT_PASSPHRASE:-}" ]; then
+  srt_enc_args+=( -e "SRS_SRT_SERVER_PASSPHRASE=${SRT_PASSPHRASE}" -e "SRS_SRT_SERVER_PBKEYLEN=${SRT_PBKEYLEN:-16}" )
+  echo "    SRT encryption: ENABLED (AES, pbkeylen=${SRT_PBKEYLEN:-16})"
+fi
+
 # Mgmt UI HTTPS is published on host port 443 (-> container 2443) so it is
 # reachable at https://<host>/mgmt with no port in the URL. This also makes the
 # MSAL redirect origin match an app-registration redirect of https://<host>
@@ -86,6 +96,7 @@ $DOCKER run -d --name "$NAME" --restart always \
   -p 8000:8000/udp -p 10080:10080/udp \
   -e ENTRA_CLIENT_ID="${ENTRA_CLIENT_ID:-}" \
   -e ENTRA_BOOTSTRAP_EMAIL="${ENTRA_BOOTSTRAP_EMAIL:-}" \
+  "${srt_enc_args[@]}" \
   -v "$DATA_DIR:/data" \
   "$IMAGE"
 
