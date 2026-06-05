@@ -143,3 +143,8 @@ __pycache__
 /*.txt
 .tmp
 __debug_bin*
+
+# Local security tooling (not part of the repo)
+gitleaks.exe
+gitleaks-report.json
+/git
