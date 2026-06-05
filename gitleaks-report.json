@@ -1,0 +1,23 @@
+[
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 44,
+  "EndLine": 44,
+  "StartColumn": 45,
+  "EndColumn": 83,
+  "Match": "secret=61ea7c72e9204cb0bbf83e385fbaf9b2",
+  "Secret": "61ea7c72e9204cb0bbf83e385fbaf9b2",
+  "File": "scripts/nginx-hls-cdn/README.md",
+  "SymlinkFile": "",
+  "Commit": "c4f19a51a7f127caaf26caea500aed9be9a83cbd",
+  "Link": "https://github.com/ossrs/oryx/blob/c4f19a51a7f127caaf26caea500aed9be9a83cbd/scripts/nginx-hls-cdn/README.md?plain=1#L44",
+  "Entropy": 3.753928,
+  "Author": "winlin",
+  "Email": "winlin@vip.126.com",
+  "Date": "2023-08-25T04:09:48Z",
+  "Message": "Nginx: Refine HLS Edge cache. v5.8.27",
+  "Tags": [],
+  "Fingerprint": "c4f19a51a7f127caaf26caea500aed9be9a83cbd:scripts/nginx-hls-cdn/README.md:generic-api-key:44"
+ }
+]

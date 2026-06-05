@@ -118,8 +118,10 @@ A modern React UI (Vite) for managing simulcasting:
   runtime only one channel streams to it at a time (the others show **blocked**),
   so a shared target is never double-sent. Editing a target propagates to its
   live forward.
-- **Streams** — live ingest monitoring (codec / resolution / FPS / uptime),
-  in-browser preview, and per-stream reset.
+- **Streams** — monitoring for **every** defined stream (one per channel, shown
+  **idle** until published) plus any unmanaged live publisher; filter by status,
+  see codec / resolution / FPS / uptime, watch a fitted in-browser player, and
+  per-stream reset.
 - **Users** — owner/editor user management (owner-only).
 
 **Authentication** is password-based by default, or **Microsoft Entra ID**

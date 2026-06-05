@@ -544,3 +544,32 @@ channel already shows its ingest URLs). Slimmed Ingest to its unique value.
   Channel); README Management-UI bullet updated.
 
 vite build + 12 vitest pass.
+
+## 2026-06-05 — Streams: fitted player + list all defined streams (PR pending)
+
+Two Streams-page fixes found during testing.
+
+1. **Watch player was clipping.** The preview embedded SRS's bundled
+   `player.html` in a fixed-height iframe, so the video rendered at native size
+   and overflowed/cropped the box.
+   - ui/src/components/FlvPlayer.js (new): a self-contained flv.js player in a
+     responsive 16:9 container; video uses `object-fit: contain` so it fits the
+     modal and letterboxes (never crops). Live tuning (no stash buffer, latency
+     chasing); cleans up the player on close/unmount; in-player error message
+     when the stream isn't publishing.
+   - ui/src/pages/Streams.js PreviewModal now renders <FlvPlayer> (iframe +
+     /tools/player.html removed); modal widened to 760px.
+   - ui/package.json: add flv.js ^1.6.2 (npm audit: 0 vulnerabilities).
+
+2. **Only active streams were listed.** Streams showed just current publishers
+   (plus session history). Now it lists **every channel-defined stream**, idle
+   until published, so operators see the full roster.
+   - Streams.js StreamsImpl: fetch /terraform/v1/mgmt/channels alongside
+     streams/query + /api/v1/streams; build one entry per channel (IDLE until a
+     matching publisher appears → ACTIVE) plus any live publisher with no channel
+     ("Unmanaged"). FPS delta moved to a ref so it survives the rebuilt list.
+   - Status filter ACTIVE/IDLE (was ACTIVE/DISCONNECTED); Watch disabled while
+     idle; card shows the channel's friendly label; stats bar STREAMS/ACTIVE/IDLE.
+- docs: USER_GUIDE.md Streams section + README Management-UI bullet updated.
+
+vite build + 12 vitest pass.

@@ -151,13 +151,21 @@ This is by design — it guarantees a destination is never double-sent.
 ---
 
 ## Streams — monitoring
-The **Streams** tab shows what's currently being ingested.
+The **Streams** tab lists **every stream you've defined** — one row per channel —
+plus any live publisher that isn't tied to a channel.
 
-- **ACTIVE / DISCONNECTED** per stream, with **codec, resolution, FPS, bitrate,
-  uptime**.
-- **▶ Preview** — watch the stream in the browser.
+- **ACTIVE / IDLE** per stream. A channel's stream stays listed as **IDLE** until
+  an encoder publishes to it, then flips to **ACTIVE**. Use the **STATUS** filter
+  (All / Active / Idle) or the search box to narrow the list.
+- **Stats** (active streams) — **codec, resolution, FPS, bitrate, uptime**.
+- **▶ Watch** — play the live stream in the browser. The player fits the modal and
+  letterboxes the video (no cropping). Disabled while a stream is idle.
 - **✎ Description** — add a note (stored in your browser).
 - **⟳ Reset** — disconnect a stuck stream; the encoder reconnects automatically.
+
+> Streams that show as **Unmanaged** are live publishers with no matching channel —
+> usually a test push or a leftover. Create a channel with that stream name to
+> manage and forward it.
 
 ---
 
