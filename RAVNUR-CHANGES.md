@@ -384,3 +384,23 @@ v1 scope: channels are saved ingest profiles + binding *visibility*. Deferred:
 a channel directly owning/creating its Forward destinations (v2).
 
 GOOS=linux go build ./... + vite build + 12 vitest pass.
+
+---
+
+## 2026-06-05 — Channels v2: route model (PR pending)
+
+Makes a channel the operating unit, not just a saved ingest URL. UI-only (reuses
+the existing forward + channels + streams APIs; no backend change).
+
+- ui Channels screen rebuilt: each channel expands into a route — manage its
+  Forward destinations inline (add/edit/delete/enable), with each destination
+  auto-bound to the channel (source stream = channel name, custom platform key).
+- Per-channel **Start all / Stop all**, live **source** status (from
+  streams/query) and per-output live + FFmpeg stats (from forward/streams), 5s
+  auto-refresh.
+- Channel delete leaves its destinations intact (only removes the saved channel).
+- Destinations created via a channel also appear in the Forward screen (same
+  SRS_FORWARD_CONFIG); Forward stays the "all destinations" view, Channels the
+  "by route" view.
+
+vite build + 12 vitest pass.
