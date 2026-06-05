@@ -15,7 +15,7 @@ the Ravnur Media Platform.
 - [Signing in & roles](#signing-in--roles)
 - [Concepts](#concepts)
 - [Quick start: publish your first stream](#quick-start-publish-your-first-stream)
-- [Ingest — get your publish URL](#ingest--get-your-publish-url)
+- [Ingest — publish key & encoder reference](#ingest--publish-key--encoder-reference)
 - [Destinations — your reusable targets](#destinations--your-reusable-targets)
 - [Channels — routes](#channels--routes)
 - [Streams — monitoring](#streams--monitoring)
@@ -74,32 +74,31 @@ prevents two streams hitting the same YouTube/Facebook key at once.
 ---
 
 ## Quick start: publish your first stream
-1. **Ingest** tab → set a **Stream name** (e.g. `livestream`) → copy the **SRT**
-   or **RTMP** URL.
-2. In your encoder (OBS, Teradek, Haivision…), paste the URL and set
+1. **Channels** → **+ Add Channel** → give it a label and a **Stream name**
+   (e.g. `sunday-service`).
+2. Expand the channel (**Manage**) → **Ingest URLs** → copy the **SRT** or
+   **RTMP** URL.
+3. In your encoder (OBS, Teradek, Haivision…), paste the URL and set
    **keyframe interval = 2s**, **H.264**, **CBR**. Start streaming.
-3. **Streams** tab → your stream appears as **ACTIVE** within a few seconds.
-4. **Channels** → create a channel for this stream name → **Add Destination**
-   (e.g. YouTube) → **Start**. Your stream is now live on that destination.
+4. **Streams** tab → your stream appears as **ACTIVE** within a few seconds.
+5. Back in the channel → **Add Destination** (e.g. YouTube) → **Start**. Your
+   stream is now live on that destination.
 
 ---
 
-## Ingest — get your publish URL
-The **Ingest** tab builds the URL your encoder pushes to.
+## Ingest — publish key & encoder reference
+> **Where are the ingest URLs?** Each **Channel** shows its own ready-to-copy
+> RTMP/SRT/HLS URLs (expand the channel → **Ingest URLs**). The **Ingest** tab is
+> for the shared publish key and encoder reference, not per-stream URLs.
 
-- **Stream name** — type any name (letters, numbers, `-`, `_`). Each name is a
-  separate stream and is how a Channel targets it.
-- **RTMP** — copy **Server** and **Stream Key** separately (OBS has two fields).
-- **SRT** — copy the single **Publish URL** (paste as the Server in OBS; leave
-  Stream Key blank). It already includes tuned latency/buffer settings for
-  reliable delivery over the internet.
-- **HLS playback** — open this URL in a player to confirm the stream is live.
-- **Publish key** — reveal or (owner) **Rotate** it. Rotating invalidates all
-  existing ingest URLs, so only do it if the key leaks.
-- **SRT encryption** — if your deployment enabled it, the Ingest page also shows
-  the **Passphrase** and a separate **Stream ID** for hardware encoders. Put the
-  passphrase in the encoder's *Passphrase/Encryption* field — **not** the Stream
-  Key field.
+The **Ingest** tab shows:
+- **Publish key** — the single shared secret that authorizes publishing (embedded
+  in every channel's ingest URLs). **Reveal** it, or (owner) **Rotate** it —
+  rotating invalidates all current ingest URLs, so only do it if the key leaks.
+- **SRT encryption** — if enabled on this deployment, the **Passphrase** (AES) to
+  put in your encoder's *Passphrase/Encryption* field (never the stream key).
+- **Recommended encoder settings** — H.264, CBR, keyframe 2s, and the hardware
+  (Teradek/Haivision) SRT field mapping.
 
 See the [encoder cheat-sheet](#encoder-setup-cheat-sheet) for exact settings.
 

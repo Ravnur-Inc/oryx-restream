@@ -8,8 +8,6 @@ import axios from "axios";
 import {Link, useLocation} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
-import {SrsEnvContext} from "../components/SrsEnvContext";
-import {buildIngestUrls} from "../components/ingestUrls";
 import {useToast, apiError} from "../components/useToast";
 
 export default function Ingest() {
@@ -41,8 +39,6 @@ const inputBase = {
   borderRadius: 5, outline: "none", transition: "border-color 0.15s",
   width: "100%",
 };
-
-const STREAM_NAME_RE = /^[a-zA-Z0-9_-]+$/;
 
 // ── Shared components ─────────────────────────────────────────────────────────
 function Btn({children, onClick, variant = "primary", disabled, small, style: extra = {}}) {
@@ -178,9 +174,7 @@ function IngestImpl() {
   const [secret, setSecret]     = React.useState(null);
   const [loading, setLoading]   = React.useState(true);
   const [error, setError]       = React.useState(null);
-  const [stream, setStream]     = React.useState("livestream");
   const [revealKey, setRevealKey] = React.useState(false);
-  const env = React.useContext(SrsEnvContext)[0];
   const {showError, Toaster} = useToast();
 
   const user = Token.loadUser();
@@ -196,22 +190,12 @@ function IngestImpl() {
 
   React.useEffect(() => { loadSecret(); }, [loadSecret]);
 
-  const name = stream.trim() || "livestream";
-  const nameValid = STREAM_NAME_RE.test(name) && name.length <= 100;
   const pub = secret?.publish || "";
-  const host = window.location.hostname;
-  const srtPort = env?.srtPort || "10080";
-
   // Optional SRT AES encryption (set server-side via SRT_PASSPHRASE).
   const srtPassphrase = secret?.srtPassphrase || "";
   const srtPbkeylen = secret?.srtPbkeylen || "16";
   const srtEncrypted = !!srtPassphrase;
-
-  const urls = buildIngestUrls({
-    host, srtPort, name, secret: pub, srtPassphrase, srtPbkeylen,
-    origin: window.location.origin,
-  });
-  const {rtmpServer, rtmpKey, srtUrl, hlsUrl} = urls;
+  const aes = {16: 128, 24: 192, 32: 256}[srtPbkeylen] || srtPbkeylen;
 
   const rotateSecret = async () => {
     if (!window.confirm(
@@ -236,12 +220,14 @@ function IngestImpl() {
 
       <main style={{padding: "28px 32px", maxWidth: 820, margin: "0 auto"}}>
         <div style={{...syne, fontWeight: 800, fontSize: 20, color: HEADING, marginBottom: 4}}>
-          Ingest / Publish
+          Publish settings
         </div>
         <div style={{fontSize: 13, color: MUTED, marginBottom: 24}}>
-          Point your encoder (OBS, vMix, hardware) at one of these URLs to start streaming.
-          Then watch it appear under <Link to="/routers-streams" style={{color: ACCENT}}>Streams</Link> and
-          fan it out from a <Link to="/routers-channels" style={{color: ACCENT}}>Channel</Link>.
+          The shared publish key and encoder reference for pushing streams in.
+          To get a <b>ready-to-copy ingest URL</b>, open the
+          {" "}<Link to="/routers-channels" style={{color: ACCENT}}>Channel</Link> you're
+          publishing to → <b>Ingest URLs</b>. Confirm a live stream under
+          {" "}<Link to="/routers-streams" style={{color: ACCENT}}>Streams</Link>.
         </div>
 
         {loading ? (
@@ -253,68 +239,13 @@ function IngestImpl() {
           </div>
         ) : (
           <>
-            {/* Stream name */}
-            <Section title="Stream name">
-              <input
-                value={stream}
-                onChange={e => setStream(e.target.value)}
-                spellCheck={false}
-                autoComplete="off"
-                style={{...inputBase, padding: "9px 12px", borderColor: nameValid ? BORDER : DANGER, maxWidth: 320}}
-                onFocus={e => (e.target.style.borderColor = nameValid ? ACCENT : DANGER)}
-                onBlur={e  => (e.target.style.borderColor = nameValid ? BORDER : DANGER)}
-              />
-              <span style={{...mono, fontSize: 10, color: nameValid ? MUTED : DANGER, marginTop: 6, display: "block"}}>
-                {nameValid
-                  ? "Letters, numbers, hyphens and underscores. Each distinct name is a separate stream."
-                  : "Invalid: use only letters, numbers, hyphens and underscores (max 100)."}
-              </span>
-            </Section>
-
-            {/* RTMP */}
-            <Section title="RTMP">
-              <CopyField label="Server" value={rtmpServer} hint="In OBS: Settings → Stream → Service: Custom → paste as Server." />
-              <CopyField label="Stream Key" value={rtmpKey} hint="Paste as Stream Key (includes the publish secret)." />
-            </Section>
-
-            {/* SRT */}
-            <Section title={srtEncrypted ? `SRT  ·  encrypted (AES-${{16:128,24:192,32:256}[srtPbkeylen] || srtPbkeylen})` : "SRT"}>
-              <CopyField
-                label="Publish URL"
-                value={srtUrl}
-                hint={srtEncrypted
-                  ? "OBS / single-URL clients: paste the whole URL as Server (it includes the passphrase). Hardware encoders (Teradek, Haivision): use the fields below instead."
-                  : "In OBS: Service: Custom → paste the whole URL as Server, leave Stream Key blank. Tuned latency/buffer params are included for lossy networks."}
-              />
-              {srtEncrypted ? (
-                <>
-                  <CopyField label="Stream ID" value={urls.srtStreamId} hint="Hardware encoders: paste into the SRT Stream ID field." />
-                  <CopyField
-                    label={`Passphrase (AES-${{16:128,24:192,32:256}[srtPbkeylen] || srtPbkeylen})`}
-                    value={srtPassphrase}
-                    hint="Hardware encoders: enter in the SRT Passphrase / Encryption field — NOT a place for the stream key. Address: this host, Port: 10080, Mode: Caller."
-                  />
-                </>
-              ) : (
-                <span style={{...mono, fontSize: 11, color: MUTED, display: "block"}}>
-                  SRT encryption is <b>off</b> — publishing is authorized by the stream key only.
-                  To require AES encryption, set <code>SRT_PASSPHRASE</code> on the server.
-                </span>
-              )}
-            </Section>
-
-            {/* Playback */}
-            <Section title="Playback (verify)">
-              <CopyField label="HLS (.m3u8)" value={hlsUrl} hint="Open in a player once you're publishing to confirm the stream is live." />
-            </Section>
-
             {/* Publish key */}
             <Section title="Publish key">
               {pub ? (
                 <CopyField
                   label="Secret"
                   value={revealKey ? pub : "•".repeat(Math.min(pub.length, 24))}
-                  hint="This key authorizes publishing and is embedded in the URLs above."
+                  hint="A single shared key that authorizes publishing. It's embedded in every channel's ingest URLs."
                 />
               ) : (
                 <div style={{...mono, fontSize: 12, color: MUTED, marginBottom: 12}}>
@@ -338,13 +269,39 @@ function IngestImpl() {
               )}
             </Section>
 
-            {/* Encoder tips */}
+            {/* SRT encryption */}
+            <Section title={srtEncrypted ? `SRT encryption · AES-${aes}` : "SRT encryption"}>
+              {srtEncrypted ? (
+                <>
+                  <CopyField
+                    label={`Passphrase (AES-${aes})`}
+                    value={srtPassphrase}
+                    hint="Enter in your encoder's SRT Passphrase / Encryption field — not the stream key. OBS includes it automatically in the channel's SRT URL."
+                  />
+                  <span style={{...mono, fontSize: 11, color: MUTED, display: "block"}}>
+                    SRT encryption is <b>on</b>. Every SRT publisher must use this passphrase.
+                  </span>
+                </>
+              ) : (
+                <span style={{...mono, fontSize: 11, color: MUTED, display: "block"}}>
+                  SRT encryption is <b>off</b> — publishing is authorized by the stream key only.
+                  To require AES, set <code>SRT_PASSPHRASE</code> on the server.
+                </span>
+              )}
+            </Section>
+
+            {/* Encoder reference */}
             <Section title="Recommended encoder settings">
               <ul style={{...mono, fontSize: 12, color: SECOND, lineHeight: 1.9, margin: 0, paddingLeft: 18}}>
                 <li>Codec <b>H.264</b>, rate control <b>CBR</b>.</li>
                 <li><b>Keyframe interval 2s</b> — required, or YouTube sits on "Preparing".</li>
-                <li>SRT: use the URL above as-is (it carries <code>latency=1000</code>, <code>pkt_size=1316</code>, <code>rcvbuf=8&nbsp;MB</code>) — prevents macroblocking on lossy uplinks.</li>
-                <li>Then attach YouTube/Facebook/etc. destinations to a <Link to="/routers-channels" style={{color: ACCENT}}>Channel</Link>.</li>
+                <li>Get the actual <b>RTMP/SRT URL</b> from the
+                  {" "}<Link to="/routers-channels" style={{color: ACCENT}}>Channel</Link> you publish to
+                  (its <b>Ingest URLs</b>). The SRT URL carries tuned
+                  {" "}<code>latency=1000</code>, <code>pkt_size=1316</code>, <code>rcvbuf=8&nbsp;MB</code>
+                  {" "}to prevent macroblocking on lossy uplinks.</li>
+                <li><b>Hardware (Teradek/Haivision) SRT:</b> Mode Caller, this host, port
+                  {" "}<code>10080</code>, Stream ID from the channel{srtEncrypted ? ", Passphrase above" : ""}.</li>
               </ul>
             </Section>
           </>

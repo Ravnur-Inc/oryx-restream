@@ -526,3 +526,21 @@ via Destinations (targets) + Channels (routes).
   Channels/Destinations flow.
 
 vite build + 12 vitest pass.
+
+---
+
+## 2026-06-05 — Slim the Ingest page (PR pending)
+
+The Ingest page's per-stream URL generation overlapped with Channels (each
+channel already shows its ingest URLs). Slimmed Ingest to its unique value.
+
+- ui/src/pages/Ingest.js: removed the stream-name input and the per-stream RTMP/
+  SRT/HLS URL fields (and the buildIngestUrls/SrsEnvContext usage). Kept the
+  shared **Publish key** (reveal / owner rotate), an **SRT encryption** section
+  (passphrase when enabled), and the **encoder reference**. Title now "Publish
+  settings"; points users to a Channel's Ingest URLs for the actual URL.
+- buildIngestUrls/ingestUrls.js still used by Channels (unchanged).
+- docs: USER_GUIDE.md Ingest section + quick start updated (URL comes from a
+  Channel); README Management-UI bullet updated.
+
+vite build + 12 vitest pass.
