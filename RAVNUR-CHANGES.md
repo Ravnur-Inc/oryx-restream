@@ -404,3 +404,25 @@ the existing forward + channels + streams APIs; no backend change).
   "by route" view.
 
 vite build + 12 vitest pass.
+
+---
+
+## 2026-06-05 — Forward: unique destinations (Tier 1) (PR pending)
+
+Prevents the same destination being configured twice and double-sent (e.g. a
+standalone Forward YouTube + a channel YouTube on the same key both forwarding
+the same stream → YouTube "more than one ingestion").
+
+- platform/forward.go: the `update` action now rejects a destination whose
+  (server + stream key) matches another existing config — normalized server
+  (trailing slash/space trimmed). One destination target = one record.
+- ui Channels "Add Destination": choose **Use existing** (reassign that
+  destination's source to this channel — it moves; a destination is fed by one
+  source at a time) or **Create new** (blocked if the target already exists).
+  Reassign keeps the destination's platform key/server/secret/label.
+
+Net: a given server+key can exist only once and be fed by one source, so two
+concurrent streams to the same destination can't happen. Tier 2 (a first-class
+reusable Destinations library) deferred.
+
+GOOS=linux go build ./... + vite build + 12 vitest pass.

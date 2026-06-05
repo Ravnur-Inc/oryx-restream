@@ -119,6 +119,31 @@ func (v *ForwardWorker) Handle(ctx context.Context, handler *http.ServeMux) erro
 				logger.Tf(ctx, "Forward delete platform=%v ok, token=%vB", userConf.Platform, len(token))
 				return nil
 			} else if action == "update" {
+				// Enforce a unique destination target (server + stream key) across all
+				// forward configs, so the same destination cannot be created twice and
+				// double-sent. Reuse/reassign the existing one instead.
+				if existing, err := rdb.HGetAll(ctx, SRS_FORWARD_CONFIG).Result(); err != nil && err != redis.Nil {
+					return errors.Wrapf(err, "hgetall %v", SRS_FORWARD_CONFIG)
+				} else {
+					normSrv := func(s string) string { return strings.TrimRight(strings.TrimSpace(s), "/") }
+					for k, val := range existing {
+						if k == userConf.Platform {
+							continue
+						}
+						var other ForwardConfigure
+						if err = json.Unmarshal([]byte(val), &other); err != nil {
+							continue
+						}
+						if normSrv(other.Server) == normSrv(userConf.Server) && strings.TrimSpace(other.Secret) == strings.TrimSpace(userConf.Secret) {
+							name := other.Label
+							if name == "" {
+								name = other.Platform
+							}
+							return errors.Errorf("a destination with this server and stream key already exists (%q); reuse it instead of adding a duplicate", name)
+						}
+					}
+				}
+
 				var targetConf ForwardConfigure
 				if config, err := rdb.HGet(ctx, SRS_FORWARD_CONFIG, userConf.Platform).Result(); err != nil && err != redis.Nil {
 					return errors.Wrapf(err, "hget %v %v", SRS_FORWARD_CONFIG, userConf.Platform)
