@@ -331,30 +331,77 @@ function ChannelModal({initial, onSave, onClose, saving}) {
 }
 
 // ── Destination modal (scoped to a channel) ───────────────────────────────────
-function DestModal({channel, initial, onSave, onClose, saving}) {
+// Adding: choose an existing destination (reassign it to this channel) or create
+// a new one. A destination (server + stream key) is unique and fed by one source
+// at a time, so reusing/reassigning is how you avoid double-sending.
+function DestModal({channel, initial, allDests, onSave, onClose, saving}) {
+  const editing = !!initial;
+  const available = (allDests || []).filter(d => d.stream !== channel.name);
+  const [mode, setMode] = React.useState("new"); // "new" | "existing"
+  const [pick, setPick] = React.useState(available[0]?.platform || "");
   const [form, setForm] = React.useState(initial
     ? {label: initial.label || "", server: initial.server || "", secret: initial.secret || "", enabled: initial.enabled ?? true}
     : {label: "", server: "", secret: "", enabled: true});
   const set = (k) => (e) => setForm(f => ({...f, [k]: e.target.value}));
-  const valid = form.label.trim() && form.server.trim();
+  const formValid = form.label.trim() && form.server.trim();
+
   React.useEffect(() => {
     const h = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [onClose]);
+
+  const useExisting = !editing && mode === "existing";
+  const chosen = available.find(d => d.platform === pick);
+  const canSave = editing ? formValid : (useExisting ? !!chosen : formValid);
+  const bindingLabel = (d) => d.stream ? `bound to ${d.stream}` : "unbound — forwards any stream";
+
+  const handleSave = () => {
+    if (!canSave) return;
+    if (useExisting) onSave({existing: chosen});
+    else onSave({form});
+  };
+
   return (
-    <ModalShell title={initial ? "Edit Destination" : `New Destination — ${channel.label}`} onClose={onClose}>
-      <div style={{...mono, fontSize: 11, color: MUTED, marginBottom: 16}}>Forwards channel stream <b>{channel.name}</b>.</div>
-      <Field id="d-label" label="Destination Label" ph="e.g. YouTube Live" value={form.label} onChange={set("label")}/>
-      <Field id="d-server" label="RTMP Server URL" ph="rtmp://a.rtmp.youtube.com/live2" value={form.server} onChange={set("server")}/>
-      <Field id="d-secret" label="Stream Key / Secret" ph="xxxx-xxxx-xxxx-xxxx" value={form.secret} onChange={set("secret")}/>
-      <div style={{display: "flex", alignItems: "center", gap: 10, marginBottom: 24}}>
-        <Toggle value={form.enabled} onChange={(v) => setForm(f => ({...f, enabled: v}))} label="Enabled"/>
-        <span style={{...syne, fontSize: 13, color: SECOND}}>{form.enabled ? "Forwarding enabled" : "Forwarding disabled"}</span>
-      </div>
+    <ModalShell title={editing ? "Edit Destination" : `Add Destination — ${channel.label}`} onClose={onClose}>
+      <div style={{...mono, fontSize: 11, color: MUTED, marginBottom: 16}}>This channel forwards stream <b>{channel.name}</b>.</div>
+
+      {!editing && available.length > 0 && (
+        <div style={{display: "flex", gap: 8, marginBottom: 18}}>
+          <Btn variant={mode === "new" ? "primary" : "dim"} small onClick={() => setMode("new")}>Create new</Btn>
+          <Btn variant={mode === "existing" ? "primary" : "dim"} small onClick={() => setMode("existing")}>Use existing</Btn>
+        </div>
+      )}
+
+      {useExisting ? (
+        <div style={{marginBottom: 24}}>
+          <label htmlFor="d-existing" style={lbl}>Existing destination</label>
+          <select id="d-existing" value={pick} onChange={e => setPick(e.target.value)} style={{...inputBase, padding: "9px 12px"}}>
+            {available.map(d => (
+              <option key={d.platform} value={d.platform}>{(d.label || d.platform)} — {d.server} ({bindingLabel(d)})</option>
+            ))}
+          </select>
+          <span style={{...mono, fontSize: 10, color: MUTED, marginTop: 5, display: "block"}}>
+            Assigns this destination to the channel (sets its source to <b>{channel.name}</b>). If it was bound elsewhere it moves here — a destination is fed by one source at a time.
+          </span>
+        </div>
+      ) : (
+        <>
+          <Field id="d-label" label="Destination Label" ph="e.g. YouTube Live" value={form.label} onChange={set("label")}/>
+          <Field id="d-server" label="RTMP Server URL" ph="rtmp://a.rtmp.youtube.com/live2" value={form.server} onChange={set("server")}/>
+          <Field id="d-secret" label="Stream Key / Secret" ph="xxxx-xxxx-xxxx-xxxx" value={form.secret} onChange={set("secret")}/>
+          <div style={{display: "flex", alignItems: "center", gap: 10, marginBottom: 24}}>
+            <Toggle value={form.enabled} onChange={(v) => setForm(f => ({...f, enabled: v}))} label="Enabled"/>
+            <span style={{...syne, fontSize: 13, color: SECOND}}>{form.enabled ? "Forwarding enabled" : "Forwarding disabled"}</span>
+          </div>
+        </>
+      )}
+
       <div style={{display: "flex", gap: 10, justifyContent: "flex-end"}}>
         <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
-        <Btn variant="primary" disabled={!valid || saving} onClick={() => valid && onSave({...form, stream: form.stream})}>{saving ? "Saving…" : "Save Destination"}</Btn>
+        <Btn variant="primary" disabled={!canSave || saving} onClick={handleSave}>
+          {saving ? "Saving…" : (useExisting ? "Assign to Channel" : "Save Destination")}
+        </Btn>
       </div>
     </ModalShell>
   );
@@ -448,11 +495,18 @@ function ChannelsImpl() {
   };
 
   // Destination CRUD (scoped to channel via stream = channel.name)
-  const saveDest = async (channel, initial, form) => {
+  const saveDest = async (channel, initial, result) => {
     setSaving(true);
     try {
-      const platform = initial?.platform || genPlatformKey();
-      await upsertDest({platform, stream: channel.name, server: form.server.trim(), secret: form.secret.trim(), label: form.label.trim(), enabled: form.enabled, custom: true});
+      if (result.existing) {
+        // Reassign an existing destination to this channel (source = channel name);
+        // keeps its platform key/server/secret/label/enabled, so no duplicate target.
+        await upsertDest({...result.existing, stream: channel.name});
+      } else {
+        const form = result.form;
+        const platform = initial?.platform || genPlatformKey();
+        await upsertDest({platform, stream: channel.name, server: form.server.trim(), secret: form.secret.trim(), label: form.label.trim(), enabled: form.enabled, custom: true});
+      }
       setModal(null); await load();
     } catch (e) { alert("Save failed: " + (e.response?.data?.message || e.message)); }
     finally { setSaving(false); }
@@ -529,8 +583,8 @@ function ChannelsImpl() {
         <ChannelModal initial={modal.channel} saving={saving} onSave={saveChannel} onClose={() => setModal(null)}/>
       )}
       {modal?.type === "dest" && (
-        <DestModal channel={modal.channel} initial={modal.dest} saving={saving}
-          onSave={(form) => saveDest(modal.channel, modal.dest, form)} onClose={() => setModal(null)}/>
+        <DestModal channel={modal.channel} initial={modal.dest} allDests={Object.values(forwards)} saving={saving}
+          onSave={(result) => saveDest(modal.channel, modal.dest, result)} onClose={() => setModal(null)}/>
       )}
     </div>
   );
