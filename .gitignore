@@ -135,7 +135,9 @@ __pycache__
 *.flv
 *.mp4
 *.ts
-/docs
+# Ignore generated content under /docs, but track Markdown docs (e.g. USER_GUIDE.md).
+/docs/*
+!/docs/*.md
 /lighthouse
 /.*.txt
 /*.txt
