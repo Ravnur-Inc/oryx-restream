@@ -497,3 +497,14 @@ channel streams to it at a time — the second is blocked, not double-sent.
 Scenario supported: shared YouTube across Council + PAO channels; whichever goes
 live first owns YouTube, the other's YouTube output is blocked until it frees.
 GOOS=linux go build ./... + vite build + 12 vitest pass.
+
+---
+
+## 2026-06-05 — User guide (PR pending)
+
+Added docs/USER_GUIDE.md — an operator/user guide covering sign-in & roles,
+concepts, a quick start, and every screen (Ingest, Destinations, Channels,
+Streams, Forward, Users), plus common workflows (including shared destinations /
+the BLOCKED rule), an encoder cheat-sheet, troubleshooting, and administration.
+Linked from README; CLAUDE.md working rules now require updating the guide in the
+same PR as any user-facing change.

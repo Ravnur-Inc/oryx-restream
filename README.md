@@ -101,6 +101,9 @@ settings, and auto-renewing TLS, see the
 
 ## Management UI
 
+📖 **Operator/user guide:** [docs/USER_GUIDE.md](./docs/USER_GUIDE.md) — how to
+sign in, get ingest URLs, manage Destinations and Channels, and more.
+
 A modern React UI (Vite) for managing simulcasting:
 
 - **Forward** — card-based destination manager: add / edit / **delete** RTMP
