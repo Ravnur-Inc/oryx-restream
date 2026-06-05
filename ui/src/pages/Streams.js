@@ -9,6 +9,7 @@ import {Link, useLocation} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {useToast, apiError} from "../components/useToast";
+import FlvPlayer from "../components/FlvPlayer";
 
 export default function Streams() {
   return (
@@ -33,6 +34,7 @@ async function apiGet(path) {
 
 const queryStreams  = () => apiPost("/terraform/v1/mgmt/streams/query");
 const querySrsStats = () => apiGet("/api/v1/streams");
+const listChannels  = () => apiPost("/terraform/v1/mgmt/channels");
 const kickoffStream = (s) => apiPost("/terraform/v1/mgmt/streams/kickoff", {
   vhost: s.vhost, app: s.app, stream: s.stream,
 });
@@ -179,7 +181,7 @@ function NavBar({lastRefresh, onRefresh}) {
 }
 
 // ── Search + Filter bar ───────────────────────────────────────────────────────
-const FILTER_STATUS = ["ALL", "ACTIVE", "DISCONNECTED"];
+const FILTER_STATUS = ["ALL", "ACTIVE", "IDLE"];
 
 function SearchFilterBar({query, setQuery, statusFilter, setStatusFilter, total, shown}) {
   return (
@@ -235,9 +237,15 @@ function SearchFilterBar({query, setQuery, statusFilter, setStatusFilter, total,
 // ── Stream Card ───────────────────────────────────────────────────────────────
 function StreamCard({entry, onReset, onPreview, onEdit}) {
   const [confirmReset, setConfirmReset] = React.useState(false);
-  const {stream, active, srsStats, computedFps} = entry;
+  const {stream, active, srsStats, computedFps, label, isChannel} = entry;
   const name = stream.stream; // without "live/" prefix
   const desc = loadDesc(name);
+  // Subtitle: channel friendly-name (or "unmanaged" note) + optional description.
+  const subParts = [];
+  if (isChannel) { if (label && label !== name) subParts.push(label); }
+  else subParts.push("Unmanaged stream — not tied to a channel");
+  if (desc) subParts.push(desc);
+  const subtitle = subParts.join("  ·  ");
 
   const fps     = computedFps;
   const bitrate = srsStats?.kbps?.recv_30s;
@@ -268,12 +276,12 @@ function StreamCard({entry, onReset, onPreview, onEdit}) {
         <div style={{display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0}}>
           <Dot active={active}/>
           <div style={{minWidth: 0, flex: 1}}>
-            <div style={{...syne, fontWeight: 700, fontSize: 14, color: HEADING, marginBottom: desc ? 2 : 0}}>
+            <div style={{...syne, fontWeight: 700, fontSize: 14, color: HEADING, marginBottom: subtitle ? 2 : 0}}>
               {name}
             </div>
-            {desc && (
+            {subtitle && (
               <div style={{...mono, fontSize: 11, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>
-                {desc}
+                {subtitle}
               </div>
             )}
           </div>
@@ -287,21 +295,24 @@ function StreamCard({entry, onReset, onPreview, onEdit}) {
             border: `1px solid ${active ? "rgba(181,65,0,0.25)" : BORDER}`,
             padding: "2px 8px", borderRadius: 3,
           }}>
-            {active ? "● ACTIVE" : "○ DISCONNECTED"}
+            {active ? "● ACTIVE" : "○ IDLE"}
           </span>
 
-          {/* Preview button */}
+          {/* Preview button — only meaningful while a stream is live */}
           <button
-            onClick={() => onPreview(stream)}
-            aria-label={`Preview ${name}`}
-            title="Watch stream"
+            onClick={active ? () => onPreview(stream) : undefined}
+            disabled={!active}
+            aria-label={active ? `Watch ${name}` : `${name} is idle — nothing to watch`}
+            title={active ? "Watch stream" : "No live signal to watch"}
             style={{
-              background: "none", border: "1px solid transparent", color: SECOND,
-              cursor: "pointer", fontSize: 15, padding: "3px 6px", lineHeight: 1,
+              background: "none", border: "1px solid transparent",
+              color: active ? SECOND : "#c0bcb7",
+              cursor: active ? "pointer" : "not-allowed",
+              fontSize: 15, padding: "3px 6px", lineHeight: 1,
               borderRadius: 4, transition: "all 0.15s",
             }}
-            onMouseEnter={e => {e.currentTarget.style.color = HEADING; e.currentTarget.style.background = PANEL; e.currentTarget.style.borderColor = BORDER;}}
-            onMouseLeave={e => {e.currentTarget.style.color = SECOND;  e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "transparent";}}
+            onMouseEnter={e => {if (active) {e.currentTarget.style.color = HEADING; e.currentTarget.style.background = PANEL; e.currentTarget.style.borderColor = BORDER;}}}
+            onMouseLeave={e => {if (active) {e.currentTarget.style.color = SECOND;  e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "transparent";}}}
           >▶</button>
 
           {/* Edit description button */}
@@ -410,7 +421,6 @@ function StreamCard({entry, onReset, onPreview, onEdit}) {
 function PreviewModal({stream, onClose}) {
   const name = stream.stream;
   const flvUrl = `${window.location.origin}/live/${name}.flv`;
-  const playerUrl = `/tools/player.html?url=${encodeURIComponent(flvUrl)}`;
 
   React.useEffect(() => {
     const h = (e) => e.key === "Escape" && onClose();
@@ -431,7 +441,7 @@ function PreviewModal({stream, onClose}) {
       }}>
       <div style={{
         background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10,
-        padding: "28px 32px", width: 520, maxWidth: "92vw",
+        padding: "28px 32px", width: 760, maxWidth: "92vw",
         boxShadow: "0 24px 60px rgba(0,0,0,0.18)",
       }}>
         <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18}}>
@@ -447,16 +457,7 @@ function PreviewModal({stream, onClose}) {
               fontSize: 20, lineHeight: 1, padding: "4px 8px",
             }}>✕</button>
         </div>
-        <iframe
-          src={playerUrl}
-          title={`Live preview: ${name}`}
-          style={{
-            width: "100%", height: 260, border: `1px solid ${BORDER}`,
-            borderRadius: 6, display: "block", background: "#000",
-          }}
-          scrolling="no"
-          allowFullScreen
-        />
+        <FlvPlayer url={flvUrl} style={{border: `1px solid ${BORDER}`}}/>
         <div style={{...mono, fontSize: 10, color: MUTED, marginTop: 10, wordBreak: "break-all"}}>
           {flvUrl}
         </div>
@@ -561,10 +562,10 @@ function EmptyState({filtered, onClear}) {
         {filtered ? "⌕" : "⬡"}
       </div>
       <div style={{...syne, fontSize: 15, color: SECOND, marginBottom: 6}}>
-        {filtered ? "No matching streams" : "No active streams"}
+        {filtered ? "No matching streams" : "No streams yet"}
       </div>
       <div style={{fontSize: 12, color: MUTED, marginBottom: 20}}>
-        {filtered ? "Try adjusting your search or filters" : "Streams will appear here when an encoder connects"}
+        {filtered ? "Try adjusting your search or filters" : "Create a channel to define a stream — it will appear here (idle until you publish)."}
       </div>
       {filtered && <Btn variant="ghost" onClick={onClear}>Clear Filters</Btn>}
     </div>
@@ -573,8 +574,9 @@ function EmptyState({filtered, onClear}) {
 
 // ── Main page component ───────────────────────────────────────────────────────
 function StreamsImpl() {
-  // history: Map<"app/stream", {stream: SrsStream, active: bool, srsStats: obj|null}>
-  const [history, setHistory]       = React.useState(new Map());
+  // entries: list of every known stream — one per channel (idle until published),
+  // plus any live publisher not tied to a channel ("unmanaged").
+  const [entries, setEntries]       = React.useState([]);
   const [loading, setLoading]       = React.useState(true);
   const [error, setError]           = React.useState(null);
   const [lastRefresh, setLastRefresh] = React.useState(null);
@@ -584,54 +586,70 @@ function StreamsImpl() {
   const [descTick, setDescTick]     = React.useState(0);   // force re-render after desc save
   const {showError, Toaster} = useToast();
   const timerRef = React.useRef();
+  const frameRef = React.useRef({}); // name -> {frames, t, fps} for FPS delta across polls
 
   const refresh = React.useCallback(async (showLoader = false) => {
     if (showLoader) setLoading(true);
     setError(null);
     try {
-      const [qRes, srsRes] = await Promise.allSettled([queryStreams(), querySrsStats()]);
+      const [qRes, srsRes, chRes] = await Promise.allSettled([queryStreams(), querySrsStats(), listChannels()]);
 
       const activeStreams = qRes.status === "fulfilled" ? (qRes.value.data?.streams || []) : [];
+      const channels      = chRes.status === "fulfilled" ? (chRes.value.data || []) : [];
 
-      // Build SRS stats map keyed by "app/name"
+      // SRS per-stream media stats keyed by "app/name"
       const srsMap = {};
       if (srsRes.status === "fulfilled") {
-        for (const s of (srsRes.value.streams || [])) {
-          srsMap[`${s.app}/${s.name}`] = s;
-        }
+        for (const s of (srsRes.value.streams || [])) srsMap[`${s.app}/${s.name}`] = s;
       }
+      // Live publishers keyed by "app/stream"
+      const activeMap = {};
+      for (const s of activeStreams) activeMap[`${s.app}/${s.stream}`] = s;
 
       const now = Date.now();
-      setHistory(prev => {
-        const next = new Map(prev);
-
-        // Mark all existing entries inactive
-        for (const [k, v] of next) {
-          next.set(k, {...v, active: false, srsStats: null});
+      const computeFps = (name, srsStats, active) => {
+        if (!active || srsStats?.frames == null) { delete frameRef.current[name]; return null; }
+        const prev = frameRef.current[name];
+        let fps = prev?.fps ?? null;
+        if (prev?.frames != null) {
+          const df = srsStats.frames - prev.frames;
+          const ds = (now - prev.t) / 1000;
+          if (ds > 0 && df >= 0) fps = Math.round(df / ds);
         }
+        frameRef.current[name] = {frames: srsStats.frames, t: now, fps};
+        return fps;
+      };
 
-        // Upsert active streams
-        for (const s of activeStreams) {
-          const key = `${s.app}/${s.stream}`;
-          const srsStats = srsMap[`${s.app}/${s.stream}`] || null;
-          const prevEntry = prev.get(key);
+      const built = [];
+      const seen = new Set();
 
-          // Compute FPS from frame-count delta between polls
-          let computedFps = prevEntry?.computedFps ?? null;
-          if (srsStats?.frames != null && prevEntry?.srsStats?.frames != null && prevEntry?.lastPollTime != null) {
-            const deltaFrames = srsStats.frames - prevEntry.srsStats.frames;
-            const deltaSec = (now - prevEntry.lastPollTime) / 1000;
-            if (deltaSec > 0 && deltaFrames >= 0) {
-              computedFps = Math.round(deltaFrames / deltaSec);
-            }
-          }
+      // 1) Every channel-defined stream — listed whether or not it's publishing.
+      for (const c of channels) {
+        const key = `live/${c.name}`;
+        const as = activeMap[key] || null;
+        const active = !!as;
+        const stream = as || {app: "live", stream: c.name, vhost: "__defaultVhost__"};
+        const srsStats = srsMap[key] || null;
+        built.push({
+          name: c.name, label: c.label, isChannel: true, active, stream, srsStats,
+          computedFps: computeFps(c.name, srsStats, active),
+        });
+        seen.add(key);
+      }
 
-          next.set(key, {stream: s, active: true, srsStats, computedFps, lastPollTime: now});
-        }
+      // 2) Any live publisher not backed by a channel (ad-hoc / unmanaged).
+      for (const s of activeStreams) {
+        const key = `${s.app}/${s.stream}`;
+        if (seen.has(key)) continue;
+        const srsStats = srsMap[key] || null;
+        built.push({
+          name: s.stream, label: null, isChannel: false, active: true, stream: s, srsStats,
+          computedFps: computeFps(s.stream, srsStats, true),
+        });
+        seen.add(key);
+      }
 
-        return next;
-      });
-
+      setEntries(built);
       setLastRefresh(new Date());
     } catch (e) {
       setError(apiError(e));
@@ -651,18 +669,16 @@ function StreamsImpl() {
     catch (e) { showError(e); }
   };
 
-  const entries = Array.from(history.values());
   const activeCount = entries.filter(e => e.active).length;
-  const disconnected = entries.filter(e => !e.active).length;
+  const idleCount   = entries.filter(e => !e.active).length;
 
   const filtered = entries.filter(entry => {
-    const name = entry.stream.stream;
-    const desc = loadDesc(name);
-    if (statusFilter === "ACTIVE"       && !entry.active) return false;
-    if (statusFilter === "DISCONNECTED" &&  entry.active) return false;
+    const desc = loadDesc(entry.name);
+    if (statusFilter === "ACTIVE" && !entry.active) return false;
+    if (statusFilter === "IDLE"   &&  entry.active) return false;
     if (query.trim()) {
       const q = query.toLowerCase();
-      if (!name.toLowerCase().includes(q) && !desc.toLowerCase().includes(q)) return false;
+      if (!`${entry.name} ${entry.label || ""} ${desc}`.toLowerCase().includes(q)) return false;
     }
     return true;
   });
@@ -670,7 +686,7 @@ function StreamsImpl() {
   // Sort: active first, then alphabetical
   filtered.sort((a, b) => {
     if (a.active !== b.active) return a.active ? -1 : 1;
-    return a.stream.stream.localeCompare(b.stream.stream);
+    return a.name.localeCompare(b.name);
   });
 
   const isFiltered = !!(query || statusFilter !== "ALL");
@@ -686,9 +702,9 @@ function StreamsImpl() {
       {/* ── Stats bar ── */}
       <div style={{background: CARD, borderBottom: `1px solid ${BORDER}`, padding: "9px 32px", display: "flex", gap: 28}}>
         {[
-          ["STREAMS",      entries.length],
-          ["ACTIVE",       activeCount],
-          ["DISCONNECTED", disconnected],
+          ["STREAMS", entries.length],
+          ["ACTIVE",  activeCount],
+          ["IDLE",    idleCount],
           ...(isFiltered ? [["FILTERED", filtered.length]] : []),
         ].map(([k, v]) => (
           <div key={k} style={{display: "flex", alignItems: "center", gap: 7}}>
@@ -725,7 +741,7 @@ function StreamsImpl() {
               <div style={{display: "flex", flexDirection: "column", gap: 10}}>
                 {filtered.map(entry => (
                   <StreamCard
-                    key={`${entry.stream.app}/${entry.stream.stream}`}
+                    key={entry.name}
                     entry={entry}
                     descTick={descTick}
                     onReset={handleReset}
