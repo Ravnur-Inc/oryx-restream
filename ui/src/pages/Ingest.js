@@ -10,6 +10,7 @@ import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {SrsEnvContext} from "../components/SrsEnvContext";
 import {buildIngestUrls} from "../components/ingestUrls";
+import {useToast, apiError} from "../components/useToast";
 
 export default function Ingest() {
   return (
@@ -181,6 +182,7 @@ function IngestImpl() {
   const [stream, setStream]     = React.useState("livestream");
   const [revealKey, setRevealKey] = React.useState(false);
   const env = React.useContext(SrsEnvContext)[0];
+  const {showError, Toaster} = useToast();
 
   const user = Token.loadUser();
   const isOwner = !user || user.role === 'owner';
@@ -189,7 +191,7 @@ function IngestImpl() {
     setLoading(true);
     axios.post('/terraform/v1/hooks/srs/secret/query', {}, {headers: Token.loadBearerHeader()})
       .then(res => setSecret(res.data.data))
-      .catch(e => setError(e.response?.data?.message || e.message))
+      .catch(e => setError(apiError(e)))
       .finally(() => setLoading(false));
   }, []);
 
@@ -224,12 +226,13 @@ function IngestImpl() {
       await axios.post('/terraform/v1/hooks/srs/secret/update', {secret: next}, {headers: Token.loadBearerHeader()});
       loadSecret();
     } catch (e) {
-      alert("Rotate failed: " + (e.response?.data?.message || e.message));
+      showError(e);
     }
   };
 
   return (
     <div style={{background: BG, color: BODY, ...syne, minHeight: "100vh"}}>
+      {Toaster}
       <NavBar/>
 
       <main style={{padding: "28px 32px", maxWidth: 820, margin: "0 auto"}}>

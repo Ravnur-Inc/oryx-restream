@@ -10,6 +10,7 @@ import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {SrsEnvContext} from "../components/SrsEnvContext";
 import {buildIngestUrls} from "../components/ingestUrls";
+import {useToast, apiError} from "../components/useToast";
 
 export default function Channels() {
   return (
@@ -381,6 +382,7 @@ function ChannelsImpl() {
   const [modal, setModal] = React.useState(null); // {type:'channel'|'attach', channel?}
   const [saving, setSaving] = React.useState(false);
   const env = React.useContext(SrsEnvContext)[0];
+  const {showError, Toaster} = useToast();
   const timerRef = React.useRef();
 
   const load = React.useCallback(async (showLoader = false) => {
@@ -398,7 +400,7 @@ function ChannelsImpl() {
       setLibrary(lib.data || []);
       setLastRefresh(new Date());
     } catch (e) {
-      setError(e.response?.data?.message || e.message);
+      setError(apiError(e));
     } finally {
       setLoading(false);
     }
@@ -426,7 +428,7 @@ function ChannelsImpl() {
     try {
       await apiPost('/terraform/v1/mgmt/channels', {action: form.id ? 'update' : 'create', ...(form.id ? {id: form.id} : {}), label: form.label.trim(), name: form.name.trim(), description: form.description.trim()});
       setModal(null); await load();
-    } catch (e) { alert("Save failed: " + (e.response?.data?.message || e.message)); }
+    } catch (e) { showError(e); }
     finally { setSaving(false); }
   };
   const deleteChannel = async (channel) => {
@@ -435,7 +437,7 @@ function ChannelsImpl() {
       await Promise.all(destsFor(channel.name).map(d => deleteDest(d.platform)));
       await apiPost('/terraform/v1/mgmt/channels', {action: 'delete', id: channel.id});
       await load();
-    } catch (e) { alert("Delete failed: " + (e.response?.data?.message || e.message)); }
+    } catch (e) { showError(e); }
   };
 
   // Attach a library destination to a channel, moving it if attached elsewhere.
@@ -443,10 +445,10 @@ function ChannelsImpl() {
     setSaving(true);
     try {
       const existing = Object.values(forwards).filter(f => f.destinationId === libDest.id);
-      for (const e of existing) await deleteDest(e.platform);
+      for (const ex of existing) await deleteDest(ex.platform);
       await upsertDest({platform: genPlatformKey(), destinationId: libDest.id, stream: channel.name, server: libDest.server, secret: libDest.secret, label: libDest.label, enabled: true, custom: true});
       setModal(null); await load();
-    } catch (e) { alert("Attach failed: " + (e.response?.data?.message || e.message)); }
+    } catch (e) { showError(e); }
     finally { setSaving(false); }
   };
   const createAndAttach = async (channel, form) => {
@@ -455,20 +457,20 @@ function ChannelsImpl() {
       const created = (await apiPost('/terraform/v1/mgmt/destinations', {action: 'create', label: form.label.trim(), server: form.server.trim(), secret: form.secret.trim()})).data;
       await upsertDest({platform: genPlatformKey(), destinationId: created.id, stream: channel.name, server: created.server, secret: created.secret, label: created.label, enabled: true, custom: true});
       setModal(null); await load();
-    } catch (e) { alert("Create failed: " + (e.response?.data?.message || e.message)); }
+    } catch (e) { showError(e); }
     finally { setSaving(false); }
   };
   const detachDest = async (dest) => {
     try { await deleteDest(dest.platform); await load(); }
-    catch (e) { alert("Detach failed: " + (e.response?.data?.message || e.message)); }
+    catch (e) { showError(e); }
   };
   const toggleDest = async (dest) => {
     try { await upsertDest({...dest, enabled: !dest.enabled}); await load(); }
-    catch (e) { alert("Toggle failed: " + (e.response?.data?.message || e.message)); }
+    catch (e) { showError(e); }
   };
   const setAll = async (dests, enabled) => {
     try { await Promise.all(dests.filter(d => d.enabled !== enabled).map(d => upsertDest({...d, enabled}))); await load(); }
-    catch (e) { alert("Failed: " + (e.response?.data?.message || e.message)); }
+    catch (e) { showError(e); }
   };
 
   const host = window.location.hostname;
@@ -482,6 +484,7 @@ function ChannelsImpl() {
 
   return (
     <div style={{background: BG, color: BODY, ...syne, minHeight: "100vh"}}>
+      {Toaster}
       <NavBar onAdd={() => setModal({type: "channel"})} lastRefresh={lastRefresh} onRefresh={() => load(true)}/>
 
       <main style={{padding: "28px 32px", maxWidth: 820, margin: "0 auto"}}>

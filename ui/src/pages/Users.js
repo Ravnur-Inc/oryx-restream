@@ -7,8 +7,8 @@ import React from "react";
 import axios from "axios";
 import {Link, useLocation} from "react-router-dom";
 import {Token} from "../utils";
-import {useErrorHandler} from "react-error-boundary";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
+import {useToast} from "../components/useToast";
 
 export default function Users() {
   return (
@@ -317,23 +317,23 @@ function UsersImpl() {
   const [users,   setUsers]   = React.useState([]);
   const [modal,   setModal]   = React.useState(null); // null | {mode:'add'} | {mode:'edit', user}
   const [saving,  setSaving]  = React.useState(false);
-  const handleError = useErrorHandler();
+  const {showError, Toaster} = useToast();
 
   const loadUsers = React.useCallback(() => {
     axios.post('/terraform/v1/mgmt/users', {}, {
       headers: Token.loadBearerHeader(),
     }).then(res => {
       setUsers(res.data.data || []);
-    }).catch(handleError);
-  }, [handleError]);
+    }).catch(showError);
+  }, [showError]);
 
   React.useEffect(() => { loadUsers(); }, [loadUsers]);
 
   const handleSave = (form) => {
-    if (!form.firstName.trim()) return alert('First name is required.');
-    if (!form.lastName.trim())  return alert('Last name is required.');
-    if (!form.email.trim())     return alert('Email is required.');
-    if (!ROLES.includes(form.role)) return alert('Role must be owner or editor.');
+    if (!form.firstName.trim()) return showError('First name is required.');
+    if (!form.lastName.trim())  return showError('Last name is required.');
+    if (!form.email.trim())     return showError('Email is required.');
+    if (!ROLES.includes(form.role)) return showError('Role must be owner or editor.');
 
     setSaving(true);
     const payload = {
@@ -351,7 +351,7 @@ function UsersImpl() {
     }).then(() => {
       setModal(null);
       loadUsers();
-    }).catch(handleError).finally(() => setSaving(false));
+    }).catch(showError).finally(() => setSaving(false));
   };
 
   const handleDelete = (user) => {
@@ -359,7 +359,7 @@ function UsersImpl() {
       action: 'delete',
       id: user.id,
       callerEmail: Token.loadUser()?.email || '',
-    }, {headers: Token.loadBearerHeader()}).then(loadUsers).catch(handleError);
+    }, {headers: Token.loadBearerHeader()}).then(loadUsers).catch(showError);
   };
 
   const owners  = users.filter(u => u.role === 'owner').length;
@@ -367,6 +367,7 @@ function UsersImpl() {
 
   return (
     <div style={{background: BG, color: BODY, ...syne}}>
+      {Toaster}
 
       {/* ── Nav + action bar ── */}
       <NavBar onAdd={() => setModal({mode: 'add'})}/>
