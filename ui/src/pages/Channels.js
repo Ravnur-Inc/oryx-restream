@@ -178,7 +178,7 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
   const [showUrls, setShowUrls] = React.useState(false);
   const liveCount = dests.filter(d => streamMap[d.platform]?.ready).length;
   const enabledCount = dests.filter(d => d.enabled).length;
-  const srcHealth = contributionHealth({active: sourceLive, fps: null}); // healthy | idle
+  const srcHealth = contributionHealth({active: sourceLive}); // healthy | idle
   // Count outputs that need attention (degraded or down).
   const attention = dests.filter(d => {
     const s = streamMap[d.platform];

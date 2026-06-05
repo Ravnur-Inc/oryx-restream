@@ -28,12 +28,15 @@ export function parseFrameLog(log) {
 // then drop frames.
 const SPEED_FLOOR = 0.94;
 
-// Contribution feed (the incoming publish). `fps` is the measured frame rate
-// (null while still measuring, 0 means frames are not advancing = frozen).
-export function contributionHealth({active, fps}) {
+// Contribution feed (the incoming publish). `bitrate` is the 30-second receive
+// bitrate in kbps — the robust "data is flowing" signal. An explicit 0 means no
+// data is arriving (frozen feed); undefined means "unknown", which we do not
+// treat as a fault. (We deliberately do NOT key health off a frame-count delta:
+// that can momentarily read 0 on a stale stats snapshot while the feed is fine.)
+export function contributionHealth({active, bitrate}) {
   if (!active) return {level: "idle", label: "IDLE", detail: "No publisher connected"};
-  if (fps === 0) return {level: "warning", label: "STALLED", detail: "Live, but frames are not advancing"};
-  return {level: "healthy", label: "HEALTHY", detail: fps != null ? `Live · ${fps} fps` : "Live"};
+  if (bitrate === 0) return {level: "warning", label: "STALLED", detail: "Live, but no data is arriving"};
+  return {level: "healthy", label: "HEALTHY", detail: "Live"};
 }
 
 // One forward output to a destination.

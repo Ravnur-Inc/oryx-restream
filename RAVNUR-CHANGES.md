@@ -606,3 +606,19 @@ from signals already in the API (no backend change).
 - docs: USER_GUIDE.md Channels + Streams sections; README Management-UI bullets.
 
 vite build + 26 vitest pass.
+
+## 2026-06-05 — Fix: stream health falsely STALLED + stray "0" badge (PR pending)
+
+The Streams contribution badge flipped to STALLED after ~10s and a literal "0"
+rendered next to the bitrate pill, even though the feed (and the player) was fine.
+
+- Root causes: (1) `{fps && <badge>}` rendered the number 0 when the computed FPS
+  was 0 (React renders falsy numbers); (2) `contributionHealth` keyed STALLED off
+  that FPS, which is a frame-count delta that reads 0 whenever the SRS
+  `/api/v1/streams` snapshot is momentarily stale — a false positive.
+- Fix: `contributionHealth({active, bitrate})` now uses the 30s receive bitrate
+  (robust data-flow signal); STALLED only when active and bitrate is exactly 0.
+  FPS/bitrate badges guarded with `> 0` so a 0 never renders. Channels source
+  badge call + HealthBadge.test.js updated accordingly.
+
+vite build + 26 vitest pass.
