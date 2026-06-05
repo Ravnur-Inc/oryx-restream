@@ -21,6 +21,9 @@ build clean) and prefer reusing what's already vendored.
    types/functions are referenced in files marked KEEP below
 5. After all deletions in a session run: go mod tidy
 6. Every session ends with a RAVNUR-CHANGES.md entry
+7. Any user-facing change (UI screens, flows, encoder/ingest behavior) MUST
+   update docs/USER_GUIDE.md in the same PR — it's the operator reference and
+   must track the UI.
 
 ## What we are keeping — do not touch without explicit instruction
 - platform/forward.go (or equivalent) — restream task manager
