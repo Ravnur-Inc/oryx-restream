@@ -108,8 +108,9 @@ A modern React UI (Vite) for managing simulcasting:
 
 - **Channels** — reusable **routes**: a named ingest plus the destinations it
   forwards to, managed in one place — attach destinations from the library,
-  **Start/Stop all**, live source + per-output status (with live FPS/bitrate),
-  and the channel's ready-to-copy ingest URLs.
+  **Start/Stop all**, the channel's ready-to-copy ingest URLs, and **health
+  badges** for the source and each output (HEALTHY / DEGRADED when FFmpeg falls
+  behind real time / DOWN / WAITING / OFF / BLOCKED) with live FPS/bitrate/speed.
 - **Ingest** — the shared publish key (reveal / owner rotate), SRT encryption
   passphrase, and encoder reference. (Per-channel ingest URLs live on each
   Channel.)
@@ -119,9 +120,9 @@ A modern React UI (Vite) for managing simulcasting:
   so a shared target is never double-sent. Editing a target propagates to its
   live forward.
 - **Streams** — monitoring for **every** defined stream (one per channel, shown
-  **idle** until published) plus any unmanaged live publisher; filter by status,
-  see codec / resolution / FPS / uptime, watch a fitted in-browser player, and
-  per-stream reset.
+  **idle** until published) plus any unmanaged live publisher; a **health badge**
+  (HEALTHY / STALLED / IDLE) per stream, filter by status, codec / resolution /
+  FPS / uptime, a fitted in-browser player, and per-stream reset.
 - **Users** — owner/editor user management (owner-only).
 
 **Authentication** is password-based by default, or **Microsoft Entra ID**

@@ -134,8 +134,17 @@ thing you actually operate for a recurring show or input.
   - Per-destination **toggle** (start/stop one) and **Detach** (remove from this
     channel; the destination stays in the library).
   - **Ingest URLs** — the channel's RTMP/SRT URLs to copy.
-- **Status** at a glance: **SOURCE live/idle** (is anyone publishing this stream?)
-  and per-destination **● LIVE / ○ IDLE / ⊘ BLOCKED** with live FPS/bitrate.
+- **Health at a glance** — each channel shows a **SOURCE** badge and, when
+  expanded, a **health badge** per destination plus live FPS / bitrate / speed:
+  - **● HEALTHY** (green) — forwarding in real time.
+  - **▲ DEGRADED** (amber) — falling behind (FFmpeg speed below ~0.94×, i.e. it
+    can't push to the destination fast enough; expect buffering/drops).
+  - **■ DOWN** (red) — the source is live but this output isn't forwarding.
+  - **○ WAITING** — enabled, but the source isn't publishing yet.
+  - **○ OFF** — the destination is toggled off.
+  - **⊘ BLOCKED** (orange) — another channel is using this shared destination.
+  The channel header also flags **"▲ N need attention"** when any output is
+  degraded or down.
 
 ### Shared destinations & the BLOCKED badge
 If two channels attach the same destination (e.g. both forward to "City
@@ -154,9 +163,11 @@ This is by design — it guarantees a destination is never double-sent.
 The **Streams** tab lists **every stream you've defined** — one row per channel —
 plus any live publisher that isn't tied to a channel.
 
-- **ACTIVE / IDLE** per stream. A channel's stream stays listed as **IDLE** until
-  an encoder publishes to it, then flips to **ACTIVE**. Use the **STATUS** filter
-  (All / Active / Idle) or the search box to narrow the list.
+- **Health badge** per stream — **● HEALTHY** (green) when the feed is live and
+  frames are advancing, **▲ STALLED** (amber) when it's connected but frames have
+  stopped (a frozen feed), or **○ IDLE** (grey) when nobody is publishing. A
+  channel's stream stays **IDLE** until an encoder publishes to it. Use the
+  **STATUS** filter (All / Active / Idle) or the search box to narrow the list.
 - **Stats** (active streams) — **codec, resolution, FPS, bitrate, uptime**.
 - **▶ Watch** — play the live stream in the browser. The player fits the modal and
   letterboxes the video (no cropping). Disabled while a stream is idle.

@@ -582,3 +582,27 @@ ship (deployment is Docker via deploy/azure-vm). Kept **Test EN image** as the
 end-to-end smoke test of the published container.
 
 vite build + 12 vitest pass.
+
+## 2026-06-05 — Health badges for streams and forward outputs (PR pending)
+
+At-a-glance health for the contribution feed and each egress, derived purely
+from signals already in the API (no backend change).
+
+- ui/src/components/HealthBadge.js (new): pure derivation + a `<HealthBadge>`.
+  - `parseFrameLog(log)` extracts fps / bitrate / **speed** from the FFmpeg
+    progress line (speed was previously ignored).
+  - `contributionHealth({active, fps})` → HEALTHY / STALLED (live but fps===0,
+    a frozen feed) / IDLE.
+  - `egressHealth({enabled, running, blocked, speed, sourceLive})` → BLOCKED /
+    OFF / DOWN (source live but not forwarding) / WAITING (source not live yet) /
+    DEGRADED (speed < 0.94× real time — falling behind) / HEALTHY.
+  - Levels render with distinct colours (green/amber/red/orange/grey).
+- ui/src/components/HealthBadge.test.js (new): 14 unit tests for the three
+  pure functions (12 → 26 vitest total).
+- Streams.js: each card's status pill is now a contribution HealthBadge.
+- Channels.js: per-destination egress HealthBadge (replaces the LIVE/IDLE/BLOCKED
+  span); the metrics pill now includes **speed**; the source shows a HealthBadge;
+  the channel header flags "▲ N need attention" when outputs are degraded/down.
+- docs: USER_GUIDE.md Channels + Streams sections; README Management-UI bullets.
+
+vite build + 26 vitest pass.
