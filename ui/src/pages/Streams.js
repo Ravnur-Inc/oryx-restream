@@ -247,10 +247,13 @@ function StreamCard({entry, onReset, onPreview, onEdit}) {
   else subParts.push("Unmanaged stream — not tied to a channel");
   if (desc) subParts.push(desc);
   const subtitle = subParts.join("  ·  ");
-  const health = contributionHealth({active, fps: computedFps});
 
   const fps     = computedFps;
   const bitrate = srsStats?.kbps?.recv_30s;
+  // Health is driven by data flow (receive bitrate), not the frame-count delta:
+  // that delta can read 0 when the SRS stats snapshot is momentarily stale even
+  // while the feed is perfectly fine, which would falsely flag STALLED.
+  const health = contributionHealth({active, bitrate});
   // stream.update is set by the platform when the stream publishes (RFC3339)
   const startMs = stream.update ? new Date(stream.update).getTime() : null;
   const elapsedMs = startMs ? Math.max(0, Date.now() - startMs) : null;
@@ -342,9 +345,9 @@ function StreamCard({entry, onReset, onPreview, onEdit}) {
       </div>
 
       {/* Stats row — active streams only */}
-      {active && (fps || bitrate || elapsedMs || videoInfo || audioInfo) && (
+      {active && (fps > 0 || bitrate > 0 || elapsedMs != null || videoInfo || audioInfo) && (
         <div style={{display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10}}>
-          {fps && (
+          {fps > 0 && (
             <span style={{
               ...mono, fontSize: 10, color: ACCENT,
               background: "rgba(181,65,0,0.06)", border: "1px solid rgba(181,65,0,0.2)",
@@ -353,7 +356,7 @@ function StreamCard({entry, onReset, onPreview, onEdit}) {
               <span style={{color: MUTED, marginRight: 5}}>FPS</span>{fps}
             </span>
           )}
-          {bitrate && (
+          {bitrate > 0 && (
             <span style={{
               ...mono, fontSize: 10, color: ACCENT,
               background: "rgba(181,65,0,0.06)", border: "1px solid rgba(181,65,0,0.2)",

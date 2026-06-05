@@ -24,14 +24,14 @@ describe("contributionHealth", () => {
   test("idle when no publisher", () => {
     expect(contributionHealth({active: false}).level).toBe("idle");
   });
-  test("stalled when live but fps is exactly 0", () => {
-    expect(contributionHealth({active: true, fps: 0}).level).toBe("warning");
+  test("stalled when live but bitrate is exactly 0", () => {
+    expect(contributionHealth({active: true, bitrate: 0}).level).toBe("warning");
   });
-  test("healthy when live and measuring (fps null)", () => {
-    expect(contributionHealth({active: true, fps: null}).level).toBe("healthy");
+  test("healthy when live and bitrate unknown (undefined)", () => {
+    expect(contributionHealth({active: true}).level).toBe("healthy");
   });
-  test("healthy when live with positive fps", () => {
-    expect(contributionHealth({active: true, fps: 30}).level).toBe("healthy");
+  test("healthy when live with positive bitrate", () => {
+    expect(contributionHealth({active: true, bitrate: 2500}).level).toBe("healthy");
   });
 });
 
