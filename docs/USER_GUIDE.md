@@ -19,7 +19,6 @@ the Ravnur Media Platform.
 - [Destinations — your reusable targets](#destinations--your-reusable-targets)
 - [Channels — routes](#channels--routes)
 - [Streams — monitoring](#streams--monitoring)
-- [Forward — flat view](#forward--flat-view)
 - [Users & roles](#users--roles)
 - [Common workflows](#common-workflows)
 - [Encoder setup cheat-sheet](#encoder-setup-cheat-sheet)
@@ -36,7 +35,7 @@ You send **one** live stream into the server (over **SRT** or **RTMP**), and it
 manage everything from the web UI at `https://<your-host>/mgmt`.
 
 The flow is always: **Ingest** (publish in) → **Streams** (confirm it's live) →
-**Channels / Forward** (fan it out).
+**Channels** (fan it out).
 
 ---
 
@@ -52,7 +51,7 @@ Open `https://<your-host>/mgmt`.
 - **Owner** — full access, including **Users**, **System/Settings**, and the
   legacy **Scenario** screens.
 - **Editor** — day-to-day operation: **Ingest**, **Channels**, **Destinations**,
-  **Streams**, **Forward**. Owner-only screens are hidden.
+  **Streams**. Owner-only screens are hidden.
 
 ---
 
@@ -64,7 +63,7 @@ Open `https://<your-host>/mgmt`.
 | **Ingest URL** | The RTMP or SRT URL your encoder pushes to. Built from the host + stream name + publish key. |
 | **Destination** | A place you forward to: a label + RTMP server URL + stream key (e.g. "City YouTube"). Saved in the **Destinations** library and reusable. |
 | **Channel** | A reusable *route*: a named ingest plus the destinations it forwards to. |
-| **Forward** | A single active "send stream X to destination Y" job. |
+| **Forward (job)** | The underlying "send stream X to destination Y" job, created automatically when you attach a destination to a channel. You manage it from the channel — there is no separate Forward screen. |
 
 **The golden rule:** a destination can be attached to several channels, but **only
 one channel streams to it at a time**. If a second channel goes live while the
@@ -80,8 +79,8 @@ prevents two streams hitting the same YouTube/Facebook key at once.
 2. In your encoder (OBS, Teradek, Haivision…), paste the URL and set
    **keyframe interval = 2s**, **H.264**, **CBR**. Start streaming.
 3. **Streams** tab → your stream appears as **ACTIVE** within a few seconds.
-4. **Channels** (or **Forward**) → add a destination (e.g. YouTube) → **Start**.
-   Your stream is now live on that destination.
+4. **Channels** → create a channel for this stream name → **Add Destination**
+   (e.g. YouTube) → **Start**. Your stream is now live on that destination.
 
 ---
 
@@ -89,7 +88,7 @@ prevents two streams hitting the same YouTube/Facebook key at once.
 The **Ingest** tab builds the URL your encoder pushes to.
 
 - **Stream name** — type any name (letters, numbers, `-`, `_`). Each name is a
-  separate stream and is how Channels/Forward target it.
+  separate stream and is how a Channel targets it.
 - **RTMP** — copy **Server** and **Stream Key** separately (OBS has two fields).
 - **SRT** — copy the single **Publish URL** (paste as the Server in OBS; leave
   Stream Key blank). It already includes tuned latency/buffer settings for
@@ -163,14 +162,6 @@ The **Streams** tab shows what's currently being ingested.
 
 ---
 
-## Forward — flat view
-The **Forward** tab lists **every** destination across all channels (the flat
-view), with search and status/state filters. You can add/edit/delete/enable
-destinations here too. **Channels** is the "by route" view of the same data;
-**Forward** is the "everything" view.
-
----
-
 ## Users & roles
 *(Owner only.)* The **Users** tab manages who can sign in with Microsoft.
 
@@ -230,7 +221,7 @@ pass-through, so YouTube needs the keyframes from your encoder.
 Two sources are hitting the same YouTube key. Make sure there's a **single**
 "City YouTube" in **Destinations** and attach *that* to your channels — a shared
 destination will show **BLOCKED** on the second channel instead of double-sending.
-Remove any leftover duplicate forward pointing at the same key.
+If a leftover duplicate target exists, fix it in **Destinations** (edit/delete) or detach it from the channel.
 
 **A destination shows ⊘ BLOCKED.**
 Expected when another channel is currently streaming to that shared destination.
@@ -292,4 +283,4 @@ or alters something a user sees or does:
 2. Note user-facing changes in [`RAVNUR-CHANGES.md`](../RAVNUR-CHANGES.md) too
    (the engineering changelog).
 3. Keep screenshots/wording in sync with the current screens (Ingest, Channels,
-   Destinations, Streams, Forward, Users).
+   Destinations, Streams, Users).

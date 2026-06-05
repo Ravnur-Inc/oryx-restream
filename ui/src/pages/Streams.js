@@ -117,7 +117,6 @@ function formatUptime(ms) {
 
 // ── Nav bar ───────────────────────────────────────────────────────────────────
 const ALL_NAV_ITEMS = [
-  {to: '/routers-forward',    text: 'Forward'},
   {to: '/routers-ingest',     text: 'Ingest'},
   {to: '/routers-channels',   text: 'Channels'},
   {to: '/routers-destinations', text: 'Destinations'},
