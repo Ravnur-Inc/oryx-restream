@@ -11,6 +11,7 @@ import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {SrsEnvContext} from "../components/SrsEnvContext";
 import {buildIngestUrls} from "../components/ingestUrls";
 import {useToast, apiError} from "../components/useToast";
+import {HealthBadge, egressHealth, contributionHealth, parseFrameLog} from "../components/HealthBadge";
 
 export default function Channels() {
   return (
@@ -90,11 +91,9 @@ function CopyField({label, value}) {
     </div>
   );
 }
-function fwStat(log) {
-  if (!log) return null;
-  const fps = log.match(/fps=(\S+)/)?.[1];
-  const br  = log.match(/bitrate=(\S+)/)?.[1];
-  return [fps && `FPS ${fps}`, br && `${br}`].filter(Boolean).join("  ");
+// Build the metrics pill (FPS / bitrate / speed) from a parsed FFmpeg log.
+function fwStat({fps, bitrate, speed}) {
+  return [fps != null && `FPS ${fps}`, bitrate, speed != null && `${speed}×`].filter(Boolean).join("  ");
 }
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
@@ -135,11 +134,13 @@ function NavBar({onAdd, lastRefresh, onRefresh}) {
 }
 
 // ── Destination row (within a channel) ────────────────────────────────────────
-function DestRow({dest, stream, onToggle, onDetach}) {
+function DestRow({dest, stream, sourceLive, onToggle, onDetach}) {
   const [confirmDel, setConfirmDel] = React.useState(false);
   const live = !!(stream?.ready);
   const blocked = !!stream?.blocked;
-  const stat = live && fwStat(stream?.frame?.log);
+  const metrics = parseFrameLog(stream?.frame?.log);
+  const health = egressHealth({enabled: dest.enabled, running: live, blocked, speed: metrics.speed, sourceLive});
+  const stat = live && fwStat(metrics);
   return (
     <div style={{padding: "10px 0", borderTop: `1px solid ${PANEL}`}}>
       <div style={{display: "flex", alignItems: "center", gap: 10}}>
@@ -149,9 +150,7 @@ function DestRow({dest, stream, onToggle, onDetach}) {
           <div style={{...mono, fontSize: 10, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>{dest.server}</div>
         </div>
         {stat && <span style={{...mono, fontSize: 10, color: ACCENT, background: "rgba(181,65,0,0.06)", border: "1px solid rgba(181,65,0,0.2)", padding: "2px 8px", borderRadius: 3}}>{stat}</span>}
-        {blocked
-          ? <span title="Another channel is streaming to this destination" style={{...mono, fontSize: 9, letterSpacing: "0.08em", color: DANGER, background: "#fef2f2", border: "1px solid #fca5a5", padding: "2px 6px", borderRadius: 3}}>⊘ BLOCKED</span>
-          : <span style={{...mono, fontSize: 9, letterSpacing: "0.08em", color: live ? ACCENT : SECOND}}>{live ? "● LIVE" : "○ IDLE"}</span>}
+        <HealthBadge level={health.level} label={health.label} title={health.detail}/>
         <Toggle value={dest.enabled} onChange={() => onToggle(dest)} label={`Toggle ${dest.label || dest.platform}`}/>
         <button onClick={() => setConfirmDel(true)} aria-label="Detach destination" title="Detach from this channel" style={iconBtn}
           onMouseEnter={e => {e.currentTarget.style.color = DANGER; e.currentTarget.style.background = "#fef2f2";}}
@@ -179,6 +178,13 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
   const [showUrls, setShowUrls] = React.useState(false);
   const liveCount = dests.filter(d => streamMap[d.platform]?.ready).length;
   const enabledCount = dests.filter(d => d.enabled).length;
+  const srcHealth = contributionHealth({active: sourceLive, fps: null}); // healthy | idle
+  // Count outputs that need attention (degraded or down).
+  const attention = dests.filter(d => {
+    const s = streamMap[d.platform];
+    const h = egressHealth({enabled: d.enabled, running: !!s?.ready, blocked: !!s?.blocked, speed: parseFrameLog(s?.frame?.log).speed, sourceLive});
+    return h.level === "warning" || h.level === "down";
+  }).length;
   return (
     <article style={{background: CARD, borderRadius: 8, padding: "18px 22px", border: `1px solid ${BORDER}`, borderLeft: `3px solid ${sourceLive ? ACCENT : "#c8c4be"}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)"}}>
       <div style={{display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12}}>
@@ -187,10 +193,15 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
           <div style={{minWidth: 0, flex: 1}}>
             <div style={{...syne, fontWeight: 700, fontSize: 14, color: HEADING}}>{channel.label}</div>
             {channel.description && <div style={{...mono, fontSize: 11, color: MUTED}}>{channel.description}</div>}
-            <div style={{display: "flex", gap: 16, flexWrap: "wrap", marginTop: 4}}>
+            <div style={{display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", marginTop: 4}}>
               <span style={{...mono, fontSize: 10, color: MUTED}}>STREAM <span style={{color: SECOND}}>{channel.name}</span></span>
-              <span style={{...mono, fontSize: 10, color: MUTED}}>SOURCE <span style={{color: sourceLive ? ACCENT : SECOND}}>{sourceLive ? "live" : "idle"}</span></span>
-              <span style={{...mono, fontSize: 10, color: MUTED}}>OUTPUTS <span style={{color: liveCount ? ACCENT : SECOND}}>{liveCount} live</span> / {dests.length}</span>
+              <span style={{...mono, fontSize: 10, color: MUTED, display: "flex", alignItems: "center", gap: 6}}>
+                SOURCE <HealthBadge level={srcHealth.level} label={srcHealth.label} title={srcHealth.detail}/>
+              </span>
+              <span style={{...mono, fontSize: 10, color: MUTED}}>
+                OUTPUTS <span style={{color: liveCount ? ACCENT : SECOND}}>{liveCount} live</span> / {dests.length}
+                {attention > 0 && <span style={{color: "#b45309", marginLeft: 6}}>▲ {attention} need attention</span>}
+              </span>
             </div>
           </div>
         </div>
@@ -229,7 +240,7 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
             </div>
           ) : (
             dests.map(d => (
-              <DestRow key={d.platform} dest={d} stream={streamMap[d.platform]} onToggle={onToggleDest} onDetach={onDetachDest}/>
+              <DestRow key={d.platform} dest={d} stream={streamMap[d.platform]} sourceLive={sourceLive} onToggle={onToggleDest} onDetach={onDetachDest}/>
             ))
           )}
         </div>

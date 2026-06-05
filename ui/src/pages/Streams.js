@@ -10,6 +10,7 @@ import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {useToast, apiError} from "../components/useToast";
 import FlvPlayer from "../components/FlvPlayer";
+import {HealthBadge, contributionHealth} from "../components/HealthBadge";
 
 export default function Streams() {
   return (
@@ -246,6 +247,7 @@ function StreamCard({entry, onReset, onPreview, onEdit}) {
   else subParts.push("Unmanaged stream — not tied to a channel");
   if (desc) subParts.push(desc);
   const subtitle = subParts.join("  ·  ");
+  const health = contributionHealth({active, fps: computedFps});
 
   const fps     = computedFps;
   const bitrate = srsStats?.kbps?.recv_30s;
@@ -288,15 +290,7 @@ function StreamCard({entry, onReset, onPreview, onEdit}) {
         </div>
 
         <div style={{display: "flex", alignItems: "center", gap: 8, flexShrink: 0}}>
-          <span style={{
-            ...mono, fontSize: 10, letterSpacing: "0.08em",
-            color: active ? ACCENT : SECOND,
-            background: active ? "rgba(181,65,0,0.08)" : PANEL,
-            border: `1px solid ${active ? "rgba(181,65,0,0.25)" : BORDER}`,
-            padding: "2px 8px", borderRadius: 3,
-          }}>
-            {active ? "● ACTIVE" : "○ IDLE"}
-          </span>
+          <HealthBadge level={health.level} label={health.label} title={health.detail}/>
 
           {/* Preview button — only meaningful while a stream is live */}
           <button
