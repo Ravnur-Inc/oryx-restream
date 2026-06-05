@@ -33,10 +33,44 @@ type ForwardWorker struct {
 
 	// The tasks we have started to forward streams,, key is platform in string, value is *ForwardTask.
 	tasks sync.Map
+
+	// Runtime exclusivity: a destination target (server+key) may be actively
+	// forwarded by only ONE task at a time, even if attached to several channels.
+	// Maps targetKey -> owning task UUID. A task that finds the target already
+	// owned by another is "blocked" and does not start until it frees up.
+	targetsLock   sync.Mutex
+	activeTargets map[string]string
 }
 
 func NewForwardWorker() *ForwardWorker {
-	return &ForwardWorker{}
+	return &ForwardWorker{activeTargets: make(map[string]string)}
+}
+
+// forwardTargetKey identifies a forward destination by its server+stream key,
+// normalizing the server for trailing slash/whitespace.
+func forwardTargetKey(server, secret string) string {
+	return strings.TrimRight(strings.TrimSpace(server), "/") + "\x00" + strings.TrimSpace(secret)
+}
+
+// claimTarget tries to take exclusive ownership of a target for a task. Returns
+// true if owned by this task (free or already ours), false if another task holds it.
+func (v *ForwardWorker) claimTarget(key, uuid string) bool {
+	v.targetsLock.Lock()
+	defer v.targetsLock.Unlock()
+	if owner, ok := v.activeTargets[key]; ok && owner != uuid {
+		return false
+	}
+	v.activeTargets[key] = uuid
+	return true
+}
+
+// releaseTarget frees a target if it is owned by the given task.
+func (v *ForwardWorker) releaseTarget(key, uuid string) {
+	v.targetsLock.Lock()
+	defer v.targetsLock.Unlock()
+	if owner, ok := v.activeTargets[key]; ok && owner == uuid {
+		delete(v.activeTargets, key)
+	}
 }
 
 func (v *ForwardWorker) GetTask(platform string) *ForwardTask {
@@ -119,13 +153,14 @@ func (v *ForwardWorker) Handle(ctx context.Context, handler *http.ServeMux) erro
 				logger.Tf(ctx, "Forward delete platform=%v ok, token=%vB", userConf.Platform, len(token))
 				return nil
 			} else if action == "update" {
-				// Enforce a unique destination target (server + stream key) across all
-				// forward configs, so the same destination cannot be created twice and
-				// double-sent. Reuse/reassign the existing one instead.
+				// A destination (server + stream key) may be attached to several
+				// channels, but not twice to the SAME channel (same source stream).
+				// Concurrent double-sending is prevented at runtime by target locking,
+				// not here. Reject only an exact duplicate route (same target + same
+				// source stream).
 				if existing, err := rdb.HGetAll(ctx, SRS_FORWARD_CONFIG).Result(); err != nil && err != redis.Nil {
 					return errors.Wrapf(err, "hgetall %v", SRS_FORWARD_CONFIG)
 				} else {
-					normSrv := func(s string) string { return strings.TrimRight(strings.TrimSpace(s), "/") }
 					for k, val := range existing {
 						if k == userConf.Platform {
 							continue
@@ -134,12 +169,9 @@ func (v *ForwardWorker) Handle(ctx context.Context, handler *http.ServeMux) erro
 						if err = json.Unmarshal([]byte(val), &other); err != nil {
 							continue
 						}
-						if normSrv(other.Server) == normSrv(userConf.Server) && strings.TrimSpace(other.Secret) == strings.TrimSpace(userConf.Secret) {
-							name := other.Label
-							if name == "" {
-								name = other.Platform
-							}
-							return errors.Errorf("a destination with this server and stream key already exists (%q); reuse it instead of adding a duplicate", name)
+						sameTarget := forwardTargetKey(other.Server, other.Secret) == forwardTargetKey(userConf.Server, userConf.Secret)
+						if sameTarget && other.Stream == userConf.Stream {
+							return errors.Errorf("this destination is already attached to this channel")
 						}
 					}
 				}
@@ -225,8 +257,10 @@ func (v *ForwardWorker) Handle(ctx context.Context, handler *http.ServeMux) erro
 
 					var pid int32
 					var streamURL, frame, update, starttime, ready string
+					blocked := false
 					if task := v.GetTask(config.Platform); task != nil {
 						pid, streamURL, frame, update, starttime, ready = task.queryFrame()
+						blocked = task.isBlocked()
 					}
 
 					elem := map[string]interface{}{
@@ -234,6 +268,9 @@ func (v *ForwardWorker) Handle(ctx context.Context, handler *http.ServeMux) erro
 						"enabled":  config.Enabled,
 						"custom":   config.Customed,
 						"label":    config.Label,
+						// True when enabled+ready but another channel is actively
+						// forwarding to the same destination target.
+						"blocked": blocked && config.Enabled && pid <= 0,
 					}
 
 					if pid > 0 {
@@ -446,6 +483,9 @@ type ForwardTask struct {
 	starttime *time.Time
 	// The first ready time.
 	firstReadyTime *time.Time
+	// Whether this task is enabled+ready to forward but blocked because another
+	// task is actively forwarding to the same destination target.
+	blocked bool
 
 	// The context for current task.
 	cancel context.CancelFunc
@@ -538,6 +578,18 @@ func (v *ForwardTask) updateFrame(frame string) {
 
 	var now = time.Now()
 	v.update = &now
+}
+
+func (v *ForwardTask) setBlocked(b bool) {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	v.blocked = b
+}
+
+func (v *ForwardTask) isBlocked() bool {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	return v.blocked
 }
 
 func (v *ForwardTask) queryFrame() (int32, string, string, string, string, string) {
@@ -674,6 +726,23 @@ func (v *ForwardTask) Run(ctx context.Context) error {
 }
 
 func (v *ForwardTask) doForward(ctx context.Context, input *SrsStream) error {
+	// Runtime exclusivity: claim this destination target. If another task is
+	// already forwarding to the same target (e.g. the same destination attached to
+	// another channel that is live), we are blocked and wait until it frees up.
+	tk := forwardTargetKey(v.config.Server, v.config.Secret)
+	if v.forwardWorker != nil && !v.forwardWorker.claimTarget(tk, v.UUID) {
+		v.setBlocked(true)
+		select {
+		case <-ctx.Done():
+		case <-time.After(3 * time.Second):
+		}
+		return nil
+	}
+	v.setBlocked(false)
+	if v.forwardWorker != nil {
+		defer v.forwardWorker.releaseTarget(tk, v.UUID)
+	}
+
 	// Create context for current task.
 	parentCtx := ctx
 	ctx, cancel := context.WithCancel(ctx)

@@ -473,3 +473,27 @@ Now e.g. attaching a destination that collides with an existing target shows
 instead of a browser popup saying "Request failed with status code 500".
 
 vite build + 12 vitest pass.
+
+---
+
+## 2026-06-05 — Shared destinations with runtime exclusivity (PR pending)
+
+A destination can now be attached to multiple channels (e.g. the city YouTube on
+both "City Council Meetings" and "PAO"), with a runtime guarantee that only one
+channel streams to it at a time — the second is blocked, not double-sent.
+
+- forward.go: relaxed the config-time uniqueness rule — the same target
+  (server+key) may be attached to different channels (different source stream);
+  only an exact duplicate within the same channel is rejected. Added runtime
+  target locking on the worker (activeTargets map + claimTarget/releaseTarget):
+  doForward claims the target before starting FFmpeg; if another task owns it the
+  task is marked blocked and retries until it frees up (auto-failover when the
+  holder's source goes offline or is disabled). The /forward/streams response now
+  returns a `blocked` flag.
+- ui Channels: attach a destination to multiple channels (no longer "moves");
+  destination rows show a BLOCKED badge when another channel holds the target.
+  Destinations "attached to" lists all channels.
+
+Scenario supported: shared YouTube across Council + PAO channels; whichever goes
+live first owns YouTube, the other's YouTube output is blocked until it frees.
+GOOS=linux go build ./... + vite build + 12 vitest pass.
