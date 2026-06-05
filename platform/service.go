@@ -233,6 +233,10 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 		return errors.Wrapf(err, "handle channels")
 	}
 
+	if err := destinationManager.Handle(ctx, handler); err != nil {
+		return errors.Wrapf(err, "handle destinations")
+	}
+
 	if err := entraAuth.Handle(ctx, handler); err != nil {
 		return errors.Wrapf(err, "handle entra auth")
 	}

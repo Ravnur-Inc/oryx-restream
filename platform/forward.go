@@ -398,6 +398,10 @@ type ForwardConfigure struct {
 	Customed bool `json:"custom"`
 	// The label for this configure.
 	Label string `json:"label"`
+	// Optional link to a reusable destination in the Destinations library
+	// (SRS_DESTINATIONS). Empty for ad-hoc/legacy forwards. When set, editing the
+	// library destination propagates server/secret/label to this config.
+	DestinationID string `json:"destinationId"`
 }
 
 func (v *ForwardConfigure) String() string {
@@ -414,6 +418,7 @@ func (v *ForwardConfigure) Update(u *ForwardConfigure) error {
 	v.Label = u.Label
 	v.Enabled = u.Enabled
 	v.Customed = u.Customed
+	v.DestinationID = u.DestinationID
 	return nil
 }
 

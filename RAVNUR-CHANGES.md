@@ -426,3 +426,26 @@ concurrent streams to the same destination can't happen. Tier 2 (a first-class
 reusable Destinations library) deferred.
 
 GOOS=linux go build ./... + vite build + 12 vitest pass.
+
+---
+
+## 2026-06-05 — Destinations library (Tier 2) (PR pending)
+
+A first-class, reusable library of forward targets that channels attach to.
+
+- platform/destinations.go (new): DestinationManager + /terraform/v1/mgmt/destinations
+  (create/update/delete/list); Destination{id,label,server,secret,createdAt};
+  Redis hash SRS_DESTINATIONS; unique (server+key) within the library. Editing a
+  destination **propagates** server/secret/label to the live forward config(s)
+  that reference it and restarts their tasks. Delete is blocked while attached.
+- platform/forward.go: ForwardConfigure gains `destinationId` linking a forward to
+  a library entry (worker unchanged — server/secret stay embedded/live).
+- ui Destinations screen (new, route /routers-destinations, NavBar tab, all roles):
+  library CRUD + "attached to" status; delete blocked when attached.
+- ui Channels "Add Destination" reworked: attach from the library (moves the
+  destination here if attached elsewhere — one channel at a time) or create a new
+  library entry and attach. Channel rows now Toggle + Detach (destination stays in
+  the library); editing targets happens on the Destinations screen.
+
+Single-active-feed is guaranteed by attach-as-move + the Tier-1 unique-target rule.
+GOOS=linux go build ./... + vite build + 12 vitest pass.
