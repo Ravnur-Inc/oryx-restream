@@ -281,6 +281,8 @@ const (
 	SIMULCAST_USERS = "SIMULCAST_USERS"
 	// For saved ingest channels, hash keyed by channel uuid.
 	SRS_CHANNELS = "SRS_CHANNELS"
+	// For the reusable forward destinations library, hash keyed by destination uuid.
+	SRS_DESTINATIONS = "SRS_DESTINATIONS"
 	// For feature statistics.
 	SRS_STAT_COUNTER = "SRS_STAT_COUNTER"
 	// For container and images.

@@ -109,9 +109,12 @@ A modern React UI (Vite) for managing simulcasting:
 - **Ingest** — copy-ready RTMP & SRT publish URLs for any stream name (tuned SRT
   params, optional AES passphrase, HLS playback URL, owner-only key rotation).
 - **Channels** — reusable **routes**: a named ingest plus the destinations it
-  forwards to, managed in one place — add/edit destinations (auto-bound to the
-  channel's stream), **Start/Stop all**, live source + per-output status, and the
-  channel's ready-to-copy ingest URLs.
+  forwards to, managed in one place — attach destinations from the library,
+  **Start/Stop all**, live source + per-output status, and the channel's
+  ready-to-copy ingest URLs.
+- **Destinations** — a reusable library of forward targets (YouTube, Facebook,
+  custom RTMP). Save a target once and attach it to any channel; a destination is
+  fed by one channel at a time, and editing it propagates to its live forward.
 - **Streams** — live ingest monitoring (codec / resolution / FPS / uptime),
   in-browser preview, and per-stream reset.
 - **Users** — owner/editor user management (owner-only).

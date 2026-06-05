@@ -143,6 +143,7 @@ const ALL_NAV_ITEMS = [
   {to: '/routers-forward',    text: 'Forward'},
   {to: '/routers-ingest',     text: 'Ingest'},
   {to: '/routers-channels',   text: 'Channels'},
+  {to: '/routers-destinations', text: 'Destinations'},
   {to: '/routers-streams',    text: 'Streams'},
   {to: '/routers-scenario',   text: 'Scenario',   ownerOnly: true},
   {to: '/routers-settings',   text: 'System',     ownerOnly: true},

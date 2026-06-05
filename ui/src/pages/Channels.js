@@ -25,16 +25,16 @@ async function apiPost(path, body = {}) {
   if (res.data.code !== 0) throw new Error(res.data.message || `API error code ${res.data.code}`);
   return res.data;
 }
-const listChannels  = () => apiPost("/terraform/v1/mgmt/channels");
-const listForwards  = () => apiPost("/terraform/v1/ffmpeg/forward/secret");
-const listFwStreams = () => apiPost("/terraform/v1/ffmpeg/forward/streams");
-const listSrcStreams= () => apiPost("/terraform/v1/mgmt/streams/query");
-const querySecret   = () => apiPost("/terraform/v1/hooks/srs/secret/query");
-const upsertDest    = (p) => apiPost("/terraform/v1/ffmpeg/forward/secret", {action: "update", ...p});
-const deleteDest    = (platform) => apiPost("/terraform/v1/ffmpeg/forward/secret", {action: "delete", platform});
+const listChannels   = () => apiPost("/terraform/v1/mgmt/channels");
+const listForwards   = () => apiPost("/terraform/v1/ffmpeg/forward/secret");
+const listFwStreams  = () => apiPost("/terraform/v1/ffmpeg/forward/streams");
+const listSrcStreams = () => apiPost("/terraform/v1/mgmt/streams/query");
+const listDestLib    = () => apiPost("/terraform/v1/mgmt/destinations");
+const querySecret    = () => apiPost("/terraform/v1/hooks/srs/secret/query");
+const upsertDest     = (p) => apiPost("/terraform/v1/ffmpeg/forward/secret", {action: "update", ...p});
+const deleteDest     = (platform) => apiPost("/terraform/v1/ffmpeg/forward/secret", {action: "delete", platform});
 
 function genPlatformKey() {
-  // A destination identifier (not a secret); Math.random is fine here.
   const letters = "abcdefghijklmnopqrstuvwxyz";
   const chars   = "abcdefghijklmnopqrstuvwxyz0123456789";
   return letters[Math.floor(Math.random() * letters.length)]
@@ -42,60 +42,28 @@ function genPlatformKey() {
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const ACCENT  = "#b54100";
-const BG      = "#f5f4f1";
-const CARD    = "#ffffff";
-const PANEL   = "#edecea";
-const BORDER  = "#888582";
-const HEADING = "#111111";
-const BODY    = "#2b2926";
-const SECOND  = "#4a4744";
-const MUTED   = "#6b6865";
-const DANGER  = "#b91c1c";
-
+const ACCENT="#b54100", BG="#f5f4f1", CARD="#fff", PANEL="#edecea", BORDER="#888582",
+  HEADING="#111", BODY="#2b2926", SECOND="#4a4744", MUTED="#6b6865", DANGER="#b91c1c";
 const mono = {fontFamily: "'Public Sans', sans-serif", fontVariantNumeric: "tabular-nums"};
 const syne = {fontFamily: "'Public Sans', sans-serif"};
-
-const inputBase = {
-  ...mono, fontSize: 13, color: BODY,
-  background: CARD, border: `1.5px solid ${BORDER}`,
-  borderRadius: 5, outline: "none", transition: "border-color 0.15s",
-  width: "100%",
-};
+const inputBase = {...mono, fontSize: 13, color: BODY, background: CARD, border: `1.5px solid ${BORDER}`, borderRadius: 5, outline: "none", transition: "border-color 0.15s", width: "100%"};
 const lbl = {display: "block", ...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7};
-const iconBtn = {
-  background: "none", border: "1px solid transparent", color: SECOND,
-  cursor: "pointer", fontSize: 15, padding: "3px 6px", lineHeight: 1,
-  borderRadius: 4, transition: "all 0.15s",
-};
+const iconBtn = {background: "none", border: "1px solid transparent", color: SECOND, cursor: "pointer", fontSize: 15, padding: "3px 6px", lineHeight: 1, borderRadius: 4, transition: "all 0.15s"};
 const NAME_RE = /^[a-zA-Z0-9_-]+$/;
 
-// ── Small components ──────────────────────────────────────────────────────────
 function Btn({children, onClick, variant = "primary", disabled, small, style: extra = {}}) {
-  const base = {
-    ...syne, fontWeight: 700, letterSpacing: "0.04em",
-    borderRadius: 5, cursor: disabled ? "not-allowed" : "pointer",
-    border: "1.5px solid", transition: "all 0.15s ease",
-    fontSize: small ? 11 : 13, padding: small ? "4px 12px" : "8px 18px",
-    opacity: disabled ? 0.45 : 1, lineHeight: 1.4,
-  };
+  const base = {...syne, fontWeight: 700, letterSpacing: "0.04em", borderRadius: 5, cursor: disabled ? "not-allowed" : "pointer", border: "1.5px solid", transition: "all 0.15s ease", fontSize: small ? 11 : 13, padding: small ? "4px 12px" : "8px 18px", opacity: disabled ? 0.45 : 1, lineHeight: 1.4};
   const variants = {
-    primary: {background: ACCENT,       color: "#ffffff", borderColor: ACCENT},
-    ghost:   {background: "transparent", color: SECOND,   borderColor: BORDER},
-    danger:  {background: "#fef2f2",     color: DANGER,   borderColor: "#fca5a5"},
-    dim:     {background: PANEL,         color: SECOND,   borderColor: BORDER},
+    primary: {background: ACCENT, color: "#fff", borderColor: ACCENT},
+    ghost: {background: "transparent", color: SECOND, borderColor: BORDER},
+    danger: {background: "#fef2f2", color: DANGER, borderColor: "#fca5a5"},
+    dim: {background: PANEL, color: SECOND, borderColor: BORDER},
   };
   return <button onClick={disabled ? undefined : onClick} style={{...base, ...variants[variant], ...extra}}>{children}</button>;
 }
-
 function Dot({live}) {
-  return <span aria-hidden="true" style={{
-    display: "inline-block", width: 9, height: 9, borderRadius: "50%", flexShrink: 0,
-    background: live ? ACCENT : "#b0aca8",
-    boxShadow: live ? `0 0 0 3px rgba(181,65,0,0.15)` : "none", transition: "all 0.4s",
-  }}/>;
+  return <span aria-hidden="true" style={{display: "inline-block", width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: live ? ACCENT : "#b0aca8", boxShadow: live ? `0 0 0 3px rgba(181,65,0,0.15)` : "none", transition: "all 0.4s"}}/>;
 }
-
 function Toggle({value, onChange, label}) {
   return (
     <div role="switch" aria-checked={value} aria-label={label} onClick={() => onChange(!value)}
@@ -104,17 +72,11 @@ function Toggle({value, onChange, label}) {
     </div>
   );
 }
-
 function CopyField({label, value}) {
   const [copied, setCopied] = React.useState(false);
   const copy = async () => {
     try { await navigator.clipboard.writeText(value); }
-    catch {
-      const ta = document.createElement("textarea");
-      ta.value = value; document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); } catch {}
-      document.body.removeChild(ta);
-    }
+    catch { const ta = document.createElement("textarea"); ta.value = value; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch {} document.body.removeChild(ta); }
     setCopied(true); setTimeout(() => setCopied(false), 1500);
   };
   return (
@@ -127,7 +89,6 @@ function CopyField({label, value}) {
     </div>
   );
 }
-
 function fwStat(log) {
   if (!log) return null;
   const fps = log.match(/fps=(\S+)/)?.[1];
@@ -135,20 +96,20 @@ function fwStat(log) {
   return [fps && `FPS ${fps}`, br && `${br}`].filter(Boolean).join("  ");
 }
 
-// ── Nav bar ───────────────────────────────────────────────────────────────────
+// ── Nav ───────────────────────────────────────────────────────────────────────
 const ALL_NAV_ITEMS = [
-  {to: '/routers-forward',    text: 'Forward'},
-  {to: '/routers-ingest',     text: 'Ingest'},
-  {to: '/routers-channels',   text: 'Channels'},
-  {to: '/routers-streams',    text: 'Streams'},
-  {to: '/routers-scenario',   text: 'Scenario',   ownerOnly: true},
-  {to: '/routers-settings',   text: 'System',     ownerOnly: true},
+  {to: '/routers-forward', text: 'Forward'},
+  {to: '/routers-ingest', text: 'Ingest'},
+  {to: '/routers-channels', text: 'Channels'},
+  {to: '/routers-destinations', text: 'Destinations'},
+  {to: '/routers-streams', text: 'Streams'},
+  {to: '/routers-scenario', text: 'Scenario', ownerOnly: true},
+  {to: '/routers-settings', text: 'System', ownerOnly: true},
   {to: '/routers-components', text: 'Components', ownerOnly: true},
-  {to: '/routers-contact',    text: 'Contact',    ownerOnly: true},
-  {to: '/routers-users',      text: 'Users',      ownerOnly: true},
-  {to: '/routers-logout',     text: 'Logout'},
+  {to: '/routers-contact', text: 'Contact', ownerOnly: true},
+  {to: '/routers-users', text: 'Users', ownerOnly: true},
+  {to: '/routers-logout', text: 'Logout'},
 ];
-
 function NavBar({onAdd, lastRefresh, onRefresh}) {
   const location = useLocation();
   const user = Token.loadUser();
@@ -159,12 +120,9 @@ function NavBar({onAdd, lastRefresh, onRefresh}) {
       <nav style={{display: "flex", alignItems: "stretch", gap: 2}}>
         {items.map(item => {
           const active = location.pathname.includes(item.to);
-          return (
-            <Link key={item.to} to={item.to} style={{...syne, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? ACCENT : SECOND, textDecoration: "none", padding: "14px 14px 12px", borderBottom: active ? `2px solid ${ACCENT}` : "2px solid transparent", transition: "all 0.15s", whiteSpace: "nowrap"}}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = HEADING; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = SECOND; }}
-            >{item.text}</Link>
-          );
+          return <Link key={item.to} to={item.to} style={{...syne, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? ACCENT : SECOND, textDecoration: "none", padding: "14px 14px 12px", borderBottom: active ? `2px solid ${ACCENT}` : "2px solid transparent", transition: "all 0.15s", whiteSpace: "nowrap"}}
+            onMouseEnter={e => { if (!active) e.currentTarget.style.color = HEADING; }}
+            onMouseLeave={e => { if (!active) e.currentTarget.style.color = SECOND; }}>{item.text}</Link>;
         })}
       </nav>
       <div style={{display: "flex", alignItems: "center", gap: 12, paddingLeft: 16}}>
@@ -177,7 +135,7 @@ function NavBar({onAdd, lastRefresh, onRefresh}) {
 }
 
 // ── Destination row (within a channel) ────────────────────────────────────────
-function DestRow({dest, stream, onToggle, onEdit, onDelete}) {
+function DestRow({dest, stream, onToggle, onDetach}) {
   const [confirmDel, setConfirmDel] = React.useState(false);
   const live = !!(stream?.ready);
   const stat = live && fwStat(stream?.frame?.log);
@@ -192,19 +150,18 @@ function DestRow({dest, stream, onToggle, onEdit, onDelete}) {
         {stat && <span style={{...mono, fontSize: 10, color: ACCENT, background: "rgba(181,65,0,0.06)", border: "1px solid rgba(181,65,0,0.2)", padding: "2px 8px", borderRadius: 3}}>{stat}</span>}
         <span style={{...mono, fontSize: 9, letterSpacing: "0.08em", color: live ? ACCENT : SECOND}}>{live ? "● LIVE" : "○ IDLE"}</span>
         <Toggle value={dest.enabled} onChange={() => onToggle(dest)} label={`Toggle ${dest.label || dest.platform}`}/>
-        <button onClick={() => onEdit(dest)} aria-label="Edit destination" style={iconBtn}
-          onMouseEnter={e => {e.currentTarget.style.color = HEADING; e.currentTarget.style.background = PANEL;}}
-          onMouseLeave={e => {e.currentTarget.style.color = SECOND; e.currentTarget.style.background = "none";}}>✎</button>
-        <button onClick={() => setConfirmDel(true)} aria-label="Delete destination" style={iconBtn}
+        <button onClick={() => setConfirmDel(true)} aria-label="Detach destination" title="Detach from this channel" style={iconBtn}
           onMouseEnter={e => {e.currentTarget.style.color = DANGER; e.currentTarget.style.background = "#fef2f2";}}
           onMouseLeave={e => {e.currentTarget.style.color = SECOND; e.currentTarget.style.background = "none";}}>✕</button>
       </div>
       {confirmDel && (
         <div role="alertdialog" style={{marginTop: 8, padding: "10px 12px", borderRadius: 6, background: "#fef2f2", border: "1px solid #fca5a5"}}>
-          <div style={{...syne, fontSize: 12, color: DANGER, marginBottom: 8}}>Delete destination "{dest.label || dest.platform}"?</div>
+          <div style={{...syne, fontSize: 12, color: DANGER, marginBottom: 8}}>
+            Detach "{dest.label || dest.platform}" from this channel? {dest.destinationId ? "The destination stays in the library." : ""}
+          </div>
           <div style={{display: "flex", gap: 8}}>
             <Btn variant="ghost" small onClick={() => setConfirmDel(false)}>Cancel</Btn>
-            <Btn variant="danger" small onClick={() => {setConfirmDel(false); onDelete(dest);}}>Delete</Btn>
+            <Btn variant="danger" small onClick={() => {setConfirmDel(false); onDetach(dest);}}>Detach</Btn>
           </div>
         </div>
       )}
@@ -213,13 +170,12 @@ function DestRow({dest, stream, onToggle, onEdit, onDelete}) {
 }
 
 // ── Channel card (route) ──────────────────────────────────────────────────────
-function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDelete, onAddDest, onEditDest, onToggleDest, onDeleteDest, onStartAll, onStopAll}) {
+function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDelete, onAddDest, onToggleDest, onDetachDest, onStartAll, onStopAll}) {
   const [confirmDel, setConfirmDel] = React.useState(false);
   const [expanded, setExpanded] = React.useState(false);
   const [showUrls, setShowUrls] = React.useState(false);
   const liveCount = dests.filter(d => streamMap[d.platform]?.ready).length;
   const enabledCount = dests.filter(d => d.enabled).length;
-
   return (
     <article style={{background: CARD, borderRadius: 8, padding: "18px 22px", border: `1px solid ${BORDER}`, borderLeft: `3px solid ${sourceLive ? ACCENT : "#c8c4be"}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)"}}>
       <div style={{display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12}}>
@@ -248,7 +204,6 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
 
       {expanded && (
         <div style={{marginTop: 14, paddingTop: 14, borderTop: `1px solid ${PANEL}`}}>
-          {/* Route controls */}
           <div style={{display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap"}}>
             <Btn variant="primary" small onClick={() => onAddDest(channel)}>+ Add Destination</Btn>
             <Btn variant="dim" small onClick={() => onStartAll(channel, dests)} disabled={!dests.length || enabledCount === dests.length}>Start all</Btn>
@@ -265,15 +220,13 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
             </div>
           )}
 
-          {/* Destinations */}
           {dests.length === 0 ? (
             <div style={{...mono, fontSize: 12, color: MUTED, padding: "12px 0", borderTop: `1px solid ${PANEL}`}}>
-              No destinations yet. Add one — it will be bound to this channel automatically (source stream <b>{channel.name}</b>).
+              No destinations attached. Add one from your <Link to="/routers-destinations" style={{color: ACCENT}}>Destinations</Link> library — it forwards this channel's stream (<b>{channel.name}</b>).
             </div>
           ) : (
             dests.map(d => (
-              <DestRow key={d.platform} dest={d} stream={streamMap[d.platform]}
-                onToggle={onToggleDest} onEdit={(dd) => onEditDest(channel, dd)} onDelete={onDeleteDest}/>
+              <DestRow key={d.platform} dest={d} stream={streamMap[d.platform]} onToggle={onToggleDest} onDetach={onDetachDest}/>
             ))
           )}
         </div>
@@ -282,7 +235,7 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
       {confirmDel && (
         <div role="alertdialog" style={{marginTop: 14, padding: "14px 16px", borderRadius: 6, background: "#fef2f2", border: "1px solid #fca5a5"}}>
           <div style={{...syne, fontSize: 13, color: DANGER, marginBottom: 10}}>
-            Delete channel "{channel.label}"? Its destinations are <b>not</b> deleted (they remain in Forward); only the saved channel is removed.
+            Delete channel "{channel.label}"? Its destinations are detached but remain in the Destinations library.
           </div>
           <div style={{display: "flex", gap: 8}}>
             <Btn variant="ghost" small onClick={() => setConfirmDel(false)}>Cancel</Btn>
@@ -318,7 +271,7 @@ function ChannelModal({initial, onSave, onClose, saving}) {
           onFocus={e => (e.target.style.borderColor = (!form.name || nameValid) ? ACCENT : DANGER)}
           onBlur={e => (e.target.style.borderColor = (!form.name || nameValid) ? BORDER : DANGER)}/>
         <span style={{...mono, fontSize: 10, color: (!form.name || nameValid) ? MUTED : DANGER, marginTop: 5, display: "block"}}>
-          The publish stream name. Destinations added to this channel forward this stream.
+          The publish stream name. Destinations attached to this channel forward this stream.
         </span>
       </div>
       <Field id="ch-desc" label="Description — optional" ph="e.g. Main auditorium camera" value={form.description} onChange={set("description")}/>
@@ -330,77 +283,60 @@ function ChannelModal({initial, onSave, onClose, saving}) {
   );
 }
 
-// ── Destination modal (scoped to a channel) ───────────────────────────────────
-// Adding: choose an existing destination (reassign it to this channel) or create
-// a new one. A destination (server + stream key) is unique and fed by one source
-// at a time, so reusing/reassigning is how you avoid double-sending.
-function DestModal({channel, initial, allDests, onSave, onClose, saving}) {
-  const editing = !!initial;
-  const available = (allDests || []).filter(d => d.stream !== channel.name);
-  const [mode, setMode] = React.useState("new"); // "new" | "existing"
-  const [pick, setPick] = React.useState(available[0]?.platform || "");
-  const [form, setForm] = React.useState(initial
-    ? {label: initial.label || "", server: initial.server || "", secret: initial.secret || "", enabled: initial.enabled ?? true}
-    : {label: "", server: "", secret: "", enabled: true});
+// ── Attach-destination modal (from the library, or create new) ────────────────
+function AttachModal({channel, library, attachedHere, onAttach, onCreate, onClose, saving}) {
+  // Library entries not already attached to THIS channel.
+  const options = library.filter(d => !attachedHere.has(d.id));
+  const [mode, setMode] = React.useState(options.length ? "existing" : "new");
+  const [pick, setPick] = React.useState(options[0]?.id || "");
+  const [form, setForm] = React.useState({label: "", server: "", secret: ""});
   const set = (k) => (e) => setForm(f => ({...f, [k]: e.target.value}));
   const formValid = form.label.trim() && form.server.trim();
-
+  const chosen = options.find(d => d.id === pick);
   React.useEffect(() => {
     const h = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [onClose]);
-
-  const useExisting = !editing && mode === "existing";
-  const chosen = available.find(d => d.platform === pick);
-  const canSave = editing ? formValid : (useExisting ? !!chosen : formValid);
-  const bindingLabel = (d) => d.stream ? `bound to ${d.stream}` : "unbound — forwards any stream";
-
-  const handleSave = () => {
-    if (!canSave) return;
-    if (useExisting) onSave({existing: chosen});
-    else onSave({form});
-  };
-
+  const useExisting = mode === "existing";
+  const canSave = useExisting ? !!chosen : formValid;
   return (
-    <ModalShell title={editing ? "Edit Destination" : `Add Destination — ${channel.label}`} onClose={onClose}>
-      <div style={{...mono, fontSize: 11, color: MUTED, marginBottom: 16}}>This channel forwards stream <b>{channel.name}</b>.</div>
-
-      {!editing && available.length > 0 && (
-        <div style={{display: "flex", gap: 8, marginBottom: 18}}>
-          <Btn variant={mode === "new" ? "primary" : "dim"} small onClick={() => setMode("new")}>Create new</Btn>
-          <Btn variant={mode === "existing" ? "primary" : "dim"} small onClick={() => setMode("existing")}>Use existing</Btn>
-        </div>
-      )}
+    <ModalShell title={`Add Destination — ${channel.label}`} onClose={onClose}>
+      <div style={{...mono, fontSize: 11, color: MUTED, marginBottom: 16}}>Forwards this channel's stream <b>{channel.name}</b>.</div>
+      <div style={{display: "flex", gap: 8, marginBottom: 18}}>
+        <Btn variant={useExisting ? "primary" : "dim"} small onClick={() => setMode("existing")} disabled={!options.length}>From library</Btn>
+        <Btn variant={!useExisting ? "primary" : "dim"} small onClick={() => setMode("new")}>New destination</Btn>
+      </div>
 
       {useExisting ? (
-        <div style={{marginBottom: 24}}>
-          <label htmlFor="d-existing" style={lbl}>Existing destination</label>
-          <select id="d-existing" value={pick} onChange={e => setPick(e.target.value)} style={{...inputBase, padding: "9px 12px"}}>
-            {available.map(d => (
-              <option key={d.platform} value={d.platform}>{(d.label || d.platform)} — {d.server} ({bindingLabel(d)})</option>
-            ))}
-          </select>
-          <span style={{...mono, fontSize: 10, color: MUTED, marginTop: 5, display: "block"}}>
-            Assigns this destination to the channel (sets its source to <b>{channel.name}</b>). If it was bound elsewhere it moves here — a destination is fed by one source at a time.
-          </span>
-        </div>
+        options.length ? (
+          <div style={{marginBottom: 24}}>
+            <label htmlFor="att-pick" style={lbl}>Destination</label>
+            <select id="att-pick" value={pick} onChange={e => setPick(e.target.value)} style={{...inputBase, padding: "9px 12px"}}>
+              {options.map(d => (
+                <option key={d.id} value={d.id}>{d.label} — {d.server}{d.attachedTo ? ` (currently: ${d.attachedTo})` : ""}</option>
+              ))}
+            </select>
+            <span style={{...mono, fontSize: 10, color: MUTED, marginTop: 5, display: "block"}}>
+              Attaches this destination to the channel. If it's attached elsewhere, it moves here — a destination is fed by one channel at a time.
+            </span>
+          </div>
+        ) : (
+          <div style={{...mono, fontSize: 12, color: MUTED, marginBottom: 24}}>No library destinations available. Create a new one →</div>
+        )
       ) : (
         <>
-          <Field id="d-label" label="Destination Label" ph="e.g. YouTube Live" value={form.label} onChange={set("label")}/>
-          <Field id="d-server" label="RTMP Server URL" ph="rtmp://a.rtmp.youtube.com/live2" value={form.server} onChange={set("server")}/>
-          <Field id="d-secret" label="Stream Key / Secret" ph="xxxx-xxxx-xxxx-xxxx" value={form.secret} onChange={set("secret")}/>
-          <div style={{display: "flex", alignItems: "center", gap: 10, marginBottom: 24}}>
-            <Toggle value={form.enabled} onChange={(v) => setForm(f => ({...f, enabled: v}))} label="Enabled"/>
-            <span style={{...syne, fontSize: 13, color: SECOND}}>{form.enabled ? "Forwarding enabled" : "Forwarding disabled"}</span>
-          </div>
+          <Field id="att-label" label="Label" ph="e.g. YouTube — Main Channel" value={form.label} onChange={set("label")}/>
+          <Field id="att-server" label="RTMP Server URL" ph="rtmp://a.rtmp.youtube.com/live2" value={form.server} onChange={set("server")}/>
+          <Field id="att-secret" label="Stream Key / Secret" ph="xxxx-xxxx-xxxx-xxxx" value={form.secret} onChange={set("secret")}/>
+          <div style={{...mono, fontSize: 10, color: MUTED, marginBottom: 18}}>Saved to the Destinations library and attached to this channel.</div>
         </>
       )}
 
       <div style={{display: "flex", gap: 10, justifyContent: "flex-end"}}>
         <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
-        <Btn variant="primary" disabled={!canSave || saving} onClick={handleSave}>
-          {saving ? "Saving…" : (useExisting ? "Assign to Channel" : "Save Destination")}
+        <Btn variant="primary" disabled={!canSave || saving} onClick={() => { if (!canSave) return; useExisting ? onAttach(chosen) : onCreate(form); }}>
+          {saving ? "Saving…" : (useExisting ? "Attach" : "Create & Attach")}
         </Btn>
       </div>
     </ModalShell>
@@ -421,12 +357,11 @@ function ModalShell({title, onClose, children}) {
     </div>
   );
 }
-
-function Field({id, label, ph, value, onChange, type = "text"}) {
+function Field({id, label, ph, value, onChange}) {
   return (
     <div style={{marginBottom: 18}}>
       <label htmlFor={id} style={lbl}>{label}</label>
-      <input id={id} type={type} style={{...inputBase, padding: "9px 12px"}} placeholder={ph} value={value} onChange={onChange}
+      <input id={id} type="text" style={{...inputBase, padding: "9px 12px"}} placeholder={ph} value={value} onChange={onChange}
         onFocus={e => (e.target.style.borderColor = ACCENT)} onBlur={e => (e.target.style.borderColor = BORDER)}/>
     </div>
   );
@@ -435,15 +370,16 @@ function Field({id, label, ph, value, onChange, type = "text"}) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 function ChannelsImpl() {
   const [channels, setChannels] = React.useState([]);
-  const [secret, setSecret]     = React.useState(null);
+  const [secret, setSecret] = React.useState(null);
   const [forwards, setForwards] = React.useState({});
   const [fwStreams, setFwStreams] = React.useState([]);
   const [activeSrc, setActiveSrc] = React.useState(new Set());
-  const [loading, setLoading]   = React.useState(true);
-  const [error, setError]       = React.useState(null);
+  const [library, setLibrary] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
   const [lastRefresh, setLastRefresh] = React.useState(null);
-  const [modal, setModal]       = React.useState(null); // {type:'channel'|'dest', channel?, dest?}
-  const [saving, setSaving]     = React.useState(false);
+  const [modal, setModal] = React.useState(null); // {type:'channel'|'attach', channel?}
+  const [saving, setSaving] = React.useState(false);
   const env = React.useContext(SrsEnvContext)[0];
   const timerRef = React.useRef();
 
@@ -451,15 +387,15 @@ function ChannelsImpl() {
     if (showLoader) setLoading(true);
     setError(null);
     try {
-      const [ch, sec, fw, fws, src] = await Promise.all([
-        listChannels(), querySecret(), listForwards(), listFwStreams(), listSrcStreams(),
+      const [ch, sec, fw, fws, src, lib] = await Promise.all([
+        listChannels(), querySecret(), listForwards(), listFwStreams(), listSrcStreams(), listDestLib(),
       ]);
       setChannels(ch.data || []);
       setSecret(sec.data || {});
       setForwards(fw.data || {});
       setFwStreams(fws.data || []);
-      const names = new Set((src.data?.streams || []).map(s => s.stream));
-      setActiveSrc(names);
+      setActiveSrc(new Set((src.data?.streams || []).map(s => s.stream)));
+      setLibrary(lib.data || []);
       setLastRefresh(new Date());
     } catch (e) {
       setError(e.response?.data?.message || e.message);
@@ -476,48 +412,59 @@ function ChannelsImpl() {
 
   const streamMap = React.useMemo(() => Object.fromEntries(fwStreams.map(s => [s.platform, s])), [fwStreams]);
   const destsFor = (name) => Object.values(forwards).filter(f => f.stream === name);
+  const channelByStream = React.useMemo(() => Object.fromEntries(channels.map(c => [c.name, c.label])), [channels]);
+  // destinationId -> where it's attached (channel label / stream)
+  const attachWhere = React.useMemo(() => {
+    const m = {};
+    Object.values(forwards).forEach(f => { if (f.destinationId) m[f.destinationId] = channelByStream[f.stream] || f.stream; });
+    return m;
+  }, [forwards, channelByStream]);
 
   // Channel CRUD
   const saveChannel = async (form) => {
     setSaving(true);
     try {
-      await apiPost('/terraform/v1/mgmt/channels', {
-        action: form.id ? 'update' : 'create', ...(form.id ? {id: form.id} : {}),
-        label: form.label.trim(), name: form.name.trim(), description: form.description.trim(),
-      });
+      await apiPost('/terraform/v1/mgmt/channels', {action: form.id ? 'update' : 'create', ...(form.id ? {id: form.id} : {}), label: form.label.trim(), name: form.name.trim(), description: form.description.trim()});
       setModal(null); await load();
     } catch (e) { alert("Save failed: " + (e.response?.data?.message || e.message)); }
     finally { setSaving(false); }
   };
   const deleteChannel = async (channel) => {
-    try { await apiPost('/terraform/v1/mgmt/channels', {action: 'delete', id: channel.id}); await load(); }
-    catch (e) { alert("Delete failed: " + (e.response?.data?.message || e.message)); }
+    try {
+      // Detach this channel's destinations (delete the forward configs), then remove the channel.
+      await Promise.all(destsFor(channel.name).map(d => deleteDest(d.platform)));
+      await apiPost('/terraform/v1/mgmt/channels', {action: 'delete', id: channel.id});
+      await load();
+    } catch (e) { alert("Delete failed: " + (e.response?.data?.message || e.message)); }
   };
 
-  // Destination CRUD (scoped to channel via stream = channel.name)
-  const saveDest = async (channel, initial, result) => {
+  // Attach a library destination to a channel, moving it if attached elsewhere.
+  const attachDest = async (channel, libDest) => {
     setSaving(true);
     try {
-      if (result.existing) {
-        // Reassign an existing destination to this channel (source = channel name);
-        // keeps its platform key/server/secret/label/enabled, so no duplicate target.
-        await upsertDest({...result.existing, stream: channel.name});
-      } else {
-        const form = result.form;
-        const platform = initial?.platform || genPlatformKey();
-        await upsertDest({platform, stream: channel.name, server: form.server.trim(), secret: form.secret.trim(), label: form.label.trim(), enabled: form.enabled, custom: true});
-      }
+      const existing = Object.values(forwards).filter(f => f.destinationId === libDest.id);
+      for (const e of existing) await deleteDest(e.platform);
+      await upsertDest({platform: genPlatformKey(), destinationId: libDest.id, stream: channel.name, server: libDest.server, secret: libDest.secret, label: libDest.label, enabled: true, custom: true});
       setModal(null); await load();
-    } catch (e) { alert("Save failed: " + (e.response?.data?.message || e.message)); }
+    } catch (e) { alert("Attach failed: " + (e.response?.data?.message || e.message)); }
     finally { setSaving(false); }
+  };
+  const createAndAttach = async (channel, form) => {
+    setSaving(true);
+    try {
+      const created = (await apiPost('/terraform/v1/mgmt/destinations', {action: 'create', label: form.label.trim(), server: form.server.trim(), secret: form.secret.trim()})).data;
+      await upsertDest({platform: genPlatformKey(), destinationId: created.id, stream: channel.name, server: created.server, secret: created.secret, label: created.label, enabled: true, custom: true});
+      setModal(null); await load();
+    } catch (e) { alert("Create failed: " + (e.response?.data?.message || e.message)); }
+    finally { setSaving(false); }
+  };
+  const detachDest = async (dest) => {
+    try { await deleteDest(dest.platform); await load(); }
+    catch (e) { alert("Detach failed: " + (e.response?.data?.message || e.message)); }
   };
   const toggleDest = async (dest) => {
     try { await upsertDest({...dest, enabled: !dest.enabled}); await load(); }
     catch (e) { alert("Toggle failed: " + (e.response?.data?.message || e.message)); }
-  };
-  const removeDest = async (dest) => {
-    try { await deleteDest(dest.platform); await load(); }
-    catch (e) { alert("Delete failed: " + (e.response?.data?.message || e.message)); }
   };
   const setAll = async (dests, enabled) => {
     try { await Promise.all(dests.filter(d => d.enabled !== enabled).map(d => upsertDest({...d, enabled}))); await load(); }
@@ -530,6 +477,9 @@ function ChannelsImpl() {
   const srtPassphrase = secret?.srtPassphrase || "";
   const srtPbkeylen = secret?.srtPbkeylen || "16";
 
+  // Library options annotated with where each is currently attached.
+  const libraryAnnotated = library.map(d => ({...d, attachedTo: attachWhere[d.id]}));
+
   return (
     <div style={{background: BG, color: BODY, ...syne, minHeight: "100vh"}}>
       <NavBar onAdd={() => setModal({type: "channel"})} lastRefresh={lastRefresh} onRefresh={() => load(true)}/>
@@ -537,8 +487,8 @@ function ChannelsImpl() {
       <main style={{padding: "28px 32px", maxWidth: 820, margin: "0 auto"}}>
         <div style={{...syne, fontWeight: 800, fontSize: 20, color: HEADING, marginBottom: 4}}>Channels</div>
         <div style={{fontSize: 13, color: MUTED, marginBottom: 24}}>
-          A channel is a reusable route: a named ingest plus the destinations it forwards to. Manage a
-          channel's outputs here and they stay bound to its stream name across every stream.
+          A channel is a reusable route: a named ingest plus the <Link to="/routers-destinations" style={{color: ACCENT}}>Destinations</Link> it
+          forwards to. Attach destinations, start/stop them, and the route stays consistent across every stream.
         </div>
 
         {loading ? (
@@ -567,10 +517,9 @@ function ChannelsImpl() {
                 urls={buildIngestUrls({host, srtPort, name: channel.name, secret: pub, srtPassphrase, srtPbkeylen, origin: window.location.origin})}
                 onEdit={(c) => setModal({type: "channel", channel: c})}
                 onDelete={deleteChannel}
-                onAddDest={(c) => setModal({type: "dest", channel: c})}
-                onEditDest={(c, d) => setModal({type: "dest", channel: c, dest: d})}
+                onAddDest={(c) => setModal({type: "attach", channel: c})}
                 onToggleDest={toggleDest}
-                onDeleteDest={removeDest}
+                onDetachDest={detachDest}
                 onStartAll={(c, ds) => setAll(ds, true)}
                 onStopAll={(c, ds) => setAll(ds, false)}
               />
@@ -582,9 +531,16 @@ function ChannelsImpl() {
       {modal?.type === "channel" && (
         <ChannelModal initial={modal.channel} saving={saving} onSave={saveChannel} onClose={() => setModal(null)}/>
       )}
-      {modal?.type === "dest" && (
-        <DestModal channel={modal.channel} initial={modal.dest} allDests={Object.values(forwards)} saving={saving}
-          onSave={(result) => saveDest(modal.channel, modal.dest, result)} onClose={() => setModal(null)}/>
+      {modal?.type === "attach" && (
+        <AttachModal
+          channel={modal.channel}
+          library={libraryAnnotated}
+          attachedHere={new Set(destsFor(modal.channel.name).map(d => d.destinationId).filter(Boolean))}
+          saving={saving}
+          onAttach={(d) => attachDest(modal.channel, d)}
+          onCreate={(form) => createAndAttach(modal.channel, form)}
+          onClose={() => setModal(null)}
+        />
       )}
     </div>
   );
