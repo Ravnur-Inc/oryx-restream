@@ -8,6 +8,7 @@ import axios from "axios";
 import {Link, useLocation} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
+import {useToast, apiError} from "../components/useToast";
 
 export default function Streams() {
   return (
@@ -582,6 +583,7 @@ function StreamsImpl() {
   const [statusFilter, setStatusFilter] = React.useState("ALL");
   const [modal, setModal]           = React.useState(null); // {type: "preview"|"edit", stream}
   const [descTick, setDescTick]     = React.useState(0);   // force re-render after desc save
+  const {showError, Toaster} = useToast();
   const timerRef = React.useRef();
 
   const refresh = React.useCallback(async (showLoader = false) => {
@@ -633,7 +635,7 @@ function StreamsImpl() {
 
       setLastRefresh(new Date());
     } catch (e) {
-      setError(e.message);
+      setError(apiError(e));
     } finally {
       setLoading(false);
     }
@@ -647,7 +649,7 @@ function StreamsImpl() {
 
   const handleReset = async (stream) => {
     try { await kickoffStream(stream); await refresh(); }
-    catch (e) { alert("Reset failed: " + e.message); }
+    catch (e) { showError(e); }
   };
 
   const entries = Array.from(history.values());
@@ -677,6 +679,7 @@ function StreamsImpl() {
 
   return (
     <div style={{background: BG, color: BODY, ...syne}}>
+      {Toaster}
 
       {/* ── Nav bar ── */}
       <NavBar lastRefresh={lastRefresh} onRefresh={() => refresh(true)}/>

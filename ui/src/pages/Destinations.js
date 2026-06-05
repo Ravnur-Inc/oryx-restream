@@ -8,6 +8,7 @@ import axios from "axios";
 import {Link, useLocation} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
+import {useToast, apiError} from "../components/useToast";
 
 export default function Destinations() {
   return (
@@ -177,6 +178,7 @@ function DestinationsImpl() {
   const [error, setError] = React.useState(null);
   const [modal, setModal] = React.useState(null);
   const [saving, setSaving] = React.useState(false);
+  const {showError, Toaster} = useToast();
 
   const load = React.useCallback(async () => {
     setError(null);
@@ -190,7 +192,7 @@ function DestinationsImpl() {
       setForwards(f.data || {});
       setChannels(c.data || []);
     } catch (e) {
-      setError(e.response?.data?.message || e.message);
+      setError(apiError(e));
     } finally {
       setLoading(false);
     }
@@ -217,12 +219,12 @@ function DestinationsImpl() {
         label: form.label.trim(), server: form.server.trim(), secret: form.secret.trim(),
       });
       setModal(null); await load();
-    } catch (e) { alert("Save failed: " + (e.response?.data?.message || e.message)); }
+    } catch (e) { showError(e); }
     finally { setSaving(false); }
   };
   const handleDelete = async (dest) => {
     try { await apiPost('/terraform/v1/mgmt/destinations', {action: 'delete', id: dest.id}); await load(); }
-    catch (e) { alert("Delete failed: " + (e.response?.data?.message || e.message)); }
+    catch (e) { showError(e); }
   };
 
   const owners = dests.length;
@@ -230,6 +232,7 @@ function DestinationsImpl() {
 
   return (
     <div style={{background: BG, color: BODY, ...syne, minHeight: "100vh"}}>
+      {Toaster}
       <NavBar onAdd={() => setModal({mode: "add"})}/>
 
       <div style={{background: CARD, borderBottom: `1px solid ${BORDER}`, padding: "9px 32px", display: "flex", gap: 28}}>

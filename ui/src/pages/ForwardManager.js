@@ -8,6 +8,7 @@ import axios from "axios";
 import {Link, useLocation} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
+import {useToast, apiError} from "../components/useToast";
 
 export default function ForwardManager() {
   return (
@@ -549,6 +550,7 @@ function ForwardManagerImpl() {
   const [query,         setQuery]         = React.useState("");
   const [statusFilter,  setStatusFilter]  = React.useState("ALL");
   const [enabledFilter, setEnabledFilter] = React.useState("ALL");
+  const {showError, Toaster} = useToast();
   const timerRef = React.useRef();
 
   const refresh = React.useCallback(async (showLoader = false) => {
@@ -560,7 +562,7 @@ function ForwardManagerImpl() {
       setStreams(sRes.data || []);
       setLastRefresh(new Date());
     } catch (e) {
-      setError(e.response?.data?.message || e.message);
+      setError(apiError(e));
     } finally {
       setLoading(false);
     }
@@ -602,7 +604,7 @@ function ForwardManagerImpl() {
       setModal(null);
       await refresh();
     } catch (e) {
-      alert("Save failed: " + (e.response?.data?.message || e.message));
+      showError(e);
     } finally {
       setSaving(false);
     }
@@ -610,16 +612,17 @@ function ForwardManagerImpl() {
 
   const handleDelete = async (platform) => {
     try {await deleteDest(platform); await refresh();}
-    catch (e) {alert("Delete failed: " + (e.response?.data?.message || e.message));}
+    catch (e) {showError(e);}
   };
 
   const handleToggle = async (dest) => {
     try {await upsertDest({...dest, enabled: !dest.enabled}); await refresh();}
-    catch (e) {alert("Toggle failed: " + (e.response?.data?.message || e.message));}
+    catch (e) {showError(e);}
   };
 
   return (
     <div style={{background: BG, color: BODY, ...syne}}>
+      {Toaster}
 
       {/* ── Nav + action bar ── */}
       <NavBar lastRefresh={lastRefresh} onRefresh={() => refresh(true)} onAdd={() => setModal({mode: "add"})}/>

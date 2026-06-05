@@ -449,3 +449,27 @@ A first-class, reusable library of forward targets that channels attach to.
 
 Single-active-feed is guaranteed by attach-as-move + the Tier-1 unique-target rule.
 GOOS=linux go build ./... + vite build + 12 vitest pass.
+
+---
+
+## 2026-06-05 — Error UX: descriptive in-page messages (PR pending)
+
+Replaces browser alert() popups and generic "status code 500" messages with
+descriptive, in-page toasts across the modern UI.
+
+Root cause: handlers raise plain Go errors, which go-oryx-lib serves via its
+"unknown error" path as HTTP 500 with the message as a plain-text body. The UI
+read e.response.data.message (undefined for a string body) and fell back to the
+axios generic, shown via alert().
+
+- ui/src/components/useToast.js (new): apiError(e) extracts the real message from
+  any envelope (plain-text body, or {code,data} JSON); useToast() renders a
+  dismissible, descriptive in-page toast (errors persist ~9s).
+- Channels/Destinations/ForwardManager/Ingest/Streams/Users: every alert() and
+  generic catch replaced with showError(e); load-error boxes use apiError(e).
+
+Now e.g. attaching a destination that collides with an existing target shows
+"a destination with this server and stream key already exists (…)" in-page,
+instead of a browser popup saying "Request failed with status code 500".
+
+vite build + 12 vitest pass.
