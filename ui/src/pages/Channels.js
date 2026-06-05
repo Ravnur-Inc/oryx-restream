@@ -139,6 +139,7 @@ function NavBar({onAdd, lastRefresh, onRefresh}) {
 function DestRow({dest, stream, onToggle, onDetach}) {
   const [confirmDel, setConfirmDel] = React.useState(false);
   const live = !!(stream?.ready);
+  const blocked = !!stream?.blocked;
   const stat = live && fwStat(stream?.frame?.log);
   return (
     <div style={{padding: "10px 0", borderTop: `1px solid ${PANEL}`}}>
@@ -149,7 +150,9 @@ function DestRow({dest, stream, onToggle, onDetach}) {
           <div style={{...mono, fontSize: 10, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>{dest.server}</div>
         </div>
         {stat && <span style={{...mono, fontSize: 10, color: ACCENT, background: "rgba(181,65,0,0.06)", border: "1px solid rgba(181,65,0,0.2)", padding: "2px 8px", borderRadius: 3}}>{stat}</span>}
-        <span style={{...mono, fontSize: 9, letterSpacing: "0.08em", color: live ? ACCENT : SECOND}}>{live ? "● LIVE" : "○ IDLE"}</span>
+        {blocked
+          ? <span title="Another channel is streaming to this destination" style={{...mono, fontSize: 9, letterSpacing: "0.08em", color: DANGER, background: "#fef2f2", border: "1px solid #fca5a5", padding: "2px 6px", borderRadius: 3}}>⊘ BLOCKED</span>
+          : <span style={{...mono, fontSize: 9, letterSpacing: "0.08em", color: live ? ACCENT : SECOND}}>{live ? "● LIVE" : "○ IDLE"}</span>}
         <Toggle value={dest.enabled} onChange={() => onToggle(dest)} label={`Toggle ${dest.label || dest.platform}`}/>
         <button onClick={() => setConfirmDel(true)} aria-label="Detach destination" title="Detach from this channel" style={iconBtn}
           onMouseEnter={e => {e.currentTarget.style.color = DANGER; e.currentTarget.style.background = "#fef2f2";}}
@@ -315,11 +318,11 @@ function AttachModal({channel, library, attachedHere, onAttach, onCreate, onClos
             <label htmlFor="att-pick" style={lbl}>Destination</label>
             <select id="att-pick" value={pick} onChange={e => setPick(e.target.value)} style={{...inputBase, padding: "9px 12px"}}>
               {options.map(d => (
-                <option key={d.id} value={d.id}>{d.label} — {d.server}{d.attachedTo ? ` (currently: ${d.attachedTo})` : ""}</option>
+                <option key={d.id} value={d.id}>{d.label} — {d.server}{d.attachedTo?.length ? ` (also on: ${d.attachedTo.join(", ")})` : ""}</option>
               ))}
             </select>
             <span style={{...mono, fontSize: 10, color: MUTED, marginTop: 5, display: "block"}}>
-              Attaches this destination to the channel. If it's attached elsewhere, it moves here — a destination is fed by one channel at a time.
+              The same destination can serve several channels, but only one streams to it at a time — the others show as <b>blocked</b> while one is live.
             </span>
           </div>
         ) : (
@@ -415,10 +418,10 @@ function ChannelsImpl() {
   const streamMap = React.useMemo(() => Object.fromEntries(fwStreams.map(s => [s.platform, s])), [fwStreams]);
   const destsFor = (name) => Object.values(forwards).filter(f => f.stream === name);
   const channelByStream = React.useMemo(() => Object.fromEntries(channels.map(c => [c.name, c.label])), [channels]);
-  // destinationId -> where it's attached (channel label / stream)
+  // destinationId -> [channels it's attached to] (a destination may serve several)
   const attachWhere = React.useMemo(() => {
     const m = {};
-    Object.values(forwards).forEach(f => { if (f.destinationId) m[f.destinationId] = channelByStream[f.stream] || f.stream; });
+    Object.values(forwards).forEach(f => { if (f.destinationId) (m[f.destinationId] = m[f.destinationId] || []).push(channelByStream[f.stream] || f.stream); });
     return m;
   }, [forwards, channelByStream]);
 
@@ -440,12 +443,12 @@ function ChannelsImpl() {
     } catch (e) { showError(e); }
   };
 
-  // Attach a library destination to a channel, moving it if attached elsewhere.
+  // Attach a library destination to a channel. The same destination may be
+  // attached to several channels; only one streams to it at a time (the backend
+  // blocks the others while one is live).
   const attachDest = async (channel, libDest) => {
     setSaving(true);
     try {
-      const existing = Object.values(forwards).filter(f => f.destinationId === libDest.id);
-      for (const ex of existing) await deleteDest(ex.platform);
       await upsertDest({platform: genPlatformKey(), destinationId: libDest.id, stream: channel.name, server: libDest.server, secret: libDest.secret, label: libDest.label, enabled: true, custom: true});
       setModal(null); await load();
     } catch (e) { showError(e); }

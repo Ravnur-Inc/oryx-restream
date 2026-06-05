@@ -113,8 +113,10 @@ A modern React UI (Vite) for managing simulcasting:
   **Start/Stop all**, live source + per-output status, and the channel's
   ready-to-copy ingest URLs.
 - **Destinations** — a reusable library of forward targets (YouTube, Facebook,
-  custom RTMP). Save a target once and attach it to any channel; a destination is
-  fed by one channel at a time, and editing it propagates to its live forward.
+  custom RTMP). Save a target once and attach it to **multiple** channels; at
+  runtime only one channel streams to it at a time (the others show **blocked**),
+  so a shared target is never double-sent. Editing a target propagates to its
+  live forward.
 - **Streams** — live ingest monitoring (codec / resolution / FPS / uptime),
   in-browser preview, and per-stream reset.
 - **Users** — owner/editor user management (owner-only).
