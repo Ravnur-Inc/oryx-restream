@@ -24,7 +24,6 @@ import Navigator from './pages/Navigator';
 import Setup from './pages/Setup';
 import {Locale, Token} from "./utils";
 import Components from "./pages/Components";
-import ForwardManager from "./pages/ForwardManager";
 import Ingest from "./pages/Ingest";
 import Channels from "./pages/Channels";
 import Destinations from "./pages/Destinations";
@@ -146,7 +145,6 @@ function AppRoute({initialized, setInitialized}) {
               {initialized === 1 && token && <>
                 <Route path="*" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
                 <Route path="routers-login" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
-                <Route path="routers-forward" element={<ForwardManager/>}/>
                 <Route path="routers-ingest" element={<Ingest/>}/>
                 <Route path="routers-channels" element={<Channels/>}/>
                 <Route path="routers-destinations" element={<Destinations/>}/>
@@ -175,7 +173,7 @@ function RequireOwner({children}) {
   const isOwner = !user || user.role === 'owner';
 
   React.useEffect(() => {
-    if (!isOwner) navigate('/routers-forward');
+    if (!isOwner) navigate('/routers-channels');
   }, [isOwner, navigate]);
 
   if (!isOwner) return null;

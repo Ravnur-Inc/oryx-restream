@@ -508,3 +508,21 @@ Streams, Forward, Users), plus common workflows (including shared destinations /
 the BLOCKED rule), an encoder cheat-sheet, troubleshooting, and administration.
 Linked from README; CLAUDE.md working rules now require updating the guide in the
 same PR as any user-facing change.
+
+---
+
+## 2026-06-05 — Remove the Forward page (PR pending)
+
+The Forward page overlapped with Channels + Destinations and let users create
+forwards outside the library/channel model (orphans). Removed it; manage outputs
+via Destinations (targets) + Channels (routes).
+
+- ui: deleted pages/ForwardManager.js; removed the Forward nav tab from every
+  screen and the /routers-forward route. Landing + RequireOwner + Login redirects
+  + the Navigator logo now go to /routers-channels. Ingest cross-links point to
+  Channels. Backend forward API is unchanged (still used by Channels/Destinations).
+- docs: USER_GUIDE.md drops the Forward section and updates flow/roles/concepts;
+  README updates the Management UI list and "configure a destination" steps to the
+  Channels/Destinations flow.
+
+vite build + 12 vitest pass.

@@ -121,7 +121,6 @@ function Section({title, children}) {
 
 // ── Nav bar ───────────────────────────────────────────────────────────────────
 const ALL_NAV_ITEMS = [
-  {to: '/routers-forward',    text: 'Forward'},
   {to: '/routers-ingest',     text: 'Ingest'},
   {to: '/routers-channels',   text: 'Channels'},
   {to: '/routers-destinations', text: 'Destinations'},
@@ -242,7 +241,7 @@ function IngestImpl() {
         <div style={{fontSize: 13, color: MUTED, marginBottom: 24}}>
           Point your encoder (OBS, vMix, hardware) at one of these URLs to start streaming.
           Then watch it appear under <Link to="/routers-streams" style={{color: ACCENT}}>Streams</Link> and
-          fan it out under <Link to="/routers-forward" style={{color: ACCENT}}>Forward</Link>.
+          fan it out from a <Link to="/routers-channels" style={{color: ACCENT}}>Channel</Link>.
         </div>
 
         {loading ? (
@@ -345,7 +344,7 @@ function IngestImpl() {
                 <li>Codec <b>H.264</b>, rate control <b>CBR</b>.</li>
                 <li><b>Keyframe interval 2s</b> — required, or YouTube sits on "Preparing".</li>
                 <li>SRT: use the URL above as-is (it carries <code>latency=1000</code>, <code>pkt_size=1316</code>, <code>rcvbuf=8&nbsp;MB</code>) — prevents macroblocking on lossy uplinks.</li>
-                <li>Then add YouTube/Facebook/etc. destinations under <Link to="/routers-forward" style={{color: ACCENT}}>Forward</Link>.</li>
+                <li>Then attach YouTube/Facebook/etc. destinations to a <Link to="/routers-channels" style={{color: ACCENT}}>Channel</Link>.</li>
               </ul>
             </Section>
           </>

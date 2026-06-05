@@ -40,7 +40,7 @@ function LoginImpl({onLogin}) {
         headers: Token.loadBearerHeader(),
       }).then(res => {
         console.log(`Login: Done, token is ${Tools.mask(token)}`);
-        navigate('/routers-forward');
+        navigate('/routers-channels');
       });
     }).catch(handleError);
   }, [navigate, handleError]);
@@ -58,7 +58,7 @@ function LoginImpl({onLogin}) {
       console.log(`Login: Entra ok, user=${data.user?.email}, role=${data.user?.role}`);
       Token.save(data);
       onLogin && onLogin();
-      navigate('/routers-forward');
+      navigate('/routers-channels');
     } catch (err) {
       if (err?.errorCode === 'user_cancelled' || err?.errorCode === 'popup_window_error') return;
       const msg = err?.response?.data?.message || err?.message || '';

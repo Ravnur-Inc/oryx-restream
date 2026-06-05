@@ -106,15 +106,12 @@ sign in, get ingest URLs, manage Destinations and Channels, and more.
 
 A modern React UI (Vite) for managing simulcasting:
 
-- **Forward** — card-based destination manager: add / edit / **delete** RTMP
-  destinations with custom names, live FFmpeg stats (FPS / bitrate / uptime),
-  search and status filters, and any number of simultaneous outputs.
-- **Ingest** — copy-ready RTMP & SRT publish URLs for any stream name (tuned SRT
-  params, optional AES passphrase, HLS playback URL, owner-only key rotation).
 - **Channels** — reusable **routes**: a named ingest plus the destinations it
   forwards to, managed in one place — attach destinations from the library,
-  **Start/Stop all**, live source + per-output status, and the channel's
-  ready-to-copy ingest URLs.
+  **Start/Stop all**, live source + per-output status (with live FPS/bitrate),
+  and the channel's ready-to-copy ingest URLs.
+- **Ingest** — copy-ready RTMP & SRT publish URLs for any stream name (tuned SRT
+  params, optional AES passphrase, HLS playback URL, owner-only key rotation).
 - **Destinations** — a reusable library of forward targets (YouTube, Facebook,
   custom RTMP). Save a target once and attach it to **multiple** channels; at
   runtime only one channel streams to it at a time (the others show **blocked**),
@@ -150,11 +147,13 @@ srt://<vm-ip>:10080?mode=caller&latency=1000&pkt_size=1316&rcvbuf=8388608&stream
 
 ### Configure a restream destination
 
-1. Open the management UI
-2. Navigate to **Scenario → Forward**
-3. Add a destination RTMP URL (e.g. `rtmp://a.rtmp.youtube.com/live2/<key>`) —
-   add more than one for simultaneous restreaming to several platforms
-4. Start publishing — the forward task fires automatically on ingest
+1. Open the management UI → **Destinations** → add your target(s)
+   (e.g. YouTube `rtmp://a.rtmp.youtube.com/live2/` + stream key).
+2. **Channels** → create a channel (set its stream name) → **Add Destination**
+   → attach the target(s) — add as many as you like for simultaneous restreaming.
+3. Start publishing to the channel's stream name; forwarding fires automatically.
+
+See the [User Guide](./docs/USER_GUIDE.md) for the full walkthrough.
 
 ---
 

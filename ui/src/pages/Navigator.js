@@ -16,7 +16,7 @@ export default function Navigator() {
   return (<>
     <Navbar>
       <Container fluid>
-        <Navbar.Brand as={Link} to="/routers-forward" style={{display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none'}}>
+        <Navbar.Brand as={Link} to="/routers-channels" style={{display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none'}}>
           <img
             src={logo}
             height="36"
