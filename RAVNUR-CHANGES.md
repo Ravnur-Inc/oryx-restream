@@ -572,4 +572,13 @@ Two Streams-page fixes found during testing.
      idle; card shows the channel's friendly label; stats bar STREAMS/ACTIVE/IDLE.
 - docs: USER_GUIDE.md Streams section + README Management-UI bullet updated.
 
+**CI trim (same PR):** .github/workflows/pullrequest.yml dropped the
+`test-zh-image`, `test-zh-installer`, and `test-en-installer` jobs and removed
+them from the `test-pr-final` gate. The ZH jobs only differed from EN by UI
+locale (`REACT_APP_LOCALE=zh` / `--language zh`) and ran the identical backend
+suite — pure duplication for this English-only fork. The installer jobs tested
+the `scripts/setup-ubuntu` systemd host-install path, which this fork doesn't
+ship (deployment is Docker via deploy/azure-vm). Kept **Test EN image** as the
+end-to-end smoke test of the published container.
+
 vite build + 12 vitest pass.
