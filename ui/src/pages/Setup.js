@@ -49,7 +49,7 @@ function SetupImpl({onInit}) {
       console.log(`Init: OK, token is ${Tools.mask(data)}`);
       Token.save(data);
       onInit && onInit();
-      navigate('/routers-scenario');
+      navigate('/routers-channels');
     }).catch(handleError);
   }, [handleError, navigate, password, initializing, onInit]);
 

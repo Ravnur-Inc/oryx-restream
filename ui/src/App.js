@@ -23,7 +23,6 @@ import Logout from './pages/Logout';
 import Navigator from './pages/Navigator';
 import Setup from './pages/Setup';
 import {Locale, Token} from "./utils";
-import Components from "./pages/Components";
 import Ingest from "./pages/Ingest";
 import Channels from "./pages/Channels";
 import Destinations from "./pages/Destinations";
@@ -31,9 +30,6 @@ import Streams from "./pages/Streams";
 import Monitor from "./pages/Monitor";
 import Users from "./pages/Users";
 import Forbidden from "./pages/Forbidden";
-import Scenario from "./pages/Scenario";
-import Settings from "./pages/Settings";
-import Contact from "./pages/Contact";
 import {ErrorBoundary, useErrorHandler} from 'react-error-boundary';
 import {SrsErrorBoundary} from "./components/SrsErrorBoundary";
 import resources from "./resources/locale.json";
@@ -152,10 +148,6 @@ function AppRoute({initialized, setInitialized}) {
                 <Route path="routers-destinations" element={<Destinations/>}/>
                 <Route path="routers-streams" element={<Streams/>}/>
                 <Route path="routers-forbidden" element={<Forbidden/>}/>
-                <Route path="routers-scenario" element={<RequireOwner><Scenario/></RequireOwner>}/>
-                <Route path="routers-settings" element={<RequireOwner><Settings/></RequireOwner>}/>
-                <Route path="routers-contact" element={<RequireOwner><Contact/></RequireOwner>}/>
-                <Route path="routers-components" element={<RequireOwner><Components/></RequireOwner>}/>
                 <Route path="routers-users" element={<RequireOwner><Users/></RequireOwner>}/>
                 <Route path="routers-logout" element={<Logout onLogout={() => setTokenUpdated(!tokenUpdated)}/>}/>
               </>}

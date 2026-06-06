@@ -121,10 +121,6 @@ const ALL_NAV_ITEMS = [
   {to: '/routers-channels',   text: 'Channels'},
   {to: '/routers-destinations', text: 'Destinations'},
   {to: '/routers-streams',    text: 'Streams'},
-  {to: '/routers-scenario',   text: 'Scenario',   ownerOnly: true},
-  {to: '/routers-settings',   text: 'System',     ownerOnly: true},
-  {to: '/routers-components', text: 'Components', ownerOnly: true},
-  {to: '/routers-contact',    text: 'Contact',    ownerOnly: true},
   {to: '/routers-users',      text: 'Users',      ownerOnly: true},
   {to: '/routers-logout',     text: 'Logout'},
 ];
