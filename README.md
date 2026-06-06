@@ -111,6 +111,9 @@ A modern React UI (Vite) for managing simulcasting:
   **Start/Stop all**, the channel's ready-to-copy ingest URLs, and **health
   badges** for the source and each output (HEALTHY / DEGRADED when FFmpeg falls
   behind real time / DOWN / WAITING / OFF / BLOCKED) with live FPS/bitrate/speed.
+- **Monitor** — each channel's **Monitor** button opens a dedicated, single-pane
+  view: a live in-browser preview of the contribution feed alongside contribution
+  health and per-output egress health.
 - **Ingest** — the shared publish key (reveal / owner rotate), SRT encryption
   passphrase, and encoder reference. (Per-channel ingest URLs live on each
   Channel.)

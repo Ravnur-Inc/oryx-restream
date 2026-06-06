@@ -18,6 +18,7 @@ the Ravnur Media Platform.
 - [Ingest — publish key & encoder reference](#ingest--publish-key--encoder-reference)
 - [Destinations — your reusable targets](#destinations--your-reusable-targets)
 - [Channels — routes](#channels--routes)
+- [Monitor — one channel at a glance](#monitor--one-channel-at-a-glance)
 - [Streams — monitoring](#streams--monitoring)
 - [Users & roles](#users--roles)
 - [Common workflows](#common-workflows)
@@ -145,6 +146,9 @@ thing you actually operate for a recurring show or input.
   - **⊘ BLOCKED** (orange) — another channel is using this shared destination.
   The channel header also flags **"▲ N need attention"** when any output is
   degraded or down.
+- **Monitor** — each channel has a **Monitor** button that opens a dedicated
+  full-screen view (live preview + contribution and per-output health). See
+  [Monitor](#monitor--one-channel-at-a-glance).
 
 ### Shared destinations & the BLOCKED badge
 If two channels attach the same destination (e.g. both forward to "City
@@ -159,13 +163,31 @@ This is by design — it guarantees a destination is never double-sent.
 
 ---
 
+## Monitor — one channel at a glance
+Click **Monitor** on any channel card to open its dedicated view — the "single
+pane of glass" for one broadcast:
+
+- **Live preview** — the contribution feed plays in-browser (the fitted player,
+  no cropping). When the source is idle it shows a "waiting for a publisher"
+  placeholder instead.
+- **Contribution health** — a HEALTHY / STALLED / IDLE badge plus video codec,
+  resolution, audio codec, bitrate and uptime.
+- **Outputs** — every attached destination with its egress health badge
+  (HEALTHY / DEGRADED / DOWN / WAITING / OFF / BLOCKED) and live FPS / bitrate /
+  speed.
+
+It refreshes every few seconds. Use **← Channels** (or the nav) to go back. The
+view is per-channel; there is no all-channels wall (yet).
+
+---
+
 ## Streams — monitoring
 The **Streams** tab lists **every stream you've defined** — one row per channel —
 plus any live publisher that isn't tied to a channel.
 
 - **Health badge** per stream — **● HEALTHY** (green) when the feed is live and
-  frames are advancing, **▲ STALLED** (amber) when it's connected but frames have
-  stopped (a frozen feed), or **○ IDLE** (grey) when nobody is publishing. A
+  receiving data, **▲ STALLED** (amber) when it's connected but no data is
+  arriving (a frozen feed), or **○ IDLE** (grey) when nobody is publishing. A
   channel's stream stays **IDLE** until an encoder publishes to it. Use the
   **STATUS** filter (All / Active / Idle) or the search box to narrow the list.
 - **Stats** (active streams) — **codec, resolution, FPS, bitrate, uptime**.

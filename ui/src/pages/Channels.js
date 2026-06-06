@@ -5,8 +5,8 @@
 //
 import React from "react";
 import axios from "axios";
-import {Link, useLocation} from "react-router-dom";
-import {Token} from "../utils";
+import {Link, useLocation, useNavigate} from "react-router-dom";
+import {Token, Locale} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {SrsEnvContext} from "../components/SrsEnvContext";
 import {buildIngestUrls} from "../components/ingestUrls";
@@ -173,6 +173,7 @@ function DestRow({dest, stream, sourceLive, onToggle, onDetach}) {
 
 // ── Channel card (route) ──────────────────────────────────────────────────────
 function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDelete, onAddDest, onToggleDest, onDetachDest, onStartAll, onStopAll}) {
+  const navigate = useNavigate();
   const [confirmDel, setConfirmDel] = React.useState(false);
   const [expanded, setExpanded] = React.useState(false);
   const [showUrls, setShowUrls] = React.useState(false);
@@ -206,6 +207,7 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
           </div>
         </div>
         <div style={{display: "flex", alignItems: "center", gap: 8, flexShrink: 0}}>
+          <Btn variant="primary" small onClick={() => navigate(`/${Locale.current()}/routers-monitor/${encodeURIComponent(channel.name)}`)}>Monitor</Btn>
           <Btn variant="dim" small onClick={() => setExpanded(e => !e)}>{expanded ? "Collapse" : `Manage (${dests.length})`}</Btn>
           <button onClick={() => onEdit(channel)} aria-label="Edit channel" style={iconBtn}
             onMouseEnter={e => {e.currentTarget.style.color = HEADING; e.currentTarget.style.background = PANEL;}}
