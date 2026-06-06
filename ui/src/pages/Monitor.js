@@ -8,12 +8,13 @@
 // health. Reached from a channel's "Monitor" button (/routers-monitor/<name>).
 import React from "react";
 import axios from "axios";
-import {Link, useLocation, useParams} from "react-router-dom";
+import {Link, useParams} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {useToast, apiError} from "../components/useToast";
 import FlvPlayer from "../components/FlvPlayer";
 import {HealthBadge, contributionHealth, egressHealth, parseFrameLog} from "../components/HealthBadge";
+import {ACCENT, ACCENT_SOFT, ACCENT_ON_SOFT, PANEL, BORDER, HEADING, BODY, SECOND, MUTED, mono, syne} from "../components/tokens";
 
 export default function Monitor() {
   return (
@@ -41,12 +42,6 @@ const listSrcStreams = () => apiPost("/terraform/v1/mgmt/streams/query");
 const querySrsStats  = () => apiGet("/api/v1/streams");
 const kickoffStream  = (s) => apiPost("/terraform/v1/mgmt/streams/kickoff", {vhost: s.vhost, app: s.app, stream: s.stream});
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const ACCENT = "#b54100", BG = "#f5f4f1", CARD = "#ffffff", PANEL = "#edecea";
-const BORDER = "#888582", HEADING = "#111111", BODY = "#2b2926", SECOND = "#4a4744", MUTED = "#6b6865";
-const mono = {fontFamily: "'Public Sans', sans-serif", fontVariantNumeric: "tabular-nums"};
-const syne = {fontFamily: "'Public Sans', sans-serif"};
-
 function formatUptime(ms) {
   const s = Math.floor(ms / 1000);
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
@@ -66,43 +61,11 @@ function Btn({children, onClick, variant = "dim"}) {
   );
 }
 
-// ── Nav bar (shared shape with the other pages) ───────────────────────────────
-const ALL_NAV_ITEMS = [
-  {to: '/routers-ingest', text: 'Ingest'},
-  {to: '/routers-channels', text: 'Channels'},
-  {to: '/routers-destinations', text: 'Destinations'},
-  {to: '/routers-users', text: 'Users', ownerOnly: true},
-  {to: '/routers-logout', text: 'Logout'},
-];
-
-function NavBar({lastRefresh, onRefresh}) {
-  const location = useLocation();
-  const user = Token.loadUser();
-  const isOwner = !user || user.role === 'owner';
-  const items = ALL_NAV_ITEMS.filter(e => !e.ownerOnly || isOwner);
-  return (
-    <div style={{background: CARD, borderBottom: `1px solid ${BORDER}`, padding: "0 32px", display: "flex", alignItems: "stretch", justifyContent: "space-between", boxShadow: "0 1px 0 rgba(0,0,0,0.06)"}}>
-      <nav style={{display: "flex", alignItems: "stretch", gap: 2}}>
-        {items.map(item => {
-          const active = item.to === '/routers-channels'; // Monitor lives under Channels
-          return <Link key={item.to} to={item.to} style={{...syne, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? ACCENT : SECOND, textDecoration: "none", padding: "14px 14px 12px", borderBottom: active ? `2px solid ${ACCENT}` : "2px solid transparent", whiteSpace: "nowrap"}}
-            onMouseEnter={e => { if (!active) e.currentTarget.style.color = HEADING; }}
-            onMouseLeave={e => { if (!active) e.currentTarget.style.color = SECOND; }}>{item.text}</Link>;
-        })}
-      </nav>
-      <div style={{display: "flex", alignItems: "center", gap: 12, paddingLeft: 16}}>
-        {lastRefresh && <span style={{...mono, fontSize: 10, color: MUTED}}>↺ {lastRefresh.toLocaleTimeString()}</span>}
-        <Btn variant="dim" onClick={onRefresh}>Refresh</Btn>
-      </div>
-    </div>
-  );
-}
-
 // ── A labelled metric pill ────────────────────────────────────────────────────
 function Metric({label, value}) {
   if (value == null || value === "") return null;
   return (
-    <span style={{...mono, fontSize: 11, color: ACCENT, background: "rgba(181,65,0,0.06)", border: "1px solid rgba(181,65,0,0.2)", padding: "3px 9px", borderRadius: 3, letterSpacing: "0.06em"}}>
+    <span style={{...mono, fontSize: 11, color: ACCENT_ON_SOFT, background: ACCENT_SOFT, border: "1px solid transparent", padding: "3px 9px", borderRadius: 3, letterSpacing: "0.06em"}}>
       <span style={{color: MUTED, marginRight: 6}}>{label}</span>{value}
     </span>
   );
@@ -195,12 +158,9 @@ function MonitorImpl() {
   const flvUrl = `${window.location.origin}/live/${name}.flv`;
 
   return (
-    <div style={{background: BG, color: BODY, ...syne, minHeight: "100vh"}}>
+    <div style={{maxWidth: 1120, margin: "0 auto", ...syne}}>
       {Toaster}
-      <NavBar lastRefresh={lastRefresh} onRefresh={() => refresh(true)}/>
-
-      <main style={{padding: "24px 32px", maxWidth: 1120, margin: "0 auto"}}>
-        <Link to="/routers-channels" style={{...mono, fontSize: 12, color: ACCENT, textDecoration: "none"}}>← Channels</Link>
+      <Link to="/routers-channels" style={{...mono, fontSize: 12, color: ACCENT, textDecoration: "none"}}>← Channels</Link>
 
         {loading ? (
           <div role="status" style={{textAlign: "center", padding: 72, ...mono, fontSize: 12, color: MUTED, letterSpacing: "0.15em"}}>LOADING…</div>
@@ -274,7 +234,6 @@ function MonitorImpl() {
             </div>
           </>
         )}
-      </main>
     </div>
   );
 }

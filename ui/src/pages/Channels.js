@@ -5,13 +5,14 @@
 //
 import React from "react";
 import axios from "axios";
-import {Link, useLocation, useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {Token, Locale} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {SrsEnvContext} from "../components/SrsEnvContext";
 import {buildIngestUrls} from "../components/ingestUrls";
 import {useToast, apiError} from "../components/useToast";
 import {HealthBadge, egressHealth, contributionHealth, parseFrameLog} from "../components/HealthBadge";
+import {ACCENT, ACCENT_SOFT, ACCENT_ON_SOFT, CARD, PANEL, BORDER, HEADING, BODY, SECOND, MUTED, DANGER, mono, syne} from "../components/tokens";
 
 export default function Channels() {
   return (
@@ -44,10 +45,6 @@ function genPlatformKey() {
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const ACCENT="#b54100", BG="#f5f4f1", CARD="#fff", PANEL="#edecea", BORDER="#888582",
-  HEADING="#111", BODY="#2b2926", SECOND="#4a4744", MUTED="#6b6865", DANGER="#b91c1c";
-const mono = {fontFamily: "'Public Sans', sans-serif", fontVariantNumeric: "tabular-nums"};
-const syne = {fontFamily: "'Public Sans', sans-serif"};
 const inputBase = {...mono, fontSize: 13, color: BODY, background: CARD, border: `1.5px solid ${BORDER}`, borderRadius: 5, outline: "none", transition: "border-color 0.15s", width: "100%"};
 const lbl = {display: "block", ...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7};
 const iconBtn = {background: "none", border: "1px solid transparent", color: SECOND, cursor: "pointer", fontSize: 15, padding: "3px 6px", lineHeight: 1, borderRadius: 4, transition: "all 0.15s"};
@@ -64,7 +61,7 @@ function Btn({children, onClick, variant = "primary", disabled, small, style: ex
   return <button onClick={disabled ? undefined : onClick} style={{...base, ...variants[variant], ...extra}}>{children}</button>;
 }
 function Dot({live}) {
-  return <span aria-hidden="true" style={{display: "inline-block", width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: live ? ACCENT : "#b0aca8", boxShadow: live ? `0 0 0 3px rgba(181,65,0,0.15)` : "none", transition: "all 0.4s"}}/>;
+  return <span aria-hidden="true" style={{display: "inline-block", width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: live ? ACCENT : "var(--mantine-color-dimmed)", boxShadow: live ? `0 0 0 3px ${ACCENT_SOFT}` : "none", transition: "all 0.4s"}}/>;
 }
 function Toggle({value, onChange, label}) {
   return (
@@ -97,37 +94,6 @@ function fwStat({fps, bitrate, speed}) {
 }
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
-const ALL_NAV_ITEMS = [
-  {to: '/routers-ingest', text: 'Ingest'},
-  {to: '/routers-channels', text: 'Channels'},
-  {to: '/routers-destinations', text: 'Destinations'},
-  {to: '/routers-users', text: 'Users', ownerOnly: true},
-  {to: '/routers-logout', text: 'Logout'},
-];
-function NavBar({onAdd, lastRefresh, onRefresh}) {
-  const location = useLocation();
-  const user = Token.loadUser();
-  const isOwner = !user || user.role === 'owner';
-  const items = ALL_NAV_ITEMS.filter(e => !e.ownerOnly || isOwner);
-  return (
-    <div style={{background: CARD, borderBottom: `1px solid ${BORDER}`, padding: "0 32px", display: "flex", alignItems: "stretch", justifyContent: "space-between", boxShadow: "0 1px 0 rgba(0,0,0,0.06)"}}>
-      <nav style={{display: "flex", alignItems: "stretch", gap: 2}}>
-        {items.map(item => {
-          const active = location.pathname.includes(item.to);
-          return <Link key={item.to} to={item.to} style={{...syne, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? ACCENT : SECOND, textDecoration: "none", padding: "14px 14px 12px", borderBottom: active ? `2px solid ${ACCENT}` : "2px solid transparent", transition: "all 0.15s", whiteSpace: "nowrap"}}
-            onMouseEnter={e => { if (!active) e.currentTarget.style.color = HEADING; }}
-            onMouseLeave={e => { if (!active) e.currentTarget.style.color = SECOND; }}>{item.text}</Link>;
-        })}
-      </nav>
-      <div style={{display: "flex", alignItems: "center", gap: 12, paddingLeft: 16}}>
-        {lastRefresh && <span style={{...mono, fontSize: 10, color: MUTED}}>↺ {lastRefresh.toLocaleTimeString()}</span>}
-        <Btn variant="dim" onClick={onRefresh}>Refresh</Btn>
-        <Btn variant="primary" onClick={onAdd}>+ Add Channel</Btn>
-      </div>
-    </div>
-  );
-}
-
 // ── Destination row (within a channel) ────────────────────────────────────────
 function DestRow({dest, stream, sourceLive, onToggle, onDetach}) {
   const [confirmDel, setConfirmDel] = React.useState(false);
@@ -144,7 +110,7 @@ function DestRow({dest, stream, sourceLive, onToggle, onDetach}) {
           <div style={{...syne, fontSize: 13, fontWeight: 600, color: HEADING}}>{dest.label || dest.platform}</div>
           <div style={{...mono, fontSize: 10, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>{dest.server}</div>
         </div>
-        {stat && <span style={{...mono, fontSize: 10, color: ACCENT, background: "rgba(181,65,0,0.06)", border: "1px solid rgba(181,65,0,0.2)", padding: "2px 8px", borderRadius: 3}}>{stat}</span>}
+        {stat && <span style={{...mono, fontSize: 10, color: ACCENT_ON_SOFT, background: ACCENT_SOFT, border: "1px solid transparent", padding: "2px 8px", borderRadius: 3}}>{stat}</span>}
         <HealthBadge level={health.level} label={health.label} title={health.detail}/>
         <Toggle value={dest.enabled} onChange={() => onToggle(dest)} label={`Toggle ${dest.label || dest.platform}`}/>
         <button onClick={() => setConfirmDel(true)} aria-label="Detach destination" title="Detach from this channel" style={iconBtn}
@@ -496,12 +462,16 @@ function ChannelsImpl() {
   const libraryAnnotated = library.map(d => ({...d, attachedTo: attachWhere[d.id]}));
 
   return (
-    <div style={{background: BG, color: BODY, ...syne, minHeight: "100vh"}}>
+    <div style={{maxWidth: 820, margin: "0 auto", ...syne}}>
       {Toaster}
-      <NavBar onAdd={() => setModal({type: "channel"})} lastRefresh={lastRefresh} onRefresh={() => load(true)}/>
-
-      <main style={{padding: "28px 32px", maxWidth: 820, margin: "0 auto"}}>
-        <div style={{...syne, fontWeight: 800, fontSize: 20, color: HEADING, marginBottom: 4}}>Channels</div>
+      <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 4, flexWrap: "wrap"}}>
+        <div style={{...syne, fontWeight: 800, fontSize: 20, color: HEADING}}>Channels</div>
+        <div style={{display: "flex", alignItems: "center", gap: 10}}>
+          {lastRefresh && <span style={{...mono, fontSize: 10, color: MUTED}}>↺ {lastRefresh.toLocaleTimeString()}</span>}
+          <Btn variant="dim" small onClick={() => load(true)}>Refresh</Btn>
+          <Btn variant="primary" small onClick={() => setModal({type: "channel"})}>+ Add Channel</Btn>
+        </div>
+      </div>
         <div style={{fontSize: 13, color: MUTED, marginBottom: 24}}>
           A channel is a reusable route: a named ingest plus the <Link to="/routers-destinations" style={{color: ACCENT}}>Destinations</Link> it
           forwards to. Attach destinations, start/stop them, and the route stays consistent across every stream.
@@ -553,7 +523,6 @@ function ChannelsImpl() {
             ))}
           </div>
         )}
-      </main>
 
       {modal?.type === "channel" && (
         <ChannelModal initial={modal.channel} saving={saving} onSave={saveChannel} onClose={() => setModal(null)}/>

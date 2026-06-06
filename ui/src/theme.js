@@ -9,26 +9,11 @@
 // the brand primary shade is tuned per scheme for contrast).
 import {createTheme} from "@mantine/core";
 
-// Burnt-orange brand ramp (light → dark). Index 7 is the canonical Ravnur
-// #b54100; lighter shades read better on dark backgrounds.
-const ravnur = [
-  "#fff4ec",
-  "#ffe3d2",
-  "#ffc4a3",
-  "#ff9f6b",
-  "#fa7d3c",
-  "#e9651f",
-  "#d2570f",
-  "#b54100",
-  "#8f3400",
-  "#6b2700",
-];
-
 export const ravnurTheme = createTheme({
-  primaryColor: "ravnur",
-  // Brand on light surfaces; a touch lighter on dark for AA contrast.
-  primaryShade: {light: 7, dark: 5},
-  colors: {ravnur},
+  // Brand/accent color family. Mantine ships this ramp built-in.
+  primaryColor: "blue",
+  // Canonical shade on light surfaces; a touch lighter on dark for AA contrast.
+  primaryShade: {light: 6, dark: 4},
   fontFamily: "'Public Sans', system-ui, sans-serif",
   fontFamilyMonospace: "'Public Sans', ui-monospace, monospace",
   headings: {fontFamily: "'Public Sans', system-ui, sans-serif", fontWeight: "800"},

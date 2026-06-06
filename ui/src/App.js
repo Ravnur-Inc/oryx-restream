@@ -6,7 +6,8 @@
 import React from 'react';
 import axios from "axios";
 import './App.css';
-import {Container} from "react-bootstrap";
+import {MantineProvider} from "@mantine/core";
+import {Notifications} from "@mantine/notifications";
 import {
   BrowserRouter,
   Routes,
@@ -17,21 +18,20 @@ import {
   useLocation,
   useSearchParams
 } from "react-router-dom";
-import Footer from './pages/Footer';
 import Login from './pages/Login';
 import Logout from './pages/Logout';
-import Navigator from './pages/Navigator';
 import Setup from './pages/Setup';
 import {Locale, Token} from "./utils";
 import Ingest from "./pages/Ingest";
 import Channels from "./pages/Channels";
 import Destinations from "./pages/Destinations";
 import Monitor from "./pages/Monitor";
-import DesignPreview from "./pages/DesignPreview";
 import Users from "./pages/Users";
 import Forbidden from "./pages/Forbidden";
 import {ErrorBoundary, useErrorBoundary} from 'react-error-boundary';
 import {SrsErrorBoundary} from "./components/SrsErrorBoundary";
+import AppLayout from "./components/AppLayout";
+import {ravnurTheme} from "./theme";
 import resources from "./resources/locale.json";
 import {SrsEnvContext} from "./components/SrsEnvContext";
 
@@ -39,18 +39,21 @@ function App() {
   const [env, setEnv] = React.useState(null);
 
   return (
-    <SrsEnvContext.Provider value={[env, setEnv]}>
-      <ErrorBoundary FallbackComponent={(RootError)}>
-        <SrsErrorBoundary>
-          <AppPreImpl/>
-        </SrsErrorBoundary>
-      </ErrorBoundary>
-    </SrsEnvContext.Provider>
+    <MantineProvider theme={ravnurTheme} defaultColorScheme="auto">
+      <Notifications position="top-right"/>
+      <SrsEnvContext.Provider value={[env, setEnv]}>
+        <ErrorBoundary FallbackComponent={RootError}>
+          <SrsErrorBoundary>
+            <AppPreImpl/>
+          </SrsErrorBoundary>
+        </ErrorBoundary>
+      </SrsEnvContext.Provider>
+    </MantineProvider>
   );
 }
 
 function RootError({error}) {
-  return <Container fluid>{error?.message}</Container>;
+  return <div style={{padding: 16}}>{error?.message}</div>;
 }
 
 function AppPreImpl() {
@@ -88,9 +91,7 @@ function AppImpl() {
 
   return (
     <>
-      {loading && <>
-        <Container fluid>Loading...</Container>
-      </>}
+      {loading && <div style={{padding: 16}}>Loading...</div>}
       {!loading && <>
         <BrowserRouter basename={window.PUBLIC_URL}>
           <AppRoute {...{initialized, setInitialized}} />
@@ -122,40 +123,38 @@ function AppRoute({initialized, setInitialized}) {
   }, [setInitialized, setTokenUpdated]);
 
   return (
-    <>
-      {isPopout === -1 && <Navigator {...{initialized, token}} />}
-      <Routes>
-        {initialized === 0 ?
-          <React.Fragment>
-            <Route path="*" element={<React.Fragment/>}/>
-          </React.Fragment> :
-          <React.Fragment>
-            <Route path="/" element={<AppRoot/>}/>
-            <Route path=':locale' element={<AppLocale/>}>
-              {initialized === -1 && <>
-                <Route path="*" element={<Setup onInit={onInit}/>}/>
-                <Route path="routers-setup" element={<Setup onInit={onInit}/>}/>
-              </>}
-              {initialized === 1 && !token && <>
-                <Route path="*" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
-              </>}
-              {initialized === 1 && token && <>
-                <Route path="*" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
-                <Route path="routers-login" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
+    <Routes>
+      {initialized === 0 ?
+        <React.Fragment>
+          <Route path="*" element={<React.Fragment/>}/>
+        </React.Fragment> :
+        <React.Fragment>
+          <Route path="/" element={<AppRoot/>}/>
+          <Route path=':locale' element={<AppLocale/>}>
+            {initialized === -1 && <>
+              <Route path="*" element={<Setup onInit={onInit}/>}/>
+              <Route path="routers-setup" element={<Setup onInit={onInit}/>}/>
+            </>}
+            {initialized === 1 && !token && <>
+              <Route path="*" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
+            </>}
+            {initialized === 1 && token && <>
+              <Route path="routers-login" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
+              <Route path="routers-logout" element={<Logout onLogout={() => setTokenUpdated(!tokenUpdated)}/>}/>
+              {/* All authed pages render inside the shared shell. */}
+              <Route element={<AppLayout/>}>
                 <Route path="routers-ingest" element={<Ingest/>}/>
                 <Route path="routers-channels" element={<Channels/>}/>
                 <Route path="routers-monitor/:name" element={<Monitor/>}/>
                 <Route path="routers-destinations" element={<Destinations/>}/>
-                <Route path="routers-design" element={<DesignPreview/>}/>
                 <Route path="routers-forbidden" element={<Forbidden/>}/>
                 <Route path="routers-users" element={<RequireOwner><Users/></RequireOwner>}/>
-                <Route path="routers-logout" element={<Logout onLogout={() => setTokenUpdated(!tokenUpdated)}/>}/>
-              </>}
-            </Route>
-          </React.Fragment>}
-      </Routes>
-      {isPopout === -1 && <Footer/> }
-    </>
+              </Route>
+              <Route path="*" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
+            </>}
+          </Route>
+        </React.Fragment>}
+    </Routes>
   );
 }
 

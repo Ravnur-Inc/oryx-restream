@@ -88,7 +88,7 @@ function Shell() {
             <Menu position="bottom-end" withArrow>
               <Menu.Target>
                 <Button variant="subtle" color="gray" rightSection={<IconChevronDown size={14}/>}
-                  leftSection={<Avatar size={24} radius="xl" color="ravnur">BH</Avatar>}>
+                  leftSection={<Avatar size={24} radius="xl" color="blue">BH</Avatar>}>
                   <Text size="sm" visibleFrom="xs">owner</Text>
                 </Button>
               </Menu.Target>
@@ -142,9 +142,9 @@ function OverviewSample() {
 
       <SimpleGrid cols={{base: 1, xs: 2, md: 4}} spacing="lg">
         {[
-          {k: "Channels", v: "6", c: "ravnur"},
+          {k: "Channels", v: "6", c: "blue"},
           {k: "Live now", v: "3", c: "teal"},
-          {k: "Outputs", v: "11", c: "ravnur"},
+          {k: "Outputs", v: "11", c: "blue"},
           {k: "Need attention", v: "1", c: "yellow"},
         ].map(s => (
           <Card key={s.k} withBorder radius="md" padding="lg">
