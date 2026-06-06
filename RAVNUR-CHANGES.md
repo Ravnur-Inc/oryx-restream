@@ -622,3 +622,22 @@ rendered next to the bitrate pill, even though the feed (and the player) was fin
   badge call + HealthBadge.test.js updated accordingly.
 
 vite build + 26 vitest pass.
+
+## 2026-06-06 — Per-channel Monitor view (PR pending)
+
+A dedicated single-channel monitoring page — "one pane of glass" for a broadcast.
+
+- ui/src/pages/Monitor.js (new): route `routers-monitor/:name`. Live preview of
+  the contribution feed (reuses FlvPlayer; idle placeholder when no publisher),
+  contribution health (codec/res/audio/bitrate/uptime), and an Outputs list with
+  each destination's egress HealthBadge + FPS/bitrate/speed. 5s refresh; reuses
+  the HealthBadge derivations. Read-only (control stays on Channels).
+- ui/src/App.js: import Monitor + register the route under :locale.
+- ui/src/pages/Channels.js: each channel card gets a **Monitor** button that
+  navigates to /<locale>/routers-monitor/<name> (useNavigate + Locale).
+- Scope: single-channel only; a multiview wall is deferred.
+- docs: USER_GUIDE.md new Monitor section + TOC + Channels mention (and the
+  Streams health wording corrected to data-flow, matching the v2.10.1 fix);
+  README Management-UI bullet.
+
+vite build + 26 vitest pass.
