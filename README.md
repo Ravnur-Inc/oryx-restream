@@ -209,16 +209,24 @@ npm run build
 ## Security
 
 ### FFmpeg
-The system FFmpeg package is recommended over any bundled binary — it receives OS-level security patches:
+The image ships a current, self-contained **static FFmpeg** (the SRS/Oryx base
+images bundle an old 5.0.2). It's installed in the [Dockerfile](./Dockerfile) via
+a `FFMPEG_URL` build arg that defaults to the latest stable release, so each image
+build picks up the current FFmpeg automatically.
 
+Update or pin the version by overriding the arg at build time:
 ```bash
-# Ubuntu 22.04 / 24.04
-apt install ffmpeg
+# latest stable (default) — just rebuild
+docker build -t oryx-restream -f Dockerfile .
+
+# pin a specific static build (e.g. from BtbN or a versioned johnvansickle archive)
+docker build -t oryx-restream -f Dockerfile \
+  --build-arg FFMPEG_URL="https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz" .
 ```
 
-Verify the version in use:
+Verify the version in the running container:
 ```bash
-ffmpeg -version
+docker exec oryx ffmpeg -version
 ```
 
 ### Redis

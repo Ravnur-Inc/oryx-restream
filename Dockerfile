@@ -44,7 +44,7 @@ RUN export SRS_NO_LINT=1 && \
 # Use UPX to compress the binary.
 # https://serverfault.com/questions/949991/how-to-install-tzdata-on-a-ubuntu-docker-image
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -y && apt-get install -y upx
+RUN apt-get update -y && apt-get install -y upx curl xz-utils
 
 RUN echo "Before UPX for $TARGETARCH" && \
     ls -lh /usr/local/srs/objs/srs /usr/local/oryx/platform/platform && \
@@ -52,6 +52,21 @@ RUN echo "Before UPX for $TARGETARCH" && \
     upx --best --lzma /usr/local/oryx/platform/platform && \
     echo "After UPX for $TARGETARCH" && \
     ls -lh /usr/local/srs/objs/srs /usr/local/oryx/platform/platform
+
+# Install an up-to-date, self-contained FFmpeg (the base images bundle an old
+# 5.0.2). It's a fully static amd64 build, so it has no runtime deps. To update,
+# bump FFMPEG_URL (or pass --build-arg); the default tracks the latest stable
+# release, so a fresh image build picks up the current FFmpeg automatically.
+# Alternative source: https://github.com/BtbN/FFmpeg-Builds/releases
+ARG FFMPEG_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+RUN set -eux; \
+    curl -fsSL "$FFMPEG_URL" -o /tmp/ffmpeg.tar.xz; \
+    mkdir -p /tmp/ffmpeg; \
+    tar -xJf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1; \
+    install -m 0755 /tmp/ffmpeg/ffmpeg  /usr/local/bin/ffmpeg; \
+    install -m 0755 /tmp/ffmpeg/ffprobe /usr/local/bin/ffprobe; \
+    rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.xz; \
+    /usr/local/bin/ffmpeg -version | head -n1
 
 # http://releases.ubuntu.com/focal/
 #FROM ${ARCH}ubuntu:focal AS dist
@@ -63,6 +78,12 @@ EXPOSE 2022 2443 1935 8080 5060 9000 8000/udp 10080/udp
 # Copy files from build.
 COPY --from=build /usr/local/oryx /usr/local/oryx
 COPY --from=build /usr/local/srs /usr/local/srs
+
+# Override the base image's bundled FFmpeg (5.0.2) with the updated build, and
+# point SRS at it. The platform invokes "ffmpeg" from PATH (/usr/local/bin).
+COPY --from=build /usr/local/bin/ffmpeg  /usr/local/bin/ffmpeg
+COPY --from=build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
+RUN ln -sf /usr/local/bin/ffmpeg /usr/local/srs/objs/ffmpeg/bin/ffmpeg
 
 # Prepare data directory.
 RUN mkdir -p /data && \
