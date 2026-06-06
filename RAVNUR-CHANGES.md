@@ -641,3 +641,34 @@ A dedicated single-channel monitoring page — "one pane of glass" for a broadca
   README Management-UI bullet.
 
 vite build + 26 vitest pass.
+
+## 2026-06-06 — Runtime SRT encryption toggle (Ingest page) (PR pending)
+
+Customers reported that whoever deploys the restreamer often doesn't know the
+users' encryption requirements, so SRT AES encryption needs to be switchable
+post-deploy from the UI (previously it was deploy-time env only).
+
+Mechanism (no SRS config-file surgery): the launcher `auto/start_srs` already
+sources `containers/data/config/.srs.env` (in the persistent /data volume) and
+exports it before starting SRS. The toggle writes that file and restarts SRS;
+the container's `bootstrap` supervisor exits when SRS stops and Docker
+(`--restart always`) brings the whole service back up with the new env.
+
+- platform/srt.go (new): `SrtManager` + endpoint `/terraform/v1/mgmt/srt/encryption`
+  (query/update). State in Redis (`SRS_SRT_ENCRYPT`), seeded from the deploy-time
+  `SRS_SRT_SERVER_PASSPHRASE` env for back-compat. On enable: validate/auto-
+  generate a 32-char alphanumeric passphrase (CSPRNG), normalize pbkeylen
+  (16/24/32). Writes `.srs.env` (always both vars; empty when disabled so it
+  overrides any inherited -e env), responds, then SIGTERMs SRS (pid file) to
+  trigger the restart.
+- platform/srs-hooks.go: `secretQueryHandler` now sources the SRT passphrase from
+  SrtManager (so channels' SRT URLs reflect the toggle), falling back to env.
+- platform/main.go + service.go: construct + register srtManager.
+- ui/src/pages/Ingest.js: replaced the read-only SRT section with an owner toggle
+  — auto-generated, editable passphrase (Regenerate), AES key-length choice, a
+  restart warning + confirm, and an auto-reload once the server is back. Non-owners
+  see status + passphrase read-only.
+- docs: USER_GUIDE Ingest section, README bullets, deploy/azure-vm/README SRT
+  section (UI toggle is now the easy path; env is a pre-seed).
+
+GOOS=linux go build ./... + vite build + 26 vitest pass.

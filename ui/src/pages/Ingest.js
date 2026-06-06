@@ -169,6 +169,157 @@ function NavBar() {
   );
 }
 
+// ── SRT encryption toggle ─────────────────────────────────────────────────────
+const SRT_PASS_RE = /^[A-Za-z0-9]{10,79}$/;
+const AES = (k) => ({16: 128, 24: 192, 32: 256}[k] || k);
+
+// Generate a 32-char alphanumeric passphrase with a CSPRNG (matches the server's
+// alphabet/length; the server re-validates and can also generate its own).
+function srtGenPassphrase() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const rnd = new Uint8Array(32);
+  crypto.getRandomValues(rnd);
+  return Array.from(rnd, b => alphabet[b % alphabet.length]).join("");
+}
+
+function Toggle({on, disabled, onClick, label}) {
+  return (
+    <button role="switch" aria-checked={on} aria-label={label} disabled={disabled}
+      onClick={disabled ? undefined : onClick}
+      style={{
+        width: 44, height: 24, borderRadius: 12, border: `1.5px solid ${on ? ACCENT : BORDER}`,
+        background: on ? ACCENT : PANEL, position: "relative", padding: 0,
+        cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.5 : 1,
+        transition: "all 0.15s", flexShrink: 0,
+      }}>
+      <span style={{position: "absolute", top: 2, left: on ? 22 : 2, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left 0.15s"}}/>
+    </button>
+  );
+}
+
+const RestartWarning = () => (
+  <div style={{...mono, fontSize: 11, color: "#b45309", background: "rgba(180,83,9,0.10)", border: "1px solid rgba(180,83,9,0.32)", borderRadius: 6, padding: "9px 12px", marginBottom: 12}}>
+    ⚠ Saving <b>restarts the streaming server</b> (~10–20s). All active streams reconnect and the management UI is briefly unavailable.
+  </div>
+);
+
+function SrtEncryption({isOwner, showError}) {
+  const [cfg, setCfg] = React.useState(null); // {enabled, passphrase, pbkeylen}
+  const [loading, setLoading] = React.useState(true);
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState({passphrase: "", pbkeylen: "16"});
+  const [saving, setSaving] = React.useState(false);
+  const [restarting, setRestarting] = React.useState(false);
+  const [reveal, setReveal] = React.useState(false);
+
+  const load = React.useCallback(() => {
+    setLoading(true);
+    axios.post('/terraform/v1/mgmt/srt/encryption', {action: 'query'}, {headers: Token.loadBearerHeader()})
+      .then(res => setCfg(res.data.data))
+      .catch(e => showError(e))
+      .finally(() => setLoading(false));
+  }, [showError]);
+  React.useEffect(() => { load(); }, [load]);
+
+  const save = async (next) => {
+    setSaving(true);
+    try {
+      const res = await axios.post('/terraform/v1/mgmt/srt/encryption', {action: 'update', ...next}, {headers: Token.loadBearerHeader()});
+      setCfg(res.data.data);
+      setEditing(false);
+      setRestarting(true);
+      // The whole container restarts; reload once it's back to get a fresh session.
+      setTimeout(() => window.location.reload(), 20000);
+    } catch (e) {
+      showError(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const beginEdit = (fromOff) => {
+    setDraft({passphrase: fromOff ? srtGenPassphrase() : (cfg?.passphrase || srtGenPassphrase()), pbkeylen: cfg?.pbkeylen || "16"});
+    setEditing(true);
+  };
+
+  const saveOn = () => {
+    const p = draft.passphrase.trim();
+    if (!SRT_PASS_RE.test(p)) { showError(new Error("Passphrase must be 10–79 letters and numbers.")); return; }
+    if (!window.confirm("Apply SRT encryption?\n\nThe streaming server will RESTART (~10–20s). All active streams will reconnect, and every SRT publisher must use this passphrase. Continue?")) return;
+    save({enabled: true, passphrase: p, pbkeylen: draft.pbkeylen});
+  };
+
+  const turnOff = () => {
+    if (!window.confirm("Turn OFF SRT encryption?\n\nThe streaming server will RESTART (~10–20s). All active streams will reconnect, and SRT publishing will no longer require a passphrase. Continue?")) return;
+    save({enabled: false});
+  };
+
+  const enabled = !!cfg?.enabled;
+  const title = (
+    <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12}}>
+      <span>SRT encryption{enabled ? ` · AES-${AES(cfg.pbkeylen)}` : ""}</span>
+      {!loading && !restarting && (
+        <Toggle on={enabled} disabled={!isOwner || saving || editing}
+          onClick={enabled ? turnOff : () => beginEdit(true)}
+          label="Toggle SRT encryption"/>
+      )}
+    </div>
+  );
+
+  return (
+    <Section title={title}>
+      {restarting ? (
+        <div role="status" style={{...mono, fontSize: 12, color: SECOND}}>
+          <b>Server restarting…</b> applying the SRT encryption change (~10–20s). This page will reload automatically.
+        </div>
+      ) : loading ? (
+        <div style={{...mono, fontSize: 12, color: MUTED}}>Loading…</div>
+      ) : editing ? (
+        <>
+          <RestartWarning/>
+          <label style={{...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 6}}>Passphrase — 10–79 letters & numbers</label>
+          <div style={{display: "flex", gap: 8, marginBottom: 12}}>
+            <input type="text" spellCheck={false} autoComplete="off" value={draft.passphrase}
+              onChange={e => setDraft(d => ({...d, passphrase: e.target.value}))}
+              style={{...inputBase, padding: "9px 12px"}}/>
+            <Btn variant="ghost" small onClick={() => setDraft(d => ({...d, passphrase: srtGenPassphrase()}))} style={{whiteSpace: "nowrap"}}>Regenerate</Btn>
+          </div>
+          <label style={{...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 6}}>Key length</label>
+          <div style={{display: "flex", gap: 6, marginBottom: 18}}>
+            {["16", "24", "32"].map(k => (
+              <Btn key={k} variant={draft.pbkeylen === k ? "primary" : "dim"} small onClick={() => setDraft(d => ({...d, pbkeylen: k}))}>AES-{AES(k)}</Btn>
+            ))}
+          </div>
+          <div style={{display: "flex", gap: 10}}>
+            <Btn variant="primary" disabled={saving} onClick={saveOn}>{saving ? "Saving…" : "Save & restart"}</Btn>
+            <Btn variant="ghost" disabled={saving} onClick={() => setEditing(false)}>Cancel</Btn>
+          </div>
+        </>
+      ) : enabled ? (
+        <>
+          <CopyField
+            label={`Passphrase (AES-${AES(cfg.pbkeylen)})`}
+            value={reveal ? cfg.passphrase : "•".repeat(Math.min(cfg.passphrase.length, 24))}
+            hint="Enter in your encoder's SRT Passphrase / Encryption field — not the stream key. OBS gets it automatically in the channel's SRT URL."
+          />
+          <div style={{display: "flex", gap: 10, marginBottom: 8}}>
+            <Btn variant="ghost" small onClick={() => setReveal(v => !v)}>{reveal ? "Hide" : "Reveal"}</Btn>
+            {isOwner && <Btn variant="dim" small onClick={() => beginEdit(false)}>Change passphrase / key length</Btn>}
+          </div>
+          <span style={{...mono, fontSize: 11, color: MUTED, display: "block"}}>
+            SRT encryption is <b>on</b>. Every SRT publisher must use this passphrase.{isOwner ? " Use the toggle above to turn it off." : ""}
+          </span>
+        </>
+      ) : (
+        <span style={{...mono, fontSize: 11, color: MUTED, display: "block"}}>
+          SRT encryption is <b>off</b> — publishing is authorized by the stream key only.
+          {isOwner ? " Flip the toggle above to require an AES passphrase (the server will restart)." : " An owner can enable it."}
+        </span>
+      )}
+    </Section>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 function IngestImpl() {
   const [secret, setSecret]     = React.useState(null);
@@ -191,11 +342,9 @@ function IngestImpl() {
   React.useEffect(() => { loadSecret(); }, [loadSecret]);
 
   const pub = secret?.publish || "";
-  // Optional SRT AES encryption (set server-side via SRT_PASSPHRASE).
-  const srtPassphrase = secret?.srtPassphrase || "";
-  const srtPbkeylen = secret?.srtPbkeylen || "16";
-  const srtEncrypted = !!srtPassphrase;
-  const aes = {16: 128, 24: 192, 32: 256}[srtPbkeylen] || srtPbkeylen;
+  // SRT encryption status (managed by the SrtEncryption toggle below); used here
+  // only to tailor the encoder-reference hint.
+  const srtEncrypted = !!secret?.srtPassphrase;
 
   const rotateSecret = async () => {
     if (!window.confirm(
@@ -269,26 +418,8 @@ function IngestImpl() {
               )}
             </Section>
 
-            {/* SRT encryption */}
-            <Section title={srtEncrypted ? `SRT encryption · AES-${aes}` : "SRT encryption"}>
-              {srtEncrypted ? (
-                <>
-                  <CopyField
-                    label={`Passphrase (AES-${aes})`}
-                    value={srtPassphrase}
-                    hint="Enter in your encoder's SRT Passphrase / Encryption field — not the stream key. OBS includes it automatically in the channel's SRT URL."
-                  />
-                  <span style={{...mono, fontSize: 11, color: MUTED, display: "block"}}>
-                    SRT encryption is <b>on</b>. Every SRT publisher must use this passphrase.
-                  </span>
-                </>
-              ) : (
-                <span style={{...mono, fontSize: 11, color: MUTED, display: "block"}}>
-                  SRT encryption is <b>off</b> — publishing is authorized by the stream key only.
-                  To require AES, set <code>SRT_PASSPHRASE</code> on the server.
-                </span>
-              )}
-            </Section>
+            {/* SRT encryption — runtime toggle (owner) */}
+            <SrtEncryption isOwner={isOwner} showError={showError}/>
 
             {/* Encoder reference */}
             <Section title="Recommended encoder settings">

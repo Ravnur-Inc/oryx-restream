@@ -96,8 +96,14 @@ The **Ingest** tab shows:
 - **Publish key** — the single shared secret that authorizes publishing (embedded
   in every channel's ingest URLs). **Reveal** it, or (owner) **Rotate** it —
   rotating invalidates all current ingest URLs, so only do it if the key leaks.
-- **SRT encryption** — if enabled on this deployment, the **Passphrase** (AES) to
-  put in your encoder's *Passphrase/Encryption* field (never the stream key).
+- **SRT encryption** — an **on/off toggle** (owner). Turn it on and the system
+  generates a strong **passphrase** (you can edit it or **Regenerate**, and pick
+  the AES key length 128/192/256). The passphrase goes in your encoder's
+  *Passphrase/Encryption* field (never the stream key); OBS picks it up
+  automatically from the channel's SRT URL. **Changing the toggle restarts the
+  streaming server (~10–20s)** — all active streams reconnect and the UI is
+  briefly unavailable; the page reloads itself when it's back. Non-owners see the
+  current status and passphrase (read-only).
 - **Recommended encoder settings** — H.264, CBR, keyframe 2s, and the hardware
   (Teradek/Haivision) SRT field mapping.
 

@@ -85,8 +85,16 @@ service on boot, so Oryx comes back automatically after a VM reboot. Verify:
 ## SRT encryption (optional, AES)
 By default SRT publishing is authorized by the stream key (`?secret=`) but the
 media travels **unencrypted**. To require **AES encryption** on the SRT ingest
-(common for contribution over the public internet), set a passphrase before
-running `setup.sh`:
+(common for contribution over the public internet):
+
+**Easiest (no redeploy):** an owner can turn it on/off any time from the
+management UI — **Ingest → SRT encryption**. Enabling auto-generates a passphrase
+(editable, with a key-length choice); the change is saved to the persistent
+volume and the **server restarts (~10–20s)** to apply it. This is the recommended
+path when the person deploying doesn't know the encryption requirements up front.
+
+**Or pre-seed at deploy time** with an env var before running `setup.sh` (the UI
+toggle then reflects and can later override it):
 
 ```bash
 export SRT_PASSPHRASE='a-strong-passphrase-10-to-79-chars'
@@ -102,7 +110,9 @@ export SRT_PBKEYLEN=16     # optional: 16=AES-128 (default), 24=AES-192, 32=AES-
   embeds it in the OBS SRT URL, and lists the decomposed fields (address / port /
   Stream ID / passphrase) for hardware encoders (Teradek, Haivision).
 - Implemented via SRS's `SRS_SRT_SERVER_PASSPHRASE` / `SRS_SRT_SERVER_PBKEYLEN`
-  env overrides — no config-file edit; unset = unencrypted (prior behavior).
+  env overrides — no config-file edit; unset = unencrypted (prior behavior). The
+  UI toggle persists these to `containers/data/config/.srs.env` in the `/data`
+  volume (so they survive restarts) and is the source of truth once used.
 - Only the **ingest** leg is affected; the forward pipeline (local RTMP → FFmpeg
   → YouTube/Facebook) and HLS playback are unchanged.
 

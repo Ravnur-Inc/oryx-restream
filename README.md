@@ -114,9 +114,10 @@ A modern React UI (Vite) for managing simulcasting:
 - **Monitor** — each channel's **Monitor** button opens a dedicated, single-pane
   view: a live in-browser preview of the contribution feed alongside contribution
   health and per-output egress health.
-- **Ingest** — the shared publish key (reveal / owner rotate), SRT encryption
-  passphrase, and encoder reference. (Per-channel ingest URLs live on each
-  Channel.)
+- **Ingest** — the shared publish key (reveal / owner rotate), an **SRT
+  encryption on/off toggle** (owner — auto-generates an AES passphrase; toggling
+  restarts the server ~10–20s), and an encoder reference. (Per-channel ingest
+  URLs live on each Channel.)
 - **Destinations** — a reusable library of forward targets (YouTube, Facebook,
   custom RTMP). Save a target once and attach it to **multiple** channels; at
   runtime only one channel streams to it at a time (the others show **blocked**),
@@ -148,9 +149,11 @@ the [deployment guide](./deploy/azure-vm/README.md#recommended-obs--srt-settings
 srt://<vm-ip>:10080?mode=caller&latency=1000&pkt_size=1316&rcvbuf=8388608&streamid=#!::r=live/<stream>?secret=<key>,m=publish
 ```
 
-> Optional **AES encryption** for SRT: set `SRT_PASSPHRASE` (and `SRT_PBKEYLEN`)
-> on the server — the Ingest screen then shows the passphrase and the per-encoder
-> fields. See the [deployment guide](./deploy/azure-vm/README.md#srt-encryption-optional-aes).
+> Optional **AES encryption** for SRT: an owner can turn it on/off any time from
+> the **Ingest** screen (it auto-generates a passphrase; toggling restarts the
+> server ~10–20s). You can also pre-seed it at deploy time with `SRT_PASSPHRASE`
+> (and `SRT_PBKEYLEN`). See the
+> [deployment guide](./deploy/azure-vm/README.md#srt-encryption-optional-aes).
 
 ### Configure a restream destination
 
