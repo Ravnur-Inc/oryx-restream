@@ -113,7 +113,9 @@ A modern React UI (Vite) for managing simulcasting:
   behind real time / DOWN / WAITING / OFF / BLOCKED) with live FPS/bitrate/speed.
 - **Monitor** — each channel's **Monitor** button opens a dedicated, single-pane
   view: a live in-browser preview of the contribution feed alongside contribution
-  health and per-output egress health.
+  health and per-output egress health, plus **Reset source** to recover a stuck
+  feed. (The Channels page also flags any **unmanaged** live publisher that has no
+  channel.)
 - **Ingest** — the shared publish key (reveal / owner rotate), an **SRT
   encryption on/off toggle** (owner — auto-generates an AES passphrase; toggling
   restarts the server ~10–20s), and an encoder reference. (Per-channel ingest
@@ -123,10 +125,6 @@ A modern React UI (Vite) for managing simulcasting:
   runtime only one channel streams to it at a time (the others show **blocked**),
   so a shared target is never double-sent. Editing a target propagates to its
   live forward.
-- **Streams** — monitoring for **every** defined stream (one per channel, shown
-  **idle** until published) plus any unmanaged live publisher; a **health badge**
-  (HEALTHY / STALLED / IDLE) per stream, filter by status, codec / resolution /
-  FPS / uptime, a fitted in-browser player, and per-stream reset.
 - **Users** — owner/editor user management (owner-only).
 
 **Authentication** is password-based by default, or **Microsoft Entra ID**

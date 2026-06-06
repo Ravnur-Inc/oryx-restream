@@ -26,7 +26,6 @@ import {Locale, Token} from "./utils";
 import Ingest from "./pages/Ingest";
 import Channels from "./pages/Channels";
 import Destinations from "./pages/Destinations";
-import Streams from "./pages/Streams";
 import Monitor from "./pages/Monitor";
 import Users from "./pages/Users";
 import Forbidden from "./pages/Forbidden";
@@ -146,7 +145,6 @@ function AppRoute({initialized, setInitialized}) {
                 <Route path="routers-channels" element={<Channels/>}/>
                 <Route path="routers-monitor/:name" element={<Monitor/>}/>
                 <Route path="routers-destinations" element={<Destinations/>}/>
-                <Route path="routers-streams" element={<Streams/>}/>
                 <Route path="routers-forbidden" element={<Forbidden/>}/>
                 <Route path="routers-users" element={<RequireOwner><Users/></RequireOwner>}/>
                 <Route path="routers-logout" element={<Logout onLogout={() => setTokenUpdated(!tokenUpdated)}/>}/>
