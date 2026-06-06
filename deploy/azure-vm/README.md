@@ -116,6 +116,27 @@ export SRT_PBKEYLEN=16     # optional: 16=AES-128 (default), 24=AES-192, 32=AES-
 - Only the **ingest** leg is affected; the forward pipeline (local RTMP → FFmpeg
   → YouTube/Facebook) and HLS playback are unchanged.
 
+## Invite emails (optional, SMTP)
+The **Users** screen can email new users a Microsoft sign-in link. Configure SMTP
+before running `setup.sh` (all optional — without them, invites still work and the
+UI shows a copyable link to send manually):
+
+```bash
+export SMTP_HOST='smtp.sendgrid.net'      # or your relay / Microsoft 365 SMTP
+export SMTP_PORT=587                       # 587 STARTTLS (default) or 465 (implicit TLS)
+export SMTP_USER='apikey'                  # omit for relays without auth
+export SMTP_PASS='********'
+export SMTP_FROM='Ravnur Simulcast <no-reply@yourdomain.com>'
+export MGMT_BASE_URL='https://restreamer.ravnur.net/mgmt'  # link put in the email
+./deploy/azure-vm/setup.sh
+```
+
+- Only **invite emails** use SMTP; nothing else sends mail.
+- `MGMT_BASE_URL` is the public URL of the mgmt UI; it's the sign-in link in the
+  email. If unset, the email omits the link (the UI's copyable link still works).
+- Implemented with Go's standard `net/smtp` (STARTTLS on 587, implicit TLS on
+  465) — no extra dependencies.
+
 ## Authentication — Microsoft Entra ID (optional)
 By default the mgmt UI uses a single password (`MGMT_PASSWORD`). To sign in with
 **Microsoft Entra ID** (Azure AD) and manage authorized users with owner/editor

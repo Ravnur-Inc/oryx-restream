@@ -25,6 +25,11 @@ import (
 const (
 	RoleOwner  = "owner"
 	RoleEditor = "editor"
+
+	// User lifecycle status. A user is "invited" until they sign in for the first
+	// time, then "active". (Access itself is gated by the email allowlist + Entra.)
+	StatusInvited = "invited"
+	StatusActive  = "active"
 )
 
 var userManager *UserManager
@@ -44,6 +49,11 @@ type SimulcastUser struct {
 	Email     string `json:"email"`
 	Role      string `json:"role"` // "owner" or "editor"
 	CreatedAt string `json:"createdAt"`
+	// Invite lifecycle.
+	Status      string `json:"status,omitempty"`      // "invited" | "active"
+	InvitedAt   string `json:"invitedAt,omitempty"`   // when the user was created/invited
+	InvitedBy   string `json:"invitedBy,omitempty"`   // caller email that created the invite
+	LastLoginAt string `json:"lastLoginAt,omitempty"` // last successful sign-in
 }
 
 func (v *SimulcastUser) String() string {
@@ -56,14 +66,16 @@ func (v *UserManager) Handle(ctx context.Context, handler *http.ServeMux) error 
 	handler.HandleFunc(ep, func(w http.ResponseWriter, r *http.Request) {
 		if err := func() error {
 			var token, action, callerEmail string
+			var invite bool
 			var userReq SimulcastUser
 			if err := ParseBody(ctx, r.Body, &struct {
 				Token       *string `json:"token"`
 				Action      *string `json:"action"`
 				CallerEmail *string `json:"callerEmail"`
+				Invite      *bool   `json:"invite"`
 				*SimulcastUser
 			}{
-				Token: &token, Action: &action, CallerEmail: &callerEmail, SimulcastUser: &userReq,
+				Token: &token, Action: &action, CallerEmail: &callerEmail, Invite: &invite, SimulcastUser: &userReq,
 			}); err != nil {
 				return errors.Wrapf(err, "parse body")
 			}
@@ -73,14 +85,14 @@ func (v *UserManager) Handle(ctx context.Context, handler *http.ServeMux) error 
 				return errors.Wrapf(err, "authenticate")
 			}
 
-			allowedActions := []string{"create", "update", "delete"}
+			allowedActions := []string{"create", "update", "delete", "invite-resend", "invite-cancel"}
 			if action != "" && !slicesContains(allowedActions, action) {
 				return errors.Errorf("invalid action=%v", action)
 			}
 
 			// Role enforcement for mutating actions.
 			// Bootstrap exception: if the user store is empty, the first create is allowed without a caller.
-			if action == "create" || action == "update" || action == "delete" {
+			if slicesContains(allowedActions, action) {
 				count, err := rdb.HLen(ctx, SIMULCAST_USERS).Result()
 				if err != nil && err != redis.Nil {
 					return errors.Wrapf(err, "hlen %v", SIMULCAST_USERS)
@@ -111,24 +123,42 @@ func (v *UserManager) Handle(ctx context.Context, handler *http.ServeMux) error 
 					return errors.Errorf("email %v is already in use", userReq.Email)
 				}
 
+				now := time.Now().Format(time.RFC3339)
 				user := SimulcastUser{
 					ID:        uuid.NewString(),
 					FirstName: strings.TrimSpace(userReq.FirstName),
 					LastName:  strings.TrimSpace(userReq.LastName),
 					Email:     userReq.Email,
 					Role:      userReq.Role,
-					CreatedAt: time.Now().Format(time.RFC3339),
+					CreatedAt: now,
+					// New users haven't signed in yet — "invited" until first sign-in.
+					Status:    StatusInvited,
+					InvitedAt: now,
+					InvitedBy: callerEmail,
 				}
-				b, err := json.Marshal(&user)
-				if err != nil {
-					return errors.Wrapf(err, "marshal user")
-				}
-				if err := rdb.HSet(ctx, SIMULCAST_USERS, user.ID, string(b)).Err(); err != nil && err != redis.Nil {
-					return errors.Wrapf(err, "hset %v %v", SIMULCAST_USERS, user.ID)
+				if err := v.persist(ctx, &user); err != nil {
+					return errors.Wrapf(err, "persist user")
 				}
 
-				ohttp.WriteData(ctx, w, r, user)
-				logger.Tf(ctx, "Users create ok, user=%v, token=%vB", user.String(), len(token))
+				// Optionally email the invitation; on failure (or no SMTP) the UI
+				// falls back to a copyable sign-in link.
+				emailSent, emailErr := false, ""
+				if invite {
+					if err := sendInviteEmail(ctx, user.Email, strings.TrimSpace(user.FirstName+" "+user.LastName), callerEmail, user.Role); err != nil {
+						emailErr = err.Error()
+						logger.Wf(ctx, "invite email to %v failed: %v", user.Email, err)
+					} else {
+						emailSent = true
+					}
+				}
+
+				ohttp.WriteData(ctx, w, r, &struct {
+					*SimulcastUser
+					EmailSent      bool   `json:"emailSent"`
+					EmailError     string `json:"emailError,omitempty"`
+					SmtpConfigured bool   `json:"smtpConfigured"`
+				}{SimulcastUser: &user, EmailSent: emailSent, EmailError: emailErr, SmtpConfigured: smtpConfigured()})
+				logger.Tf(ctx, "Users create ok, user=%v, invite=%v, emailSent=%v, token=%vB", user.String(), invite, emailSent, len(token))
 
 			case "update":
 				if userReq.ID == "" {
@@ -196,6 +226,45 @@ func (v *UserManager) Handle(ctx context.Context, handler *http.ServeMux) error 
 
 				ohttp.WriteData(ctx, w, r, nil)
 				logger.Tf(ctx, "Users delete ok, id=%v, token=%vB", userReq.ID, len(token))
+
+			case "invite-resend":
+				if userReq.ID == "" {
+					return errors.New("id is required")
+				}
+				target, err := v.getUser(ctx, userReq.ID)
+				if err != nil {
+					return err
+				}
+				emailSent, emailErr := false, ""
+				if err := sendInviteEmail(ctx, target.Email, strings.TrimSpace(target.FirstName+" "+target.LastName), callerEmail, target.Role); err != nil {
+					emailErr = err.Error()
+					logger.Wf(ctx, "invite resend to %v failed: %v", target.Email, err)
+				} else {
+					emailSent = true
+				}
+				ohttp.WriteData(ctx, w, r, &struct {
+					EmailSent      bool   `json:"emailSent"`
+					EmailError     string `json:"emailError,omitempty"`
+					SmtpConfigured bool   `json:"smtpConfigured"`
+				}{EmailSent: emailSent, EmailError: emailErr, SmtpConfigured: smtpConfigured()})
+				logger.Tf(ctx, "Users invite-resend, email=%v, emailSent=%v", target.Email, emailSent)
+
+			case "invite-cancel":
+				if userReq.ID == "" {
+					return errors.New("id is required")
+				}
+				target, err := v.getUser(ctx, userReq.ID)
+				if err != nil {
+					return err
+				}
+				if target.Status == StatusActive {
+					return errors.Errorf("%v has already accepted; use delete to remove an active user", target.Email)
+				}
+				if err := rdb.HDel(ctx, SIMULCAST_USERS, target.ID).Err(); err != nil && err != redis.Nil {
+					return errors.Wrapf(err, "hdel %v %v", SIMULCAST_USERS, target.ID)
+				}
+				ohttp.WriteData(ctx, w, r, nil)
+				logger.Tf(ctx, "Users invite-cancel ok, email=%v, token=%vB", target.Email, len(token))
 
 			default: // list
 				users, err := v.listUsers(ctx)
@@ -265,6 +334,37 @@ func (v *UserManager) emailExists(ctx context.Context, email, excludeID string) 
 	return false, nil
 }
 
+// getUser fetches a single user by id, defaulting a missing status to active
+// (back-compat for users created before the invite lifecycle existed).
+func (v *UserManager) getUser(ctx context.Context, id string) (*SimulcastUser, error) {
+	raw, err := rdb.HGet(ctx, SIMULCAST_USERS, id).Result()
+	if err == redis.Nil {
+		return nil, errors.Errorf("user %v not found", id)
+	} else if err != nil {
+		return nil, errors.Wrapf(err, "hget %v %v", SIMULCAST_USERS, id)
+	}
+	var u SimulcastUser
+	if err := json.Unmarshal([]byte(raw), &u); err != nil {
+		return nil, errors.Wrapf(err, "unmarshal user")
+	}
+	if u.Status == "" {
+		u.Status = StatusActive
+	}
+	return &u, nil
+}
+
+// persist marshals and stores a user.
+func (v *UserManager) persist(ctx context.Context, u *SimulcastUser) error {
+	b, err := json.Marshal(u)
+	if err != nil {
+		return errors.Wrapf(err, "marshal user")
+	}
+	if err := rdb.HSet(ctx, SIMULCAST_USERS, u.ID, string(b)).Err(); err != nil && err != redis.Nil {
+		return errors.Wrapf(err, "hset %v %v", SIMULCAST_USERS, u.ID)
+	}
+	return nil
+}
+
 func (v *UserManager) listUsers(ctx context.Context) ([]*SimulcastUser, error) {
 	all, err := rdb.HGetAll(ctx, SIMULCAST_USERS).Result()
 	if err != nil && err != redis.Nil {
@@ -275,6 +375,9 @@ func (v *UserManager) listUsers(ctx context.Context) ([]*SimulcastUser, error) {
 		var u SimulcastUser
 		if err := json.Unmarshal([]byte(raw), &u); err != nil {
 			return nil, errors.Wrapf(err, "unmarshal user")
+		}
+		if u.Status == "" {
+			u.Status = StatusActive // back-compat for pre-invite users
 		}
 		users = append(users, &u)
 	}
@@ -293,13 +396,16 @@ func (v *UserManager) bootstrapOwner(ctx context.Context, email string) (*Simulc
 	if i := strings.Index(email, "@"); i > 0 {
 		local = email[:i]
 	}
+	now := time.Now().Format(time.RFC3339)
 	user := &SimulcastUser{
-		ID:        uuid.NewString(),
-		FirstName: local,
-		LastName:  "(bootstrap admin)",
-		Email:     email,
-		Role:      RoleOwner,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		ID:          uuid.NewString(),
+		FirstName:   local,
+		LastName:    "(bootstrap admin)",
+		Email:       email,
+		Role:        RoleOwner,
+		CreatedAt:   now,
+		Status:      StatusActive, // created during their own first sign-in
+		LastLoginAt: now,
 	}
 	b, err := json.Marshal(user)
 	if err != nil {

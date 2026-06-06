@@ -50,10 +50,33 @@ function Btn({children, onClick, variant = "primary", disabled, small, style: ex
   );
 }
 
+// ── Status badge ──────────────────────────────────────────────────────────────
+function StatusBadge({status}) {
+  const active = status === "active";
+  const s = active
+    ? {color: "#15803d", bg: "rgba(21,128,61,0.09)", bd: "rgba(21,128,61,0.30)", label: "● ACTIVE"}
+    : {color: "#b45309", bg: "rgba(180,83,9,0.10)",  bd: "rgba(180,83,9,0.32)",  label: "○ INVITED"};
+  return (
+    <span title={active ? "Has signed in" : "Invited — awaiting first sign-in"} style={{
+      ...mono, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+      color: s.color, background: s.bg, border: `1px solid ${s.bd}`,
+      padding: "2px 7px", borderRadius: 3, whiteSpace: "nowrap",
+    }}>{s.label}</span>
+  );
+}
+
+const iconBtn = {
+  background: "none", border: "1px solid transparent", color: SECOND,
+  cursor: "pointer", fontSize: 15, padding: "3px 6px", lineHeight: 1,
+  borderRadius: 4, transition: "all 0.15s",
+};
+
 // ── User row card ─────────────────────────────────────────────────────────────
-function UserCard({user, onEdit, onDelete}) {
+function UserCard({user, onEdit, onDelete, onResend, onCancel}) {
   const [confirmDel, setConfirmDel] = React.useState(false);
+  const [confirmCancel, setConfirmCancel] = React.useState(false);
   const isOwner = user.role === 'owner';
+  const invited = user.status === 'invited';
 
   return (
     <article style={{
@@ -85,35 +108,31 @@ function UserCard({user, onEdit, onDelete}) {
             {user.role.toUpperCase()}
           </span>
 
-          {user.createdAt && (
-            <span style={{...mono, fontSize: 10, color: MUTED}}>
-              {new Date(user.createdAt).toLocaleDateString()}
-            </span>
+          <StatusBadge status={user.status}/>
+
+          {invited ? (
+            <>
+              <Btn variant="dim" small onClick={() => onResend(user)}>Resend</Btn>
+              <Btn variant="danger" small onClick={() => setConfirmCancel(true)}>Cancel</Btn>
+              <button onClick={() => onEdit(user)} aria-label={`Edit ${user.email}`} style={iconBtn}
+                onMouseEnter={e => {e.currentTarget.style.color = HEADING; e.currentTarget.style.background = PANEL; e.currentTarget.style.borderColor = BORDER;}}
+                onMouseLeave={e => {e.currentTarget.style.color = SECOND;  e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "transparent";}}>✎</button>
+            </>
+          ) : (
+            <>
+              {user.lastLoginAt && (
+                <span title="Last sign-in" style={{...mono, fontSize: 10, color: MUTED}}>
+                  seen {new Date(user.lastLoginAt).toLocaleDateString()}
+                </span>
+              )}
+              <button onClick={() => onEdit(user)} aria-label={`Edit ${user.firstName} ${user.lastName}`} style={iconBtn}
+                onMouseEnter={e => {e.currentTarget.style.color = HEADING; e.currentTarget.style.background = PANEL; e.currentTarget.style.borderColor = BORDER;}}
+                onMouseLeave={e => {e.currentTarget.style.color = SECOND;  e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "transparent";}}>✎</button>
+              <button onClick={() => setConfirmDel(true)} aria-label={`Delete ${user.firstName} ${user.lastName}`} style={iconBtn}
+                onMouseEnter={e => {e.currentTarget.style.color = DANGER; e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.borderColor = "#fca5a5";}}
+                onMouseLeave={e => {e.currentTarget.style.color = SECOND; e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "transparent";}}>✕</button>
+            </>
           )}
-
-          <button
-            onClick={() => onEdit(user)}
-            aria-label={`Edit ${user.firstName} ${user.lastName}`}
-            style={{
-              background: "none", border: "1px solid transparent", color: SECOND,
-              cursor: "pointer", fontSize: 15, padding: "3px 6px", lineHeight: 1,
-              borderRadius: 4, transition: "all 0.15s",
-            }}
-            onMouseEnter={e => {e.currentTarget.style.color = HEADING; e.currentTarget.style.background = PANEL; e.currentTarget.style.borderColor = BORDER;}}
-            onMouseLeave={e => {e.currentTarget.style.color = SECOND;  e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "transparent";}}
-          >✎</button>
-
-          <button
-            onClick={() => setConfirmDel(true)}
-            aria-label={`Delete ${user.firstName} ${user.lastName}`}
-            style={{
-              background: "none", border: "1px solid transparent", color: SECOND,
-              cursor: "pointer", fontSize: 15, padding: "3px 6px", lineHeight: 1,
-              borderRadius: 4, transition: "all 0.15s",
-            }}
-            onMouseEnter={e => {e.currentTarget.style.color = DANGER; e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.borderColor = "#fca5a5";}}
-            onMouseLeave={e => {e.currentTarget.style.color = SECOND; e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "transparent";}}
-          >✕</button>
         </div>
       </div>
 
@@ -131,13 +150,66 @@ function UserCard({user, onEdit, onDelete}) {
           </div>
         </div>
       )}
+
+      {confirmCancel && (
+        <div role="alertdialog" aria-label="Confirm cancel invite" style={{
+          marginTop: 14, padding: "14px 16px", borderRadius: 6,
+          background: "#fef2f2", border: "1px solid #fca5a5",
+        }}>
+          <div style={{...syne, fontSize: 13, color: DANGER, marginBottom: 10}}>
+            Cancel the invite for {user.email}? They'll be removed and the sign-in link will stop working.
+          </div>
+          <div style={{display: "flex", gap: 8}}>
+            <Btn variant="ghost" small onClick={() => setConfirmCancel(false)}>Keep</Btn>
+            <Btn variant="danger" small onClick={() => {setConfirmCancel(false); onCancel(user);}}>Cancel invite</Btn>
+          </div>
+        </div>
+      )}
     </article>
+  );
+}
+
+// ── Invite-link modal (shown when an invite email can't be sent) ──────────────
+function InviteLinkModal({info, onClose}) {
+  const [copied, setCopied] = React.useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(info.link); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {}
+  };
+  React.useEffect(() => {
+    const h = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+  return (
+    <div role="dialog" aria-modal="true" aria-label="Invite link" onClick={e => e.target === e.currentTarget && onClose()}
+      style={{position: "fixed", inset: 0, background: "rgba(43,41,38,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, backdropFilter: "blur(4px)"}}>
+      <div style={{background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "28px 32px", width: 560, maxWidth: "92vw", boxShadow: "0 24px 60px rgba(0,0,0,0.18)"}}>
+        <div style={{display: "flex", alignItems: "center", gap: 12, marginBottom: 14}}>
+          <div style={{width: 5, height: 28, background: ACCENT, borderRadius: 3}}/>
+          <span style={{...syne, fontWeight: 800, fontSize: 18, color: HEADING}}>Invite created — send the link</span>
+        </div>
+        <div style={{fontSize: 13, color: SECOND, marginBottom: 16}}>
+          {info.reason} Share this sign-in link with <b>{info.email}</b> — they sign in with their Microsoft account.
+        </div>
+        <div style={{...mono, fontSize: 12, color: BODY, background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 6, padding: "10px 12px", wordBreak: "break-all", marginBottom: 16}}>
+          {info.link}
+        </div>
+        <div style={{display: "flex", gap: 10, justifyContent: "flex-end"}}>
+          <Btn variant="ghost" onClick={onClose}>Close</Btn>
+          <Btn variant="primary" onClick={copy}>{copied ? "Copied ✓" : "Copy link"}</Btn>
+        </div>
+      </div>
+    </div>
   );
 }
 
 // ── Add / Edit Modal ──────────────────────────────────────────────────────────
 const ROLES = ['owner', 'editor'];
-const emptyForm = {firstName: '', lastName: '', email: '', role: 'editor'};
+const emptyForm = {firstName: '', lastName: '', email: '', role: 'editor', invite: true};
+
+// The app's externally-reachable base URL (origin + PUBLIC_URL), used as the
+// sign-in link shown when an invite email can't be sent.
+const appBaseUrl = () => `${window.location.origin}${window.PUBLIC_URL || ''}`;
 
 function UserModal({initial, onSave, onClose, saving}) {
   const [form, setForm] = React.useState(initial
@@ -229,10 +301,22 @@ function UserModal({initial, onSave, onClose, saving}) {
           </div>
         </div>
 
+        {!initial && (
+          <label style={{display: "flex", alignItems: "center", gap: 10, marginBottom: 24, cursor: "pointer", ...mono, fontSize: 12, color: SECOND}}>
+            <input
+              type="checkbox"
+              checked={form.invite}
+              onChange={e => setForm(f => ({...f, invite: e.target.checked}))}
+              style={{width: 16, height: 16, accentColor: ACCENT, cursor: "pointer"}}
+            />
+            Send an invite email with a sign-in link
+          </label>
+        )}
+
         <div style={{display: "flex", gap: 10, justifyContent: "flex-end"}}>
           <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
           <Btn variant="primary" disabled={!valid || saving} onClick={() => valid && onSave(form)}>
-            {saving ? "Saving…" : "Save User"}
+            {saving ? "Saving…" : (initial ? "Save User" : (form.invite ? "Create & Invite" : "Create User"))}
           </Btn>
         </div>
       </div>
@@ -245,7 +329,16 @@ function UsersImpl() {
   const [users,   setUsers]   = React.useState([]);
   const [modal,   setModal]   = React.useState(null); // null | {mode:'add'} | {mode:'edit', user}
   const [saving,  setSaving]  = React.useState(false);
-  const {showError, Toaster} = useToast();
+  const [inviteInfo, setInviteInfo] = React.useState(null); // {email, link, reason} when email can't be sent
+  const {showError, showOk, Toaster} = useToast();
+
+  // Build the "email couldn't be sent" reason + show the copyable link modal.
+  const fallbackToLink = React.useCallback((email, data) => {
+    const reason = !data?.smtpConfigured
+      ? "Email isn't configured on the server, so no message was sent."
+      : `The invite email couldn't be sent${data?.emailError ? ` (${data.emailError})` : ""}.`;
+    setInviteInfo({email, link: appBaseUrl(), reason});
+  }, []);
 
   const loadUsers = React.useCallback(() => {
     axios.post('/terraform/v1/mgmt/users', {}, {
@@ -263,22 +356,34 @@ function UsersImpl() {
     if (!form.email.trim())     return showError('Email is required.');
     if (!ROLES.includes(form.role)) return showError('Role must be owner or editor.');
 
+    const creating = !modal.user;
     setSaving(true);
     const payload = {
-      action: modal.user ? 'update' : 'create',
-      ...(modal.user ? {id: modal.user.id} : {}),
+      action: creating ? 'create' : 'update',
+      ...(creating ? {} : {id: modal.user.id}),
       callerEmail: Token.loadUser()?.email || '',
       firstName: form.firstName.trim(),
       lastName:  form.lastName.trim(),
       email:     form.email.trim(),
       role:      form.role,
+      ...(creating ? {invite: !!form.invite} : {}),
     };
 
     axios.post('/terraform/v1/mgmt/users', payload, {
       headers: Token.loadBearerHeader(),
-    }).then(() => {
+    }).then((res) => {
       setModal(null);
       loadUsers();
+      if (creating) {
+        const data = res.data?.data || {};
+        if (!form.invite) {
+          showOk(`${data.email || form.email.trim()} added.`);
+        } else if (data.emailSent) {
+          showOk(`Invite emailed to ${data.email || form.email.trim()}.`);
+        } else {
+          fallbackToLink(data.email || form.email.trim(), data);
+        }
+      }
     }).catch(showError).finally(() => setSaving(false));
   };
 
@@ -290,8 +395,32 @@ function UsersImpl() {
     }, {headers: Token.loadBearerHeader()}).then(loadUsers).catch(showError);
   };
 
+  const handleResend = (user) => {
+    axios.post('/terraform/v1/mgmt/users', {
+      action: 'invite-resend',
+      id: user.id,
+      callerEmail: Token.loadUser()?.email || '',
+    }, {headers: Token.loadBearerHeader()}).then((res) => {
+      const data = res.data?.data || {};
+      if (data.emailSent) showOk(`Invite re-sent to ${user.email}.`);
+      else fallbackToLink(user.email, data);
+    }).catch(showError);
+  };
+
+  const handleCancel = (user) => {
+    axios.post('/terraform/v1/mgmt/users', {
+      action: 'invite-cancel',
+      id: user.id,
+      callerEmail: Token.loadUser()?.email || '',
+    }, {headers: Token.loadBearerHeader()}).then(() => {
+      showOk(`Invite for ${user.email} cancelled.`);
+      loadUsers();
+    }).catch(showError);
+  };
+
   const owners  = users.filter(u => u.role === 'owner').length;
   const editors = users.filter(u => u.role === 'editor').length;
+  const pending = users.filter(u => u.status === 'invited').length;
 
   return (
     <div style={{maxWidth: 820, margin: "0 auto", ...syne}}>
@@ -304,6 +433,7 @@ function UsersImpl() {
             ["TOTAL",   users.length],
             ["OWNERS",  owners],
             ["EDITORS", editors],
+            ["PENDING", pending],
           ].map(([k, v]) => (
             <div key={k} style={{display: "flex", alignItems: "center", gap: 7}}>
               <span style={{...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em"}}>{k}</span>
@@ -331,6 +461,8 @@ function UsersImpl() {
                 user={user}
                 onEdit={(u) => setModal({mode: 'edit', user: u})}
                 onDelete={handleDelete}
+                onResend={handleResend}
+                onCancel={handleCancel}
               />
             ))}
           </div>
@@ -344,6 +476,10 @@ function UsersImpl() {
           onSave={handleSave}
           onClose={() => setModal(null)}
         />
+      )}
+
+      {inviteInfo && (
+        <InviteLinkModal info={inviteInfo} onClose={() => setInviteInfo(null)}/>
       )}
     </div>
   );

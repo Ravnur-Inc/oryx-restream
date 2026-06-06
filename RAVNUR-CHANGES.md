@@ -766,3 +766,33 @@ GOOS=linux go build ./... (unchanged) · vite build + 26 vitest pass · npm audi
   Monitor header + output rows wrap. (index.css + the page cards.)
 
 vite build + eslint + 26 vitest pass.
+
+## 2026-06-06 — User invites (email + status + resend/cancel)
+
+Owners can invite users by email and track their status. Access is still gated by
+the email allowlist + Entra; the invite adds the user and emails them a Microsoft
+sign-in link.
+
+Backend:
+- platform/email.go (new): SMTP sender via Go stdlib net/smtp (STARTTLS on 587,
+  implicit TLS on 465) — no new deps. Configured by SMTP_HOST/PORT/USER/PASS/FROM
+  + MGMT_BASE_URL (link in the email). `smtpConfigured()` gates sending.
+- users.go: SimulcastUser gains status (invited|active), invitedAt, invitedBy,
+  lastLoginAt (missing status defaults to active for pre-existing users). `create`
+  takes an `invite` flag and sets status=invited; new actions `invite-resend` and
+  `invite-cancel` (cancel deletes a not-yet-active user). create/resend return
+  {emailSent, smtpConfigured, emailError} so the UI can fall back to a link.
+- entra_auth.go: first successful sign-in flips invited→active and records
+  lastLoginAt (best-effort). bootstrapOwner is created active.
+- utils.go: SMTP_* + MGMT_BASE_URL env helpers.
+
+Frontend (Users):
+- Add User has a "Send an invite email" checkbox; status badges (INVITED/ACTIVE);
+  Resend / Cancel on invited users; last-sign-in date on active users; a PENDING
+  stat. When email isn't sent (no SMTP or send failed), an **invite-link modal**
+  shows a copyable sign-in link (origin + PUBLIC_URL).
+
+Deploy/docs: setup.sh passes SMTP_*/MGMT_BASE_URL; deploy README "Invite emails"
+section; USER_GUIDE Users section; README bullet.
+
+GOOS=linux go build ./... + eslint + vite build + 26 vitest pass.

@@ -377,6 +377,22 @@ func envSrtPbkeylen() string {
 	return v
 }
 
+// SMTP configuration for sending user-invite emails. When SMTP_HOST and
+// SMTP_FROM are set, invites are emailed; otherwise the UI shows a copyable
+// invite link instead. SMTP_USER/PASS are optional (for relays without auth).
+func envSmtpHost() string { return os.Getenv("SMTP_HOST") }
+func envSmtpPort() string { return os.Getenv("SMTP_PORT") }
+func envSmtpUser() string { return os.Getenv("SMTP_USER") }
+func envSmtpPass() string { return os.Getenv("SMTP_PASS") }
+func envSmtpFrom() string { return os.Getenv("SMTP_FROM") }
+
+// envMgmtBaseURL is the externally reachable base URL of the management UI (e.g.
+// https://restreamer.ravnur.net/mgmt), used to build the sign-in link in invite
+// emails. Empty means the email omits the link (the UI's copyable link still works).
+func envMgmtBaseURL() string {
+	return os.Getenv("MGMT_BASE_URL")
+}
+
 func envSelfSignedCertificate() string {
 	return os.Getenv("AUTO_SELF_SIGNED_CERTIFICATE")
 }

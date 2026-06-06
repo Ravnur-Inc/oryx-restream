@@ -87,6 +87,16 @@ if [ -n "${SRT_PASSPHRASE:-}" ]; then
   echo "    SRT encryption: ENABLED (AES, pbkeylen=${SRT_PBKEYLEN:-16})"
 fi
 
+# Optional email for user invites. Set SMTP_HOST + SMTP_FROM (and usually
+# SMTP_PORT/USER/PASS) to email invites; MGMT_BASE_URL is the public mgmt URL put
+# in the email's sign-in link. Unset = invites still work, but the UI shows a
+# copyable link to send manually instead of emailing it.
+smtp_args=()
+for v in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS SMTP_FROM MGMT_BASE_URL; do
+  if [ -n "${!v:-}" ]; then smtp_args+=( -e "${v}=${!v}" ); fi
+done
+if [ -n "${SMTP_HOST:-}" ]; then echo "    Invite email (SMTP): ENABLED via ${SMTP_HOST}"; fi
+
 # Mgmt UI HTTPS is published on host port 443 (-> container 2443) so it is
 # reachable at https://<host>/mgmt with no port in the URL. This also makes the
 # MSAL redirect origin match an app-registration redirect of https://<host>
@@ -97,6 +107,7 @@ $DOCKER run -d --name "$NAME" --restart always \
   -e ENTRA_CLIENT_ID="${ENTRA_CLIENT_ID:-}" \
   -e ENTRA_BOOTSTRAP_EMAIL="${ENTRA_BOOTSTRAP_EMAIL:-}" \
   "${srt_enc_args[@]}" \
+  "${smtp_args[@]}" \
   -v "$DATA_DIR:/data" \
   "$IMAGE"
 
