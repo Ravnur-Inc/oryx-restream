@@ -816,3 +816,17 @@ resolved to the base image's /usr/local/bin/ffmpeg.
 Verified by CI (Build platform image + Test EN image's publish->forward media
 test, which exercises the new ffmpeg). Confirm the version with
 `docker exec oryx ffmpeg -version`.
+
+## 2026-06-06 — Deploy hardening for unattended long-running operation
+
+Closes the two most likely "left alone for months" failure modes found while
+reviewing maintenance:
+- deploy/azure-vm/setup.sh: Docker **log rotation** on the container
+  (`--log-opt max-size=10m --log-opt max-file=3`) — SRS logs to console → Docker
+  json logs were unbounded and could fill the disk over time.
+- setup.sh: install + enable **unattended-upgrades** on the host so OS/Docker CVEs
+  are patched even if the app isn't touched (writes /etc/apt/apt.conf.d/20auto-upgrades).
+- deploy README: "Ongoing maintenance" section (backups, cert-timer check,
+  periodic security rebuild).
+
+No app/code change; deploy-only.

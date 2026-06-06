@@ -40,6 +40,15 @@ fi
 # brings Oryx back after a VM reboot.
 sudo systemctl enable docker >/dev/null 2>&1 || true
 
+# Enable unattended security updates on the host so OS/Docker CVEs are patched
+# even if the app is left untouched. Best-effort (Debian/Ubuntu only).
+if command -v apt-get >/dev/null 2>&1; then
+  echo "==> Enabling unattended security upgrades"
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y unattended-upgrades >/dev/null 2>&1 || true
+  printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' \
+    | sudo tee /etc/apt/apt.conf.d/20auto-upgrades >/dev/null || true
+fi
+
 # 1. Get the source: build in place if we're inside the repo, else clone/update.
 if [ -f "./Dockerfile" ] && [ -d "./platform" ]; then
   SRC_DIR="$(pwd)"
@@ -102,6 +111,7 @@ if [ -n "${SMTP_HOST:-}" ]; then echo "    Invite email (SMTP): ENABLED via ${SM
 # MSAL redirect origin match an app-registration redirect of https://<host>
 # (no port). Port 80 is intentionally left unmapped for certbot HTTP-01 renewals.
 $DOCKER run -d --name "$NAME" --restart always \
+  --log-opt max-size=10m --log-opt max-file=3 \
   -p 2022:2022 -p 443:2443 -p 1935:1935 \
   -p 8000:8000/udp -p 10080:10080/udp \
   -e ENTRA_CLIENT_ID="${ENTRA_CLIENT_ID:-}" \
