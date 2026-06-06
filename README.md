@@ -222,7 +222,7 @@ ffmpeg -version
 Redis binds to `127.0.0.1` only and requires a password. These are enforced by the platform configuration. Do not expose Redis externally.
 
 ### SRT publish secret
-Set a publish secret in the management UI under **System → Auth**. This prevents unauthorized sources from publishing to your ingest endpoint.
+Manage the publish key in the management UI under **Ingest → Publish key** (reveal, or owner **Rotate**). It's embedded in every channel's ingest URLs and prevents unauthorized sources from publishing to your ingest endpoint.
 
 ### Management UI
 Restrict ports `443`/`2022` to trusted IP ranges at your firewall or cloud NSG. Do not expose the management UI to the public internet.

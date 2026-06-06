@@ -49,10 +49,10 @@ Open `https://<your-host>/mgmt`.
   management password.
 
 **Roles:**
-- **Owner** — full access, including **Users**, **System/Settings**, and the
-  legacy **Scenario** screens.
+- **Owner** — full access, including **Users** management and owner-only controls
+  (e.g. rotating the publish key and the SRT-encryption toggle).
 - **Editor** — day-to-day operation: **Ingest**, **Channels**, **Destinations**,
-  **Streams**. Owner-only screens are hidden.
+  **Streams**. Owner-only controls are hidden.
 
 ---
 

@@ -672,3 +672,24 @@ the container's `bootstrap` supervisor exits when SRS stops and Docker
   section (UI toggle is now the easy path; env is a pre-seed).
 
 GOOS=linux go build ./... + vite build + 26 vitest pass.
+
+## 2026-06-06 — Remove non-restreaming pages (Scenario/System/Components/Contact) (PR pending)
+
+These upstream-oryx owner-only screens aren't relevant to the restreamer, so they
+were removed along with their nav tabs.
+
+- ui/src/App.js: dropped the imports + routes for Scenario, Settings (System),
+  Components, Contact (kept RequireOwner — Users is still owner-only).
+- Removed the four owner-only entries from ALL_NAV_ITEMS in all six nav-bearing
+  pages (Channels, Destinations, Ingest, Monitor, Streams, Users). Owner nav is
+  now just **Users · Logout**; everyone sees Ingest · Channels · Destinations ·
+  Streams.
+- ui/src/pages/Setup.js: post-first-run redirect now goes to /routers-channels
+  (was /routers-scenario).
+- Deleted pages: Scenario.js (+ ScenarioForward/Live/Others/Srt/Transcode/
+  Tutorials), Settings.js, Components.js, Contact.js. (Backend endpoints those
+  screens called are left in place — harmless and out of scope.)
+- docs: USER_GUIDE roles wording; README "publish secret" now points to
+  Ingest → Publish key (was System → Auth).
+
+vite build + 26 vitest pass (also drops the noisy ScenarioSrt esbuild warning).
