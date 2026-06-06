@@ -14,7 +14,7 @@ import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {useToast, apiError} from "../components/useToast";
 import FlvPlayer from "../components/FlvPlayer";
 import {HealthBadge, contributionHealth, egressHealth, parseFrameLog} from "../components/HealthBadge";
-import {ACCENT, ACCENT_SOFT, ACCENT_ON_SOFT, PANEL, BORDER, HEADING, BODY, SECOND, MUTED, mono, syne} from "../components/tokens";
+import {ACCENT, ACCENT_SOFT, ACCENT_ON_SOFT, CARD, PANEL, BORDER, HEADING, BODY, SECOND, MUTED, mono, syne} from "../components/tokens";
 
 export default function Monitor() {
   return (
