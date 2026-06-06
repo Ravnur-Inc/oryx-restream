@@ -188,7 +188,7 @@ function MonitorImpl() {
             </div>
 
             {/* Two columns: preview + info */}
-            <div style={{display: "grid", gridTemplateColumns: "minmax(0, 1.6fr) minmax(280px, 1fr)", gap: 22, alignItems: "start"}}>
+            <div className="monitor-grid">
               {/* Preview */}
               <div>
                 {sourceLive ? (

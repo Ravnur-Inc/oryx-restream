@@ -104,7 +104,9 @@ settings, and auto-renewing TLS, see the
 📖 **Operator/user guide:** [docs/USER_GUIDE.md](./docs/USER_GUIDE.md) — how to
 sign in, get ingest URLs, manage Destinations and Channels, and more.
 
-A modern React UI (Vite) for managing simulcasting:
+A modern React UI (Vite + Mantine, React 18) for managing simulcasting — a
+responsive sidebar layout with **light/dark mode** (follows your OS, remembers
+your choice) that collapses to a drawer on small screens:
 
 - **Channels** — reusable **routes**: a named ingest plus the destinations it
   forwards to, managed in one place — attach destinations from the library,

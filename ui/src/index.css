@@ -16,3 +16,14 @@
 body {
   background: var(--app-bg);
 }
+
+/* Monitor: preview + info side-by-side on desktop, stacked on small screens. */
+.monitor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .monitor-grid { grid-template-columns: 1fr; }
+}
