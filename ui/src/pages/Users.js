@@ -68,7 +68,6 @@ const ALL_NAV_ITEMS = [
   {to: '/routers-ingest',     text: 'Ingest'},
   {to: '/routers-channels',   text: 'Channels'},
   {to: '/routers-destinations', text: 'Destinations'},
-  {to: '/routers-streams',    text: 'Streams'},
   {to: '/routers-users',      text: 'Users',      ownerOnly: true},
   {to: '/routers-logout',     text: 'Logout'},
 ];

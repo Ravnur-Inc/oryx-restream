@@ -101,7 +101,6 @@ const ALL_NAV_ITEMS = [
   {to: '/routers-ingest', text: 'Ingest'},
   {to: '/routers-channels', text: 'Channels'},
   {to: '/routers-destinations', text: 'Destinations'},
-  {to: '/routers-streams', text: 'Streams'},
   {to: '/routers-users', text: 'Users', ownerOnly: true},
   {to: '/routers-logout', text: 'Logout'},
 ];
@@ -426,6 +425,9 @@ function ChannelsImpl() {
   const streamMap = React.useMemo(() => Object.fromEntries(fwStreams.map(s => [s.platform, s])), [fwStreams]);
   const destsFor = (name) => Object.values(forwards).filter(f => f.stream === name);
   const channelByStream = React.useMemo(() => Object.fromEntries(channels.map(c => [c.name, c.label])), [channels]);
+  // Live publishers that aren't backed by any channel (test pushes / leftovers /
+  // wrong stream name). Surfaced as a notice so operators can spot rogue ingest.
+  const unmanaged = React.useMemo(() => [...activeSrc].filter(n => !channels.some(c => c.name === n)), [activeSrc, channels]);
   // destinationId -> [channels it's attached to] (a destination may serve several)
   const attachWhere = React.useMemo(() => {
     const m = {};
@@ -504,6 +506,17 @@ function ChannelsImpl() {
           A channel is a reusable route: a named ingest plus the <Link to="/routers-destinations" style={{color: ACCENT}}>Destinations</Link> it
           forwards to. Attach destinations, start/stop them, and the route stays consistent across every stream.
         </div>
+
+        {!loading && !error && unmanaged.length > 0 && (
+          <div role="status" style={{background: "rgba(180,83,9,0.10)", border: "1px solid rgba(180,83,9,0.32)", borderRadius: 8, padding: "12px 16px", marginBottom: 16}}>
+            <div style={{...syne, fontSize: 13, fontWeight: 700, color: "#b45309", marginBottom: 4}}>
+              ⚠ {unmanaged.length} unmanaged stream{unmanaged.length > 1 ? "s" : ""} publishing
+            </div>
+            <div style={{...mono, fontSize: 11, color: SECOND}}>
+              Live but not tied to any channel: <b>{unmanaged.join(", ")}</b>. Create a channel with that stream name to manage and forward it.
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div role="status" style={{textAlign: "center", padding: 72, ...mono, fontSize: 12, color: MUTED, letterSpacing: "0.15em"}}>LOADING…</div>

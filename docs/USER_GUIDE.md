@@ -19,7 +19,6 @@ the Ravnur Media Platform.
 - [Destinations — your reusable targets](#destinations--your-reusable-targets)
 - [Channels — routes](#channels--routes)
 - [Monitor — one channel at a glance](#monitor--one-channel-at-a-glance)
-- [Streams — monitoring](#streams--monitoring)
 - [Users & roles](#users--roles)
 - [Common workflows](#common-workflows)
 - [Encoder setup cheat-sheet](#encoder-setup-cheat-sheet)
@@ -35,8 +34,8 @@ You send **one** live stream into the server (over **SRT** or **RTMP**), and it
 **forwards** that stream out to one or more destinations at the same time. You
 manage everything from the web UI at `https://<your-host>/mgmt`.
 
-The flow is always: **Ingest** (publish in) → **Streams** (confirm it's live) →
-**Channels** (fan it out).
+The flow is always: **Ingest** (publish in) → **Channels** (fan it out) →
+**Monitor** (confirm it's live and healthy).
 
 ---
 
@@ -51,8 +50,8 @@ Open `https://<your-host>/mgmt`.
 **Roles:**
 - **Owner** — full access, including **Users** management and owner-only controls
   (e.g. rotating the publish key and the SRT-encryption toggle).
-- **Editor** — day-to-day operation: **Ingest**, **Channels**, **Destinations**,
-  **Streams**. Owner-only controls are hidden.
+- **Editor** — day-to-day operation: **Ingest**, **Channels** (incl. **Monitor**),
+  **Destinations**. Owner-only controls are hidden.
 
 ---
 
@@ -81,7 +80,8 @@ prevents two streams hitting the same YouTube/Facebook key at once.
    **RTMP** URL.
 3. In your encoder (OBS, Teradek, Haivision…), paste the URL and set
    **keyframe interval = 2s**, **H.264**, **CBR**. Start streaming.
-4. **Streams** tab → your stream appears as **ACTIVE** within a few seconds.
+4. On the channel, click **Monitor** → the source shows **HEALTHY** with a live
+   preview within a few seconds.
 5. Back in the channel → **Add Destination** (e.g. YouTube) → **Start**. Your
    stream is now live on that destination.
 
@@ -185,26 +185,14 @@ pane of glass" for one broadcast:
 It refreshes every few seconds. Use **← Channels** (or the nav) to go back. The
 view is per-channel; there is no all-channels wall (yet).
 
----
+- **Reset source** — when the source is live, a **Reset source** button
+  disconnects the current publisher so the encoder reconnects automatically. Use
+  it to recover a stuck/frozen feed.
 
-## Streams — monitoring
-The **Streams** tab lists **every stream you've defined** — one row per channel —
-plus any live publisher that isn't tied to a channel.
-
-- **Health badge** per stream — **● HEALTHY** (green) when the feed is live and
-  receiving data, **▲ STALLED** (amber) when it's connected but no data is
-  arriving (a frozen feed), or **○ IDLE** (grey) when nobody is publishing. A
-  channel's stream stays **IDLE** until an encoder publishes to it. Use the
-  **STATUS** filter (All / Active / Idle) or the search box to narrow the list.
-- **Stats** (active streams) — **codec, resolution, FPS, bitrate, uptime**.
-- **▶ Watch** — play the live stream in the browser. The player fits the modal and
-  letterboxes the video (no cropping). Disabled while a stream is idle.
-- **✎ Description** — add a note (stored in your browser).
-- **⟳ Reset** — disconnect a stuck stream; the encoder reconnects automatically.
-
-> Streams that show as **Unmanaged** are live publishers with no matching channel —
-> usually a test push or a leftover. Create a channel with that stream name to
-> manage and forward it.
+> **Unmanaged streams:** if something publishes a stream name that isn't one of
+> your channels (a test push, a leftover, or the wrong name), the **Channels**
+> page shows a "⚠ N unmanaged stream(s) publishing" notice listing them. Create a
+> channel with that stream name to manage and forward it.
 
 ---
 
@@ -329,4 +317,4 @@ or alters something a user sees or does:
 2. Note user-facing changes in [`RAVNUR-CHANGES.md`](../RAVNUR-CHANGES.md) too
    (the engineering changelog).
 3. Keep screenshots/wording in sync with the current screens (Ingest, Channels,
-   Destinations, Streams, Users).
+   Monitor, Destinations, Users).

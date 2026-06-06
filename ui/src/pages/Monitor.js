@@ -39,6 +39,7 @@ const listForwards   = () => apiPost("/terraform/v1/ffmpeg/forward/secret");
 const listFwStreams  = () => apiPost("/terraform/v1/ffmpeg/forward/streams");
 const listSrcStreams = () => apiPost("/terraform/v1/mgmt/streams/query");
 const querySrsStats  = () => apiGet("/api/v1/streams");
+const kickoffStream  = (s) => apiPost("/terraform/v1/mgmt/streams/kickoff", {vhost: s.vhost, app: s.app, stream: s.stream});
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const ACCENT = "#b54100", BG = "#f5f4f1", CARD = "#ffffff", PANEL = "#edecea";
@@ -70,7 +71,6 @@ const ALL_NAV_ITEMS = [
   {to: '/routers-ingest', text: 'Ingest'},
   {to: '/routers-channels', text: 'Channels'},
   {to: '/routers-destinations', text: 'Destinations'},
-  {to: '/routers-streams', text: 'Streams'},
   {to: '/routers-users', text: 'Users', ownerOnly: true},
   {to: '/routers-logout', text: 'Logout'},
 ];
@@ -143,7 +143,7 @@ function MonitorImpl() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [lastRefresh, setLastRefresh] = React.useState(null);
-  const {Toaster} = useToast();
+  const {Toaster, showError} = useToast();
   const timerRef = React.useRef();
 
   const refresh = React.useCallback(async (showLoader = false) => {
@@ -179,6 +179,13 @@ function MonitorImpl() {
     timerRef.current = setInterval(() => refresh(false), 5000);
     return () => clearInterval(timerRef.current);
   }, [refresh]);
+
+  const handleReset = async () => {
+    if (!srcStream) return;
+    if (!window.confirm(`Reset the source for "${channel?.label || name}"?\n\nThis disconnects the current publisher; the encoder will reconnect automatically.`)) return;
+    try { await kickoffStream(srcStream); await refresh(true); }
+    catch (e) { showError(e); }
+  };
 
   const health = contributionHealth({active: sourceLive, bitrate: srs?.kbps?.recv_30s});
   const startMs = srcStream?.update ? new Date(srcStream.update).getTime() : null;
@@ -216,6 +223,7 @@ function MonitorImpl() {
                 <div style={{...syne, fontWeight: 800, fontSize: 22, color: HEADING}}>{channel.label}</div>
                 {channel.description && <div style={{...mono, fontSize: 12, color: MUTED}}>{channel.description}</div>}
               </div>
+              {sourceLive && <Btn variant="dim" onClick={handleReset}>Reset source</Btn>}
               <HealthBadge level={health.level} label={health.label} title={health.detail}/>
             </div>
 

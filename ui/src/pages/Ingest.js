@@ -120,7 +120,6 @@ const ALL_NAV_ITEMS = [
   {to: '/routers-ingest',     text: 'Ingest'},
   {to: '/routers-channels',   text: 'Channels'},
   {to: '/routers-destinations', text: 'Destinations'},
-  {to: '/routers-streams',    text: 'Streams'},
   {to: '/routers-users',      text: 'Users',      ownerOnly: true},
   {to: '/routers-logout',     text: 'Logout'},
 ];
@@ -371,8 +370,8 @@ function IngestImpl() {
           The shared publish key and encoder reference for pushing streams in.
           To get a <b>ready-to-copy ingest URL</b>, open the
           {" "}<Link to="/routers-channels" style={{color: ACCENT}}>Channel</Link> you're
-          publishing to → <b>Ingest URLs</b>. Confirm a live stream under
-          {" "}<Link to="/routers-streams" style={{color: ACCENT}}>Streams</Link>.
+          publishing to → <b>Ingest URLs</b>, then use its <b>Monitor</b> view to
+          confirm the feed is live.
         </div>
 
         {loading ? (

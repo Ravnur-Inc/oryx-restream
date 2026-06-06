@@ -693,3 +693,25 @@ were removed along with their nav tabs.
   Ingest → Publish key (was System → Auth).
 
 vite build + 26 vitest pass (also drops the noisy ScenarioSrt esbuild warning).
+
+## 2026-06-06 — Remove the Streams page; fold its unique bits into Channels/Monitor (PR pending)
+
+With per-channel **Monitor** (live preview + contribution & egress health) and
+Channels (overview + control + source health), the Streams page was almost
+entirely redundant. Its only unique value was (1) **Reset** a stuck publisher and
+(2) visibility of **unmanaged** (no-channel) live streams — both folded in.
+
+- Deleted ui/src/pages/Streams.js + its route/import in App.js + the Streams nav
+  entry from the remaining nav pages (Channels, Destinations, Ingest, Monitor,
+  Users). Nav is now Ingest · Channels · Destinations (+ owner Users · Logout).
+- Monitor.js: added a **Reset source** button (kickoff /terraform/v1/mgmt/streams/
+  kickoff) shown when the source is live, with confirm — recovers a stuck feed.
+- Channels.js: added an **unmanaged streams** notice — live publishers whose name
+  matches no channel are listed with a "⚠ N unmanaged stream(s) publishing" banner.
+- ui/src/pages/Ingest.js: "confirm live under Streams" hint now points to the
+  channel's Monitor view.
+- docs: USER_GUIDE removed the Streams section + TOC entry, folded Reset/unmanaged
+  into Monitor/Channels, fixed flow/roles/quick-start wording; README dropped the
+  Streams bullet and noted Reset + unmanaged on the Monitor/Channels bullets.
+
+vite build + 26 vitest pass.
