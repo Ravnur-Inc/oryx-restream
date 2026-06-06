@@ -34,7 +34,10 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.39.4",
+    "globals": "^15.15.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.5.15",
     "postcss-preset-mantine": "^1.18.0",
@@ -46,8 +49,9 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "echo 'lint skipped (eslint removed with CRA)'",
-    "test": "vitest run",
+    "lint": "echo 'lint runs in the test script (eslint src && vitest)'",
+    "eslint": "eslint src",
+    "test": "eslint src && vitest run",
     "testWatch": "vitest"
   },
   "browserslist": {

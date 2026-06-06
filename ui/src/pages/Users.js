@@ -64,7 +64,7 @@ function UserCard({user, onEdit, onDelete}) {
       borderLeft: `3px solid ${isOwner ? ACCENT : "#c8c4be"}`,
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
     }}>
-      <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12}}>
+      <div className="card-header">
         <div style={{flex: 1, minWidth: 0}}>
           <div style={{...syne, fontWeight: 700, fontSize: 14, color: HEADING, marginBottom: 2}}>
             {user.firstName} {user.lastName}
@@ -74,7 +74,7 @@ function UserCard({user, onEdit, onDelete}) {
           </div>
         </div>
 
-        <div style={{display: "flex", alignItems: "center", gap: 10, flexShrink: 0}}>
+        <div className="card-actions">
           <span style={{
             ...mono, fontSize: 10, letterSpacing: "0.08em",
             color: isOwner ? ACCENT_ON_SOFT : SECOND,
