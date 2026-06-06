@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 import React from 'react';
-import {Container, Alert, Button} from 'react-bootstrap';
+import {Container, Alert, Button, Group} from '@mantine/core';
 import {useNavigate} from 'react-router-dom';
 import {msalInstance} from '../msalInstance';
 import {Token} from '../utils';
@@ -23,19 +23,17 @@ export default function Forbidden() {
   };
 
   return (
-    <Container className="mt-5" style={{maxWidth: 560}}>
-      <Alert variant="danger">
-        <Alert.Heading>Access Denied</Alert.Heading>
+    <Container size="sm" mt="xl">
+      <Alert color="red" title="Access Denied">
         <p>
           Your Microsoft account is not registered as a user of this application.
           Please contact an administrator to request access.
         </p>
-        <hr/>
-        <div className="d-flex justify-content-end">
-          <Button variant="outline-danger" onClick={handleSignOut}>
+        <Group justify="flex-end" mt="md">
+          <Button color="red" variant="outline" onClick={handleSignOut}>
             Sign out and try a different account
           </Button>
-        </div>
+        </Group>
       </Alert>
     </Container>
   );

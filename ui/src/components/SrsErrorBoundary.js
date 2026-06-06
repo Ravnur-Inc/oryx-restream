@@ -5,7 +5,6 @@
 //
 import React from "react";
 import {ErrorBoundary} from 'react-error-boundary';
-import {Alert, Button, Container} from "react-bootstrap";
 import {Errors} from "../utils";
 import {NavLink} from "react-router-dom";
 import {useTranslation} from "react-i18next";
@@ -27,14 +26,16 @@ function ErrorFallback({error, resetErrorBoundary}) {
   }, [setShow, resetErrorBoundary]);
 
   if (!show) return <></>;
+  // Provider-independent (plain HTML) so the fallback renders even if the error
+  // is in the MantineProvider tree itself.
   return (
-    <Container fluid>
-      <Alert variant="danger" onClose={() => setShow(false)} dismissible>
-        <Alert.Heading>You got an error!</Alert.Heading>
+    <div style={{padding: 16, maxWidth: 900, margin: "0 auto", fontFamily: "'Public Sans', sans-serif"}}>
+      <div role="alert" style={{background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "16px 18px"}}>
+        <h3 style={{margin: "0 0 8px", color: "#b91c1c"}}>You got an error!</h3>
         <ErrorDetail error={error} />
-        <Button variant="success" type="button" onClick={onResetError}>OK</Button>
-      </Alert>
-    </Container>
+        <button type="button" onClick={onResetError} style={{marginTop: 10, padding: "6px 16px", background: "#15803d", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontWeight: 700}}>OK</button>
+      </div>
+    </div>
   );
 }
 

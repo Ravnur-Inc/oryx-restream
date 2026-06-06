@@ -9,7 +9,6 @@ import {createRoot} from 'react-dom/client';
 // own overrides win.
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 import './i18n';
 import App from './App';

@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 import React from "react";
-import {Spinner} from 'react-bootstrap';
+import {Loader} from '@mantine/core';
 import axios from "axios";
 import {useNavigate} from "react-router-dom";
 import {Token, Tools} from '../utils';
@@ -122,7 +122,7 @@ function LoginImpl({onLogin}) {
             width: '100%',
             padding: '11px 20px',
             background: '#ffffff',
-            border: `1.5px solid ${btnHover ? '#b54100' : '#d1d5db'}`,
+            border: `1.5px solid ${btnHover ? '#1971c2' : '#d1d5db'}`,
             borderRadius: 6,
             fontFamily: "'Public Sans', sans-serif",
             fontSize: 14, fontWeight: 600,
@@ -138,7 +138,7 @@ function LoginImpl({onLogin}) {
         >
           {operating ? (
             <>
-              <Spinner animation="border" size="sm" style={{color: '#6b7280'}}/>
+              <Loader size="sm" color="gray"/>
               Signing in…
             </>
           ) : (
@@ -171,7 +171,7 @@ function LoginImpl({onLogin}) {
       {/* ── Right panel — decorative pattern ── */}
       <div style={{
         flex: 1,
-        backgroundColor: '#b54100',
+        backgroundColor: '#1971c2',
         backgroundImage: `url(${patternBg})`,
         backgroundSize: '280px 280px',
         backgroundRepeat: 'repeat',
