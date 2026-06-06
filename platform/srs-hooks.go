@@ -209,17 +209,28 @@ func handleHooksService(ctx context.Context, handler *http.ServeMux) error {
 				return errors.New("system not boot yet")
 			}
 
-			// Surface the optional SRT encryption settings (from the SRS env), so the
-			// Ingest UI can show the passphrase and build encrypted SRT URLs. Empty
+			// Surface the optional SRT encryption settings, so the Ingest UI can show
+			// the passphrase and build encrypted SRT URLs. The source of truth is the
+			// runtime toggle (SrtManager, seeded from the deploy-time env); an empty
 			// passphrase means SRT encryption is off (publish auth via stream key only).
+			srtPassphrase, srtPbkeylen := envSrtPassphrase(), envSrtPbkeylen()
+			if srtManager != nil {
+				if srtCfg, err := srtManager.load(ctx); err != nil {
+					return errors.Wrapf(err, "load srt encryption")
+				} else if srtCfg.Enabled {
+					srtPassphrase, srtPbkeylen = srtCfg.Passphrase, srtCfg.Pbkeylen
+				} else {
+					srtPassphrase, srtPbkeylen = "", ""
+				}
+			}
 			ohttp.WriteData(ctx, w, r, &struct {
 				Publish       string `json:"publish"`
 				SrtPassphrase string `json:"srtPassphrase"`
 				SrtPbkeylen   string `json:"srtPbkeylen"`
 			}{
 				Publish:       publish,
-				SrtPassphrase: envSrtPassphrase(),
-				SrtPbkeylen:   envSrtPbkeylen(),
+				SrtPassphrase: srtPassphrase,
+				SrtPbkeylen:   srtPbkeylen,
 			})
 			logger.Tf(ctx, "srs secret ok ok, token=%vB", len(token))
 			return nil
