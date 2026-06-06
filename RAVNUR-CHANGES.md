@@ -749,3 +749,20 @@ hand-rolled chrome with a single responsive shell and theme tokens.
 - docs: USER_GUIDE "The interface" section + README updated.
 
 GOOS=linux go build ./... (unchanged) · vite build + 26 vitest pass · npm audit 0.
+
+## 2026-06-06 — Redesign fixes: Monitor crash, mobile layout, ESLint guard (v3.0.1)
+
+- **Fix:** opening a channel **Monitor** threw `ReferenceError: CARD is not defined`
+  — the migration imported a subset of tokens into Monitor.js but the page uses
+  CARD. Added the missing import.
+- **Guard:** added ESLint (flat config, `no-undef`) wired into the `test` script
+  (`eslint src && vitest run`) so CI's "Run UTest" catches undefined identifiers
+  — the exact class of bug the bundler doesn't flag. (`lint` stays an echo to
+  preserve the Makefile's pre-install build ordering; `npm run eslint` for manual.)
+- **Mobile breakpoint pass:** channel/destination/user **card headers** now stack
+  (title over actions) below 600px via a shared `.card-header`/`.card-actions`
+  class instead of squeezing the title to one word per line; per-destination rows
+  group their metrics/badge/toggle/✕ controls so they wrap below the label;
+  Monitor header + output rows wrap. (index.css + the page cards.)
+
+vite build + eslint + 26 vitest pass.

@@ -14,7 +14,7 @@ import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {useToast, apiError} from "../components/useToast";
 import FlvPlayer from "../components/FlvPlayer";
 import {HealthBadge, contributionHealth, egressHealth, parseFrameLog} from "../components/HealthBadge";
-import {ACCENT, ACCENT_SOFT, ACCENT_ON_SOFT, PANEL, BORDER, HEADING, BODY, SECOND, MUTED, mono, syne} from "../components/tokens";
+import {ACCENT, ACCENT_SOFT, ACCENT_ON_SOFT, CARD, PANEL, BORDER, HEADING, BODY, SECOND, MUTED, mono, syne} from "../components/tokens";
 
 export default function Monitor() {
   return (
@@ -77,8 +77,8 @@ function OutputRow({dest, stream, sourceLive}) {
   const {fps, bitrate, speed} = parseFrameLog(stream?.frame?.log);
   const health = egressHealth({enabled: dest.enabled, running: live, blocked: !!stream?.blocked, speed, sourceLive});
   return (
-    <div style={{padding: "12px 0", borderTop: `1px solid ${PANEL}`, display: "flex", alignItems: "center", gap: 12}}>
-      <div style={{minWidth: 0, flex: 1}}>
+    <div style={{padding: "12px 0", borderTop: `1px solid ${PANEL}`, display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap"}}>
+      <div style={{minWidth: 0, flex: "1 1 160px"}}>
         <div style={{...syne, fontSize: 13, fontWeight: 600, color: HEADING}}>{dest.label || dest.platform}</div>
         <div style={{...mono, fontSize: 10, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>{dest.server}</div>
         {live && (
@@ -177,7 +177,7 @@ function MonitorImpl() {
         ) : (
           <>
             {/* Header */}
-            <div style={{display: "flex", alignItems: "center", gap: 14, margin: "14px 0 22px"}}>
+            <div style={{display: "flex", alignItems: "center", gap: 14, margin: "14px 0 22px", flexWrap: "wrap"}}>
               <div style={{width: 5, height: 30, background: sourceLive ? ACCENT : "#c8c4be", borderRadius: 3}}/>
               <div style={{flex: 1, minWidth: 0}}>
                 <div style={{...syne, fontWeight: 800, fontSize: 22, color: HEADING}}>{channel.label}</div>

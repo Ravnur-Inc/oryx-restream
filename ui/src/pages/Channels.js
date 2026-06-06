@@ -104,18 +104,20 @@ function DestRow({dest, stream, sourceLive, onToggle, onDetach}) {
   const stat = live && fwStat(metrics);
   return (
     <div style={{padding: "10px 0", borderTop: `1px solid ${PANEL}`}}>
-      <div style={{display: "flex", alignItems: "center", gap: 10}}>
+      <div style={{display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap"}}>
         <Dot live={live}/>
-        <div style={{minWidth: 0, flex: 1}}>
+        <div style={{minWidth: 0, flex: "1 1 150px"}}>
           <div style={{...syne, fontSize: 13, fontWeight: 600, color: HEADING}}>{dest.label || dest.platform}</div>
           <div style={{...mono, fontSize: 10, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>{dest.server}</div>
         </div>
-        {stat && <span style={{...mono, fontSize: 10, color: ACCENT_ON_SOFT, background: ACCENT_SOFT, border: "1px solid transparent", padding: "2px 8px", borderRadius: 3}}>{stat}</span>}
-        <HealthBadge level={health.level} label={health.label} title={health.detail}/>
-        <Toggle value={dest.enabled} onChange={() => onToggle(dest)} label={`Toggle ${dest.label || dest.platform}`}/>
-        <button onClick={() => setConfirmDel(true)} aria-label="Detach destination" title="Detach from this channel" style={iconBtn}
-          onMouseEnter={e => {e.currentTarget.style.color = DANGER; e.currentTarget.style.background = "#fef2f2";}}
-          onMouseLeave={e => {e.currentTarget.style.color = SECOND; e.currentTarget.style.background = "none";}}>✕</button>
+        <div style={{display: "flex", alignItems: "center", gap: 8, marginLeft: "auto", flexShrink: 0, flexWrap: "wrap"}}>
+          {stat && <span style={{...mono, fontSize: 10, color: ACCENT_ON_SOFT, background: ACCENT_SOFT, border: "1px solid transparent", padding: "2px 8px", borderRadius: 3}}>{stat}</span>}
+          <HealthBadge level={health.level} label={health.label} title={health.detail}/>
+          <Toggle value={dest.enabled} onChange={() => onToggle(dest)} label={`Toggle ${dest.label || dest.platform}`}/>
+          <button onClick={() => setConfirmDel(true)} aria-label="Detach destination" title="Detach from this channel" style={iconBtn}
+            onMouseEnter={e => {e.currentTarget.style.color = DANGER; e.currentTarget.style.background = "#fef2f2";}}
+            onMouseLeave={e => {e.currentTarget.style.color = SECOND; e.currentTarget.style.background = "none";}}>✕</button>
+        </div>
       </div>
       {confirmDel && (
         <div role="alertdialog" style={{marginTop: 8, padding: "10px 12px", borderRadius: 6, background: "#fef2f2", border: "1px solid #fca5a5"}}>
@@ -149,7 +151,7 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
   }).length;
   return (
     <article style={{background: CARD, borderRadius: 8, padding: "18px 22px", border: `1px solid ${BORDER}`, borderLeft: `3px solid ${sourceLive ? ACCENT : "#c8c4be"}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)"}}>
-      <div style={{display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12}}>
+      <div className="card-header">
         <div style={{display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1}}>
           <Dot live={sourceLive}/>
           <div style={{minWidth: 0, flex: 1}}>
@@ -167,7 +169,7 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
             </div>
           </div>
         </div>
-        <div style={{display: "flex", alignItems: "center", gap: 8, flexShrink: 0}}>
+        <div className="card-actions">
           <Btn variant="primary" small onClick={() => navigate(`/${Locale.current()}/routers-monitor/${encodeURIComponent(channel.name)}`)}>Monitor</Btn>
           <Btn variant="dim" small onClick={() => setExpanded(e => !e)}>{expanded ? "Collapse" : `Manage (${dests.length})`}</Btn>
           <button onClick={() => onEdit(channel)} aria-label="Edit channel" style={iconBtn}

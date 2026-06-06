@@ -17,6 +17,26 @@ body {
   background: var(--app-bg);
 }
 
+/* Card header: title on the left, action buttons on the right; on small screens
+ * the actions drop to their own full-width row so the title isn't squeezed. */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.card-header .card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .card-header { flex-direction: column; }
+  .card-header .card-actions { width: 100%; }
+}
+
 /* Monitor: preview + info side-by-side on desktop, stacked on small screens. */
 .monitor-grid {
   display: grid;

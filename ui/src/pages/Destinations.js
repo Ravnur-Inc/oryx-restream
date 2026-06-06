@@ -49,7 +49,7 @@ function DestCard({dest, attachedTo, onEdit, onDelete}) {
   const attached = attachedTo.length > 0;
   return (
     <article style={{background: CARD, borderRadius: 8, padding: "18px 22px", border: `1px solid ${BORDER}`, borderLeft: `3px solid ${attached ? ACCENT : "#c8c4be"}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)"}}>
-      <div style={{display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12}}>
+      <div className="card-header">
         <div style={{minWidth: 0, flex: 1}}>
           <div style={{...syne, fontWeight: 700, fontSize: 14, color: HEADING, marginBottom: 2}}>{dest.label}</div>
           <div style={{...mono, fontSize: 11, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>{dest.server}</div>
@@ -62,7 +62,7 @@ function DestCard({dest, attachedTo, onEdit, onDelete}) {
             </span>
           </div>
         </div>
-        <div style={{display: "flex", alignItems: "center", gap: 8, flexShrink: 0}}>
+        <div className="card-actions">
           <button onClick={() => onEdit(dest)} aria-label="Edit" style={iconBtn}
             onMouseEnter={e => {e.currentTarget.style.color = HEADING; e.currentTarget.style.background = PANEL;}}
             onMouseLeave={e => {e.currentTarget.style.color = SECOND; e.currentTarget.style.background = "none";}}>✎</button>
