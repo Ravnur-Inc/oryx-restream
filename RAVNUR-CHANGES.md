@@ -796,3 +796,23 @@ Deploy/docs: setup.sh passes SMTP_*/MGMT_BASE_URL; deploy README "Invite emails"
 section; USER_GUIDE Users section; README bullet.
 
 GOOS=linux go build ./... + eslint + vite build + 26 vitest pass.
+
+## 2026-06-06 — Update + make FFmpeg updatable
+
+The base images (ossrs/srs:5 / ossrs/oryx:focal-1) bundle FFmpeg 5.0.2 (May 2022,
+old). The platform invokes "ffmpeg" from PATH (forward.go / trancode.go), which
+resolved to the base image's /usr/local/bin/ffmpeg.
+
+- Dockerfile: install a current self-contained **static FFmpeg** in the build
+  stage and copy ffmpeg + ffprobe into the runtime image at /usr/local/bin
+  (overriding the base's 5.0.2); re-point SRS's objs/ffmpeg/bin/ffmpeg symlink at
+  it. The static build has no runtime deps and is amd64 (matches the amd64-only
+  image).
+- **Updatable** via a new `FFMPEG_URL` build arg (default: latest stable static
+  release), so each image build picks up the current FFmpeg; pin/override with
+  `--build-arg FFMPEG_URL=...` (e.g. a versioned johnvansickle or BtbN build).
+- README FFmpeg section updated (static build + how to update/pin/verify).
+
+Verified by CI (Build platform image + Test EN image's publish->forward media
+test, which exercises the new ffmpeg). Confirm the version with
+`docker exec oryx ffmpeg -version`.
