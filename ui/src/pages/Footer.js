@@ -7,7 +7,7 @@ import React from "react";
 import Container from "react-bootstrap/Container";
 import axios from "axios";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
-import {useErrorHandler} from "react-error-boundary";
+import {useErrorBoundary} from "react-error-boundary";
 
 export default function Footer() {
   return (
@@ -20,7 +20,7 @@ export default function Footer() {
 function FooterImpl() {
   const [versions, setVersions] = React.useState();
   const [beian, setBeian] = React.useState();
-  const handleError = useErrorHandler();
+  const {showBoundary: handleError} = useErrorBoundary();
 
   React.useEffect(() => {
     axios.get('/terraform/v1/mgmt/versions')

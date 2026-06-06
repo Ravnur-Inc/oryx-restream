@@ -10,7 +10,7 @@ import axios from "axios";
 import {Token, Tools} from "../utils";
 import {useNavigate} from "react-router-dom";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
-import {useErrorHandler} from "react-error-boundary";
+import {useErrorBoundary} from "react-error-boundary";
 import {useTranslation} from "react-i18next";
 import {v4 as uuidv4} from "uuid";
 
@@ -27,7 +27,7 @@ function SetupImpl({onInit}) {
   const [initializing, setInitializing] = React.useState();
   const [enabled, setEnabled] = React.useState(false);
   const navigate = useNavigate();
-  const handleError = useErrorHandler();
+  const {showBoundary: handleError} = useErrorBoundary();
   const {t} = useTranslation();
 
   // Generate password if not initialized.

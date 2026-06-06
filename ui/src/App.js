@@ -27,9 +27,10 @@ import Ingest from "./pages/Ingest";
 import Channels from "./pages/Channels";
 import Destinations from "./pages/Destinations";
 import Monitor from "./pages/Monitor";
+import DesignPreview from "./pages/DesignPreview";
 import Users from "./pages/Users";
 import Forbidden from "./pages/Forbidden";
-import {ErrorBoundary, useErrorHandler} from 'react-error-boundary';
+import {ErrorBoundary, useErrorBoundary} from 'react-error-boundary';
 import {SrsErrorBoundary} from "./components/SrsErrorBoundary";
 import resources from "./resources/locale.json";
 import {SrsEnvContext} from "./components/SrsEnvContext";
@@ -54,7 +55,7 @@ function RootError({error}) {
 
 function AppPreImpl() {
   const [env, setEnv] = React.useContext(SrsEnvContext);
-  const handleError = useErrorHandler();
+  const {showBoundary: handleError} = useErrorBoundary();
 
   React.useEffect(() => {
     if (!setEnv) return;
@@ -74,7 +75,7 @@ function AppImpl() {
   const [loading, setLoading] = React.useState(true);
   // Possible value is 1: yes, -1: no, 0: undefined.
   const [initialized, setInitialized] = React.useState(0);
-  const handleError = useErrorHandler();
+  const {showBoundary: handleError} = useErrorBoundary();
 
   React.useEffect(() => {
     axios.get('/terraform/v1/mgmt/check').then(res => {
@@ -145,6 +146,7 @@ function AppRoute({initialized, setInitialized}) {
                 <Route path="routers-channels" element={<Channels/>}/>
                 <Route path="routers-monitor/:name" element={<Monitor/>}/>
                 <Route path="routers-destinations" element={<Destinations/>}/>
+                <Route path="routers-design" element={<DesignPreview/>}/>
                 <Route path="routers-forbidden" element={<Forbidden/>}/>
                 <Route path="routers-users" element={<RequireOwner><Users/></RequireOwner>}/>
                 <Route path="routers-logout" element={<Logout onLogout={() => setTokenUpdated(!tokenUpdated)}/>}/>

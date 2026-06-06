@@ -9,7 +9,7 @@ import axios from "axios";
 import {useNavigate} from "react-router-dom";
 import {Token, Tools} from '../utils';
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
-import {useErrorHandler} from "react-error-boundary";
+import {useErrorBoundary} from "react-error-boundary";
 import {msalInstance, loginRequest} from "../msalInstance";
 import ravnurLogo from '../resources/ravnur-logo.svg';
 import patternBg from '../resources/pattern-onboard.png';
@@ -27,7 +27,7 @@ function LoginImpl({onLogin}) {
   const [entraError, setEntraError] = React.useState('');
   const [btnHover, setBtnHover] = React.useState(false);
   const navigate = useNavigate();
-  const handleError = useErrorHandler();
+  const {showBoundary: handleError} = useErrorBoundary();
 
   // Verify an existing token on load — if valid, skip the login page.
   React.useEffect(() => {
