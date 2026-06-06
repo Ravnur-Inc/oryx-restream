@@ -1,0 +1,18 @@
+/*
+ * App surface tokens, scheme-aware. Mantine sets data-mantine-color-scheme on
+ * <html>; these vars give a tinted page background with raised cards in both
+ * schemes. Loaded after bootstrap (see index.js) so the body rule wins.
+ */
+[data-mantine-color-scheme="light"] {
+  --app-bg:      #e5e7eb; /* page background */
+  --app-surface: #ffffff; /* cards / raised surface */
+  --app-panel:   #eef0f2; /* subtle inset (search bars, pills, toggles) */
+}
+[data-mantine-color-scheme="dark"] {
+  --app-bg:      #1a1b1e; /* page background (dark.7) */
+  --app-surface: #25262b; /* cards, one step lighter = elevated (dark.6) */
+  --app-panel:   #2c2e33; /* subtle inset (dark.5) */
+}
+body {
+  background: var(--app-bg);
+}

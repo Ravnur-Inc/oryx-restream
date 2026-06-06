@@ -9,6 +9,7 @@ import React from "react";
 import {createRoot} from "react-dom/client";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
+import "./index.css";
 import DesignPreview from "./pages/DesignPreview";
 
 createRoot(document.getElementById("design-root")).render(

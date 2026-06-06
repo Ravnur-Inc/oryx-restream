@@ -67,7 +67,8 @@ export default function AppLayout() {
     <AppShell
       header={{height: 60}}
       navbar={{width: 264, breakpoint: "sm", collapsed: {mobile: !opened}}}
-      padding="lg">
+      padding="lg"
+      styles={{main: {background: "var(--app-bg)"}}}>
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
