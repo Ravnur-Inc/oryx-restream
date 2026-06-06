@@ -4,15 +4,18 @@
 // SPDX-License-Identifier: MIT
 //
 import React from 'react';
-import ReactDOM from 'react-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import {createRoot} from 'react-dom/client';
+// Mantine styles (design-system migration). Imported before app styles so our
+// own overrides win.
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
 import './index.css';
 import './i18n';
 import App from './App';
 
-ReactDOM.render(
+const root = createRoot(document.getElementById('root'));
+root.render(
   <React.StrictMode>
-      <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+    <App />
+  </React.StrictMode>
 );

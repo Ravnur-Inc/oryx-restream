@@ -7,7 +7,7 @@ import React from "react";
 import {Token, StreamName} from "../utils";
 import axios from "axios";
 import {useTranslation} from "react-i18next";
-import {useErrorHandler} from "react-error-boundary";
+import {useErrorBoundary} from "react-error-boundary";
 import {SrsEnvContext} from "./SrsEnvContext";
 
 export function buildUrls(defaultUrl, secret, env) {
@@ -125,7 +125,7 @@ export default function useUrls() {
   const [loading, setLoading] = React.useState(true);
   const [secret, setSecret] = React.useState();
   const {t} = useTranslation();
-  const handleError = useErrorHandler();
+  const {showBoundary: handleError} = useErrorBoundary();
   const env = React.useContext(SrsEnvContext)[0];
 
   const updateStreamName = React.useCallback(() => {

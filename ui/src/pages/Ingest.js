@@ -5,10 +5,11 @@
 //
 import React from "react";
 import axios from "axios";
-import {Link, useLocation} from "react-router-dom";
+import {Link} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {useToast, apiError} from "../components/useToast";
+import {ACCENT, CARD, PANEL, BORDER, HEADING, BODY, SECOND, MUTED, DANGER, mono, syne} from "../components/tokens";
 
 export default function Ingest() {
   return (
@@ -17,21 +18,6 @@ export default function Ingest() {
     </SrsErrorBoundary>
   );
 }
-
-// ── Design tokens (matches ForwardManager/Streams) ────────────────────────────
-const ACCENT  = "#b54100";
-const BG      = "#f5f4f1";
-const CARD    = "#ffffff";
-const PANEL   = "#edecea";
-const BORDER  = "#888582";
-const HEADING = "#111111";
-const BODY    = "#2b2926";
-const SECOND  = "#4a4744";
-const MUTED   = "#6b6865";
-const DANGER  = "#b91c1c";
-
-const mono = {fontFamily: "'Public Sans', sans-serif", fontVariantNumeric: "tabular-nums"};
-const syne = {fontFamily: "'Public Sans', sans-serif"};
 
 const inputBase = {
   ...mono, fontSize: 13, color: BODY,
@@ -111,55 +97,6 @@ function Section({title, children}) {
     }}>
       <div style={{...syne, fontWeight: 800, fontSize: 15, color: HEADING, marginBottom: 16}}>{title}</div>
       {children}
-    </div>
-  );
-}
-
-// ── Nav bar ───────────────────────────────────────────────────────────────────
-const ALL_NAV_ITEMS = [
-  {to: '/routers-ingest',     text: 'Ingest'},
-  {to: '/routers-channels',   text: 'Channels'},
-  {to: '/routers-destinations', text: 'Destinations'},
-  {to: '/routers-users',      text: 'Users',      ownerOnly: true},
-  {to: '/routers-logout',     text: 'Logout'},
-];
-
-function NavBar() {
-  const location = useLocation();
-  const user = Token.loadUser();
-  const isOwner = !user || user.role === 'owner';
-  const items = ALL_NAV_ITEMS.filter(e => !e.ownerOnly || isOwner);
-
-  return (
-    <div style={{
-      background: CARD, borderBottom: `1px solid ${BORDER}`,
-      padding: "0 32px", display: "flex", alignItems: "stretch",
-      boxShadow: "0 1px 0 rgba(0,0,0,0.06)",
-    }}>
-      <nav style={{display: "flex", alignItems: "stretch", gap: 2}}>
-        {items.map(item => {
-          const active = location.pathname.includes(item.to);
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              style={{
-                ...syne, fontSize: 12, fontWeight: active ? 700 : 500,
-                color: active ? ACCENT : SECOND,
-                textDecoration: "none",
-                padding: "14px 14px 12px",
-                borderBottom: active ? `2px solid ${ACCENT}` : "2px solid transparent",
-                transition: "all 0.15s",
-                whiteSpace: "nowrap",
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = HEADING; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = SECOND; }}
-            >
-              {item.text}
-            </Link>
-          );
-        })}
-      </nav>
     </div>
   );
 }
@@ -358,14 +295,11 @@ function IngestImpl() {
   };
 
   return (
-    <div style={{background: BG, color: BODY, ...syne, minHeight: "100vh"}}>
+    <div style={{maxWidth: 820, margin: "0 auto", ...syne}}>
       {Toaster}
-      <NavBar/>
-
-      <main style={{padding: "28px 32px", maxWidth: 820, margin: "0 auto"}}>
-        <div style={{...syne, fontWeight: 800, fontSize: 20, color: HEADING, marginBottom: 4}}>
-          Publish settings
-        </div>
+      <div style={{...syne, fontWeight: 800, fontSize: 20, color: HEADING, marginBottom: 4}}>
+        Publish settings
+      </div>
         <div style={{fontSize: 13, color: MUTED, marginBottom: 24}}>
           The shared publish key and encoder reference for pushing streams in.
           To get a <b>ready-to-copy ingest URL</b>, open the
@@ -432,7 +366,6 @@ function IngestImpl() {
             </Section>
           </>
         )}
-      </main>
     </div>
   );
 }

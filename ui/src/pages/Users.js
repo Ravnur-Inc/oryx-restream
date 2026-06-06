@@ -5,10 +5,10 @@
 //
 import React from "react";
 import axios from "axios";
-import {Link, useLocation} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {useToast} from "../components/useToast";
+import {ACCENT, ACCENT_SOFT, ACCENT_ON_SOFT, CARD, PANEL, BORDER, HEADING, BODY, SECOND, MUTED, DANGER, mono, syne} from "../components/tokens";
 
 export default function Users() {
   return (
@@ -19,19 +19,6 @@ export default function Users() {
 }
 
 // ── Design tokens (matches ForwardManager) ────────────────────────────────────
-const ACCENT  = "#b54100";
-const BG      = "#f5f4f1";
-const CARD    = "#ffffff";
-const PANEL   = "#edecea";
-const BORDER  = "#888582";
-const HEADING = "#111111";
-const BODY    = "#2b2926";
-const SECOND  = "#4a4744";
-const MUTED   = "#6b6865";
-const DANGER  = "#b91c1c";
-
-const mono = {fontFamily: "'Public Sans', sans-serif", fontVariantNumeric: "tabular-nums"};
-const syne = {fontFamily: "'Public Sans', sans-serif"};
 
 const inputBase = {
   ...mono, fontSize: 13, color: BODY,
@@ -63,59 +50,6 @@ function Btn({children, onClick, variant = "primary", disabled, small, style: ex
   );
 }
 
-// ── Nav + action bar ──────────────────────────────────────────────────────────
-const ALL_NAV_ITEMS = [
-  {to: '/routers-ingest',     text: 'Ingest'},
-  {to: '/routers-channels',   text: 'Channels'},
-  {to: '/routers-destinations', text: 'Destinations'},
-  {to: '/routers-users',      text: 'Users',      ownerOnly: true},
-  {to: '/routers-logout',     text: 'Logout'},
-];
-
-function NavBar({onAdd}) {
-  const location = useLocation();
-  const user = Token.loadUser();
-  const isOwner = !user || user.role === 'owner';
-  const items = ALL_NAV_ITEMS.filter(e => !e.ownerOnly || isOwner);
-
-  return (
-    <div style={{
-      background: CARD, borderBottom: `1px solid ${BORDER}`,
-      padding: "0 32px", display: "flex", alignItems: "stretch",
-      justifyContent: "space-between",
-      boxShadow: "0 1px 0 rgba(0,0,0,0.06)",
-    }}>
-      <nav style={{display: "flex", alignItems: "stretch", gap: 2}}>
-        {items.map(item => {
-          const active = location.pathname.includes(item.to);
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              style={{
-                ...syne, fontSize: 12, fontWeight: active ? 700 : 500,
-                color: active ? ACCENT : SECOND,
-                textDecoration: "none",
-                padding: "14px 14px 12px",
-                borderBottom: active ? `2px solid ${ACCENT}` : "2px solid transparent",
-                transition: "all 0.15s",
-                whiteSpace: "nowrap",
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = HEADING; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = SECOND; }}
-            >
-              {item.text}
-            </Link>
-          );
-        })}
-      </nav>
-      <div style={{display: "flex", alignItems: "center", gap: 12, paddingLeft: 16}}>
-        <Btn variant="primary" onClick={onAdd}>+ Add User</Btn>
-      </div>
-    </div>
-  );
-}
-
 // ── User row card ─────────────────────────────────────────────────────────────
 function UserCard({user, onEdit, onDelete}) {
   const [confirmDel, setConfirmDel] = React.useState(false);
@@ -143,9 +77,9 @@ function UserCard({user, onEdit, onDelete}) {
         <div style={{display: "flex", alignItems: "center", gap: 10, flexShrink: 0}}>
           <span style={{
             ...mono, fontSize: 10, letterSpacing: "0.08em",
-            color: isOwner ? ACCENT : SECOND,
-            background: isOwner ? "rgba(181,65,0,0.08)" : PANEL,
-            border: `1px solid ${isOwner ? "rgba(181,65,0,0.25)" : BORDER}`,
+            color: isOwner ? ACCENT_ON_SOFT : SECOND,
+            background: isOwner ? ACCENT_SOFT : PANEL,
+            border: `1px solid ${isOwner ? "transparent" : BORDER}`,
             padding: "2px 8px", borderRadius: 3,
           }}>
             {user.role.toUpperCase()}
@@ -360,28 +294,28 @@ function UsersImpl() {
   const editors = users.filter(u => u.role === 'editor').length;
 
   return (
-    <div style={{background: BG, color: BODY, ...syne}}>
+    <div style={{maxWidth: 820, margin: "0 auto", ...syne}}>
       {Toaster}
 
-      {/* ── Nav + action bar ── */}
-      <NavBar onAdd={() => setModal({mode: 'add'})}/>
-
-      {/* ── Stats bar ── */}
-      <div style={{background: CARD, borderBottom: `1px solid ${BORDER}`, padding: "9px 32px", display: "flex", gap: 28}}>
-        {[
-          ["TOTAL",   users.length],
-          ["OWNERS",  owners],
-          ["EDITORS", editors],
-        ].map(([k, v]) => (
-          <div key={k} style={{display: "flex", alignItems: "center", gap: 7}}>
-            <span style={{...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em"}}>{k}</span>
-            <span style={{...mono, fontSize: 15, fontWeight: 600, color: v > 0 ? ACCENT : SECOND}}>{v}</span>
-          </div>
-        ))}
+      <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 14, flexWrap: "wrap"}}>
+        <div style={{display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap"}}>
+          <span style={{...syne, fontWeight: 800, fontSize: 20, color: HEADING}}>Users</span>
+          {[
+            ["TOTAL",   users.length],
+            ["OWNERS",  owners],
+            ["EDITORS", editors],
+          ].map(([k, v]) => (
+            <div key={k} style={{display: "flex", alignItems: "center", gap: 7}}>
+              <span style={{...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em"}}>{k}</span>
+              <span style={{...mono, fontSize: 15, fontWeight: 600, color: v > 0 ? ACCENT : SECOND}}>{v}</span>
+            </div>
+          ))}
+        </div>
+        <Btn variant="primary" onClick={() => setModal({mode: 'add'})}>+ Add User</Btn>
       </div>
 
       {/* ── Body ── */}
-      <main style={{padding: "28px 32px", maxWidth: 820, margin: "0 auto"}}>
+      <div>
         {users.length === 0 ? (
           <div style={{textAlign: "center", padding: "56px 24px"}}>
             <div aria-hidden="true" style={{fontSize: 40, marginBottom: 14, color: BORDER}}>⬡</div>
@@ -401,7 +335,7 @@ function UsersImpl() {
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       {modal && (
         <UserModal

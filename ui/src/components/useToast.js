@@ -9,7 +9,13 @@
 // {code, data} JSON envelope).
 import React from "react";
 
-const ACCENT = "#b54100", CARD = "#fff", BORDER = "#888582", DANGER = "#b91c1c";
+// Theme-aware tokens (adapt to light/dark via Mantine CSS variables).
+const ACCENT = "var(--mantine-primary-color-filled)";
+const CARD = "var(--mantine-color-body)";
+const BORDER = "var(--mantine-color-default-border)";
+const DANGER = "var(--mantine-color-red-6)";
+const TEXT = "var(--mantine-color-text)";
+const MUTED = "var(--mantine-color-dimmed)";
 const mono = {fontFamily: "'Public Sans', sans-serif"};
 
 // Extract the most descriptive message from an axios error (or a plain string).
@@ -47,8 +53,8 @@ export function useToast() {
         position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)",
         zIndex: 1000, maxWidth: "min(720px, 92vw)",
         display: "flex", alignItems: "flex-start", gap: 12,
-        background: CARD, color: "#2b2926",
-        border: `1.5px solid ${toast.type === "error" ? "#fca5a5" : BORDER}`,
+        background: CARD, color: TEXT,
+        border: `1.5px solid ${toast.type === "error" ? "var(--mantine-color-red-4)" : BORDER}`,
         borderLeft: `4px solid ${toast.type === "error" ? DANGER : ACCENT}`,
         borderRadius: 8, padding: "12px 14px",
         boxShadow: "0 8px 28px rgba(0,0,0,0.18)",
@@ -60,7 +66,7 @@ export function useToast() {
         {toast.msg}
       </span>
       <button onClick={dismiss} aria-label="Dismiss"
-        style={{background: "none", border: "none", color: "#6b6865", cursor: "pointer", fontSize: 15, lineHeight: 1, padding: "0 2px"}}>✕</button>
+        style={{background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 15, lineHeight: 1, padding: "0 2px"}}>✕</button>
     </div>
   ) : null;
 

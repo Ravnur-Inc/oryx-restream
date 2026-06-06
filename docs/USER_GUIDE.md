@@ -12,6 +12,7 @@ the Ravnur Media Platform.
 
 ## Contents
 - [What it does](#what-it-does)
+- [The interface](#the-interface)
 - [Signing in & roles](#signing-in--roles)
 - [Concepts](#concepts)
 - [Quick start: publish your first stream](#quick-start-publish-your-first-stream)
@@ -36,6 +37,16 @@ manage everything from the web UI at `https://<your-host>/mgmt`.
 
 The flow is always: **Ingest** (publish in) → **Channels** (fan it out) →
 **Monitor** (confirm it's live and healthy).
+
+---
+
+## The interface
+Navigate with the **left sidebar** — **Ingest · Channels · Destinations** (and
+**Users** for owners). The top bar shows the current page, your account, and a
+**light/dark toggle** (also in the sidebar footer); the app follows your system
+theme by default and remembers your choice. On narrow screens / phones the
+sidebar collapses to a **☰ menu** button. Sign out from the account menu (top
+right).
 
 ---
 

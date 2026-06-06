@@ -715,3 +715,37 @@ entirely redundant. Its only unique value was (1) **Reset** a stuck publisher an
   Streams bullet and noted Reset + unmanaged on the Monitor/Channels bullets.
 
 vite build + 26 vitest pass.
+
+## 2026-06-06 — UI redesign: Mantine design system, responsive shell, dark/light (v3.0.0)
+
+A full front-end redesign onto a real design system, replacing the per-page
+hand-rolled chrome with a single responsive shell and theme tokens.
+
+- **Stack:** React 17 → 18 (createRoot); added **Mantine v7** (@mantine/core,
+  hooks, notifications) + @tabler/icons-react + postcss-preset-mantine. Brand
+  color = Mantine **blue**; theme in `src/theme.js`.
+- **Shell:** `components/AppLayout.js` — responsive Mantine AppShell with a
+  sidebar (Ingest · Channels · Destinations · owner Users), a top bar (logo,
+  page title, **light/dark toggle**, account menu + sign out), and an Outlet,
+  wired as a react-router layout route. Color scheme follows the OS and persists;
+  sidebar collapses to a drawer on small screens. App is wrapped in
+  MantineProvider(defaultColorScheme="auto") + Notifications.
+- **Tokens:** `components/tokens.js` + scheme-aware CSS variables in `index.css`
+  (`--app-bg`/`--app-surface`/`--app-panel`) — one source of truth replacing the
+  6 copy-pasted burnt-orange token sets; gives a tinted page + raised cards in
+  both schemes (fixes the white-in-dark main panel + no-contrast-in-light bugs).
+- **Pages:** removed the 5 duplicated per-page NavBars; migrated Ingest, Channels,
+  Monitor, Destinations, Users and the auth pages (Login/Setup/Logout/Forbidden)
+  to Mantine. Monitor's two-column layout stacks on phones. In-page toasts +
+  SrsErrorBoundary fallback are theme-aware/provider-independent.
+- **Bootstrap removed entirely** (bootstrap, react-bootstrap, react-bootstrap-icons)
+  along with orphaned components (Footer, Navigator, LanguageSwitch, PopoverConfirm,
+  SwitchConfirmButton, Tutorials*). react-error-boundary v3→v4
+  (useErrorHandler → useErrorBoundary().showBoundary); @testing-library/* bumped
+  to React-18 versions. **No legacy-peer-deps shim** — from-scratch install
+  resolves clean; `npm audit` = 0.
+- Dev: `DEV_PROXY_TARGET` env points the dev proxy at a live deployment; default
+  dev locale is `en` (was `zh`). Standalone `design.html` styleguide retained.
+- docs: USER_GUIDE "The interface" section + README updated.
+
+GOOS=linux go build ./... (unchanged) · vite build + 26 vitest pass · npm audit 0.

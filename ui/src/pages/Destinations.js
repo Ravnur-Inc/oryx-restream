@@ -5,10 +5,11 @@
 //
 import React from "react";
 import axios from "axios";
-import {Link, useLocation} from "react-router-dom";
+import {Link} from "react-router-dom";
 import {Token} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {useToast, apiError} from "../components/useToast";
+import {ACCENT, CARD, PANEL, BORDER, HEADING, BODY, SECOND, MUTED, DANGER, mono, syne} from "../components/tokens";
 
 export default function Destinations() {
   return (
@@ -25,10 +26,6 @@ async function apiPost(path, body = {}) {
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const ACCENT="#b54100", BG="#f5f4f1", CARD="#fff", PANEL="#edecea", BORDER="#888582",
-  HEADING="#111", BODY="#2b2926", SECOND="#4a4744", MUTED="#6b6865", DANGER="#b91c1c";
-const mono = {fontFamily: "'Public Sans', sans-serif", fontVariantNumeric: "tabular-nums"};
-const syne = {fontFamily: "'Public Sans', sans-serif"};
 const inputBase = {...mono, fontSize: 13, color: BODY, background: CARD, border: `1.5px solid ${BORDER}`, borderRadius: 5, outline: "none", transition: "border-color 0.15s", width: "100%"};
 const lbl = {display: "block", ...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7};
 const iconBtn = {background: "none", border: "1px solid transparent", color: SECOND, cursor: "pointer", fontSize: 15, padding: "3px 6px", lineHeight: 1, borderRadius: 4, transition: "all 0.15s"};
@@ -45,34 +42,6 @@ function Btn({children, onClick, variant = "primary", disabled, small, style: ex
 }
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
-const ALL_NAV_ITEMS = [
-  {to: '/routers-ingest', text: 'Ingest'},
-  {to: '/routers-channels', text: 'Channels'},
-  {to: '/routers-destinations', text: 'Destinations'},
-  {to: '/routers-users', text: 'Users', ownerOnly: true},
-  {to: '/routers-logout', text: 'Logout'},
-];
-function NavBar({onAdd}) {
-  const location = useLocation();
-  const user = Token.loadUser();
-  const isOwner = !user || user.role === 'owner';
-  const items = ALL_NAV_ITEMS.filter(e => !e.ownerOnly || isOwner);
-  return (
-    <div style={{background: CARD, borderBottom: `1px solid ${BORDER}`, padding: "0 32px", display: "flex", alignItems: "stretch", justifyContent: "space-between", boxShadow: "0 1px 0 rgba(0,0,0,0.06)"}}>
-      <nav style={{display: "flex", alignItems: "stretch", gap: 2}}>
-        {items.map(item => {
-          const active = location.pathname.includes(item.to);
-          return <Link key={item.to} to={item.to} style={{...syne, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? ACCENT : SECOND, textDecoration: "none", padding: "14px 14px 12px", borderBottom: active ? `2px solid ${ACCENT}` : "2px solid transparent", transition: "all 0.15s", whiteSpace: "nowrap"}}
-            onMouseEnter={e => { if (!active) e.currentTarget.style.color = HEADING; }}
-            onMouseLeave={e => { if (!active) e.currentTarget.style.color = SECOND; }}>{item.text}</Link>;
-        })}
-      </nav>
-      <div style={{display: "flex", alignItems: "center", paddingLeft: 16}}>
-        <Btn variant="primary" onClick={onAdd}>+ Add Destination</Btn>
-      </div>
-    </div>
-  );
-}
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 function DestCard({dest, attachedTo, onEdit, onDelete}) {
@@ -225,21 +194,22 @@ function DestinationsImpl() {
   const attachedCount = dests.filter(d => (attachMap[d.id] || []).length > 0).length;
 
   return (
-    <div style={{background: BG, color: BODY, ...syne, minHeight: "100vh"}}>
+    <div style={{maxWidth: 820, margin: "0 auto", ...syne}}>
       {Toaster}
-      <NavBar onAdd={() => setModal({mode: "add"})}/>
-
-      <div style={{background: CARD, borderBottom: `1px solid ${BORDER}`, padding: "9px 32px", display: "flex", gap: 28}}>
-        {[["DESTINATIONS", owners], ["ATTACHED", attachedCount], ["UNUSED", owners - attachedCount]].map(([k, v]) => (
-          <div key={k} style={{display: "flex", alignItems: "center", gap: 7}}>
-            <span style={{...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em"}}>{k}</span>
-            <span style={{...mono, fontSize: 15, fontWeight: 600, color: v > 0 ? ACCENT : SECOND}}>{v}</span>
-          </div>
-        ))}
+      <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 14, flexWrap: "wrap"}}>
+        <div style={{display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap"}}>
+          <span style={{...syne, fontWeight: 800, fontSize: 20, color: HEADING}}>Destinations</span>
+          {[["DESTINATIONS", owners], ["ATTACHED", attachedCount], ["UNUSED", owners - attachedCount]].map(([k, v]) => (
+            <div key={k} style={{display: "flex", alignItems: "center", gap: 7}}>
+              <span style={{...mono, fontSize: 10, color: MUTED, letterSpacing: "0.1em"}}>{k}</span>
+              <span style={{...mono, fontSize: 15, fontWeight: 600, color: v > 0 ? ACCENT : SECOND}}>{v}</span>
+            </div>
+          ))}
+        </div>
+        <Btn variant="primary" onClick={() => setModal({mode: "add"})}>+ Add Destination</Btn>
       </div>
 
-      <main style={{padding: "28px 32px", maxWidth: 820, margin: "0 auto"}}>
-        <div style={{fontSize: 13, color: MUTED, marginBottom: 24}}>
+      <div style={{fontSize: 13, color: MUTED, marginBottom: 24}}>
           A reusable library of forward targets (YouTube, Facebook, custom RTMP). Save a destination
           once, then attach it to any <Link to="/routers-channels" style={{color: ACCENT}}>Channel</Link>.
           A destination is fed by one channel at a time.
@@ -266,7 +236,6 @@ function DestinationsImpl() {
             ))}
           </div>
         )}
-      </main>
 
       {modal && (
         <DestModal initial={modal.dest} saving={saving} onSave={handleSave} onClose={() => setModal(null)}/>

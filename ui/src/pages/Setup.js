@@ -3,14 +3,13 @@
 //
 // SPDX-License-Identifier: MIT
 //
-import Container from "react-bootstrap/Container";
-import {Button, Form, Spinner} from "react-bootstrap";
+import {Container, TextInput, Button, Stack, Group} from "@mantine/core";
 import React from "react";
 import axios from "axios";
 import {Token, Tools} from "../utils";
 import {useNavigate} from "react-router-dom";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
-import {useErrorHandler} from "react-error-boundary";
+import {useErrorBoundary} from "react-error-boundary";
 import {useTranslation} from "react-i18next";
 import {v4 as uuidv4} from "uuid";
 
@@ -27,7 +26,7 @@ function SetupImpl({onInit}) {
   const [initializing, setInitializing] = React.useState();
   const [enabled, setEnabled] = React.useState(false);
   const navigate = useNavigate();
-  const handleError = useErrorHandler();
+  const {showBoundary: handleError} = useErrorBoundary();
   const {t} = useTranslation();
 
   // Generate password if not initialized.
@@ -61,24 +60,25 @@ function SetupImpl({onInit}) {
   }, [handleError]);
 
   return (
-    <>
-      <Container fluid>
-        <Form>
-          <Form.Group className="mb-3" controlId="formBasicPassword">
-            <Form.Label>{t('setup.passwordLabel')}</Form.Label>
-            <Form.Control type={initializing ? 'password' : 'text'} placeholder="Password" defaultValue={password}
-              onChange={(e) => setPassword(e.target.value)}/>
-            <Form.Text className="text-muted">
-              * {t('setup.passwordTip')}
-            </Form.Text>
-          </Form.Group>
-          <Button variant="primary" type="submit" disabled={!enabled} className={initializing && "disabled"} onClick={(e) => handleLogin(e)}>
-            {initializing ? t('setup.labelInit') : t('setup.labelNormal')}
-          </Button> &nbsp;
-          {initializing && <Spinner animation="border" variant="success" style={{verticalAlign: 'middle'}} />}
-        </Form>
-      </Container>
-    </>
+    <Container size="sm" mt="xl">
+      <form onSubmit={handleLogin}>
+        <Stack>
+          <TextInput
+            label={t('setup.passwordLabel')}
+            type={initializing ? 'password' : 'text'}
+            placeholder="Password"
+            defaultValue={password}
+            onChange={(e) => setPassword(e.target.value)}
+            description={`* ${t('setup.passwordTip')}`}
+          />
+          <Group>
+            <Button type="submit" disabled={!enabled} loading={!!initializing} onClick={handleLogin}>
+              {initializing ? t('setup.labelInit') : t('setup.labelNormal')}
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </Container>
   );
 }
 
