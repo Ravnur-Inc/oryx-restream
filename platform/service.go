@@ -241,6 +241,10 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 		return errors.Wrapf(err, "handle srt encryption")
 	}
 
+	if err := systemManager.Handle(ctx, handler); err != nil {
+		return errors.Wrapf(err, "handle system")
+	}
+
 	if err := entraAuth.Handle(ctx, handler); err != nil {
 		return errors.Wrapf(err, "handle entra auth")
 	}

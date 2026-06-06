@@ -127,6 +127,9 @@ your choice) that collapses to a drawer on small screens:
   runtime only one channel streams to it at a time (the others show **blocked**),
   so a shared target is never double-sent. Editing a target propagates to its
   live forward.
+- **System** — owner-only live health panel: host CPU/memory/disk + app signals
+  (SRS up, FFmpeg forward count, goroutines/threads, uptime). For history/alerting,
+  enable Azure Monitor (see the deployment guide).
 - **Users** — owner/editor user management (owner-only), with **email invites**:
   add a user and send a Microsoft sign-in link, track **Invited/Active** status,
   and **resend** or **cancel** pending invites. Set `SMTP_*` + `MGMT_BASE_URL` to

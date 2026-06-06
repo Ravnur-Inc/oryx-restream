@@ -137,6 +137,45 @@ export MGMT_BASE_URL='https://restreamer.ravnur.net/mgmt'  # link put in the ema
 - Implemented with Go's standard `net/smtp` (STARTTLS on 587, implicit TLS on
   465) — no extra dependencies.
 
+## Monitoring
+Two complementary layers:
+
+**In-app (built in):** owners get a **System** tab — live host CPU load, memory,
+disk, plus app signals (SRS up, FFmpeg forward count, goroutines/threads, uptime).
+Good for an at-a-glance check; it has no history or alerting.
+
+**Azure Monitor (recommended for alerts + history):** since this runs on an Azure
+VM, the lowest-maintenance way to get CPU/memory/disk graphs *and* email alerts is
+Azure Monitor — managed, nothing to run on the box.
+
+1. **Enable VM insights** (installs the Azure Monitor Agent; collects CPU/memory/
+   disk/network). Portal → the VM → *Monitoring → Insights → Enable*, or:
+   ```bash
+   az vm extension set -g <rg> --vm-name <vm> -n AzureMonitorLinuxAgent \
+     --publisher Microsoft.Azure.Monitor
+   ```
+   (Linux memory/disk are *guest* metrics — VM insights / the agent provides them;
+   CPU and VM availability are available without the agent.)
+2. **Email action group:**
+   ```bash
+   az monitor action-group create -g <rg> -n oryx-alerts \
+     --action email ops you@ravnur.com
+   ```
+3. **Alert rules** (tune thresholds):
+   ```bash
+   VM=$(az vm show -g <rg> -n <vm> --query id -o tsv)
+   AG=$(az monitor action-group show -g <rg> -n oryx-alerts --query id -o tsv)
+   az monitor metrics alert create -g <rg> -n oryx-cpu --scopes "$VM" --action "$AG" \
+     --condition "avg Percentage CPU > 85" --window-size 5m --evaluation-frequency 1m
+   az monitor metrics alert create -g <rg> -n oryx-mem --scopes "$VM" --action "$AG" \
+     --condition "avg Available Memory Bytes < 209715200" --window-size 5m   # <200 MB free
+   az monitor metrics alert create -g <rg> -n oryx-down --scopes "$VM" --action "$AG" \
+     --condition "avg VM Availability Metric < 1" --window-size 5m            # VM unavailable
+   ```
+   For a **disk-full** alert (the top freeze-risk), add a rule on the guest
+   "Logical Disk % Free Space" metric once VM insights is on, or watch it in the
+   in-app System tab.
+
 ## Authentication — Microsoft Entra ID (optional)
 By default the mgmt UI uses a single password (`MGMT_PASSWORD`). To sign in with
 **Microsoft Entra ID** (Azure AD) and manage authorized users with owner/editor
