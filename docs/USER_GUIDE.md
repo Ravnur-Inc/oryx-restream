@@ -21,6 +21,7 @@ the Ravnur Media Platform.
 - [Channels — routes](#channels--routes)
 - [Monitor — one channel at a glance](#monitor--one-channel-at-a-glance)
 - [Users & roles](#users--roles)
+- [System health](#system-health)
 - [Common workflows](#common-workflows)
 - [Encoder setup cheat-sheet](#encoder-setup-cheat-sheet)
 - [Troubleshooting](#troubleshooting)
@@ -230,6 +231,17 @@ email you add here.
 > public mgmt URL used in the link). See the
 > [deployment guide](../deploy/azure-vm/README.md#invite-emails-optional-smtp).
 > Without SMTP, invites fall back to the copyable link.
+
+---
+
+## System health
+*(Owner only.)* The **System** tab is a live at-a-glance health panel (refreshes
+every 5s): host **CPU load**, **memory**, and **disk** usage, plus application
+signals — whether the **SRS media server** is up, the number of active **FFmpeg
+forwards**, goroutines/threads, and host/process **uptime**. Bars turn amber/red
+as usage climbs. It's a snapshot, not a history — for graphs, alerting, and
+notifications, enable **Azure Monitor** on the VM (see the
+[deployment guide](../deploy/azure-vm/README.md#monitoring)).
 
 ---
 

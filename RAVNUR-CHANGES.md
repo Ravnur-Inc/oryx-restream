@@ -830,3 +830,19 @@ reviewing maintenance:
   periodic security rebuild).
 
 No app/code change; deploy-only.
+
+## 2026-06-06 — In-app System health panel + Azure Monitor guidance
+
+Owner-only health visibility, plus docs for proper VM monitoring.
+
+- platform/system.go (new): `/terraform/v1/mgmt/system` returns host + app metrics
+  read from /proc + syscalls (no deps): CPU load (vs cores), memory used/avail,
+  disk usage for / and /data, goroutines, OS threads, platform RSS + Go heap, host
+  + process uptime, SRS-reachable (pings :1985), and FFmpeg-forward count (scans
+  /proc for `ffmpeg`). main.go/service.go register it.
+- ui/src/pages/System.js (new): owner-only **System** tab (route routers-system,
+  nav entry) — live gauges (amber/red thresholds) refreshing every 5s. Read-only.
+- docs: deploy README "Monitoring" section (in-app panel + Azure Monitor enable +
+  action group + CPU/memory/availability alert rules); USER_GUIDE System section.
+
+GOOS=linux go build ./... + eslint + vite build + 26 vitest pass.

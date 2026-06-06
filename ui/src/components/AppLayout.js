@@ -15,7 +15,7 @@ import {useDisclosure} from "@mantine/hooks";
 import {Outlet, useLocation, useNavigate} from "react-router-dom";
 import {
   IconBroadcast, IconDeviceTv, IconServer2, IconUsers, IconLogout,
-  IconSun, IconMoon, IconChevronDown,
+  IconSun, IconMoon, IconChevronDown, IconActivity,
 } from "@tabler/icons-react";
 import {Token, Locale} from "../utils";
 import logo from "../resources/ravnur-logo.svg";
@@ -25,6 +25,7 @@ const NAV = [
   {to: "/routers-channels", label: "Channels", icon: IconDeviceTv},
   {to: "/routers-destinations", label: "Destinations", icon: IconServer2},
   {to: "/routers-users", label: "Users", icon: IconUsers, ownerOnly: true},
+  {to: "/routers-system", label: "System", icon: IconActivity, ownerOnly: true},
 ];
 
 export function ColorToggle() {

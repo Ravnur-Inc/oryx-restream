@@ -27,6 +27,7 @@ import Channels from "./pages/Channels";
 import Destinations from "./pages/Destinations";
 import Monitor from "./pages/Monitor";
 import Users from "./pages/Users";
+import System from "./pages/System";
 import Forbidden from "./pages/Forbidden";
 import {ErrorBoundary, useErrorBoundary} from 'react-error-boundary';
 import {SrsErrorBoundary} from "./components/SrsErrorBoundary";
@@ -149,6 +150,7 @@ function AppRoute({initialized, setInitialized}) {
                 <Route path="routers-destinations" element={<Destinations/>}/>
                 <Route path="routers-forbidden" element={<Forbidden/>}/>
                 <Route path="routers-users" element={<RequireOwner><Users/></RequireOwner>}/>
+                <Route path="routers-system" element={<RequireOwner><System/></RequireOwner>}/>
               </Route>
               <Route path="*" element={<Login onLogin={() => setTokenUpdated(!tokenUpdated)}/>}/>
             </>}

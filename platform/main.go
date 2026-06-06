@@ -217,6 +217,7 @@ func doMain(ctx context.Context) error {
 	channelManager = NewChannelManager()
 	destinationManager = NewDestinationManager()
 	srtManager = NewSrtManager()
+	systemManager = NewSystemManager()
 
 	// Create worker for crontab.
 	crontabWorker = NewCrontabWorker()
