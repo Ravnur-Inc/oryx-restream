@@ -84,6 +84,17 @@ func (v *EntraAuth) Handle(ctx context.Context, handler *http.ServeMux) error {
 				} else {
 					return errors.Errorf("user %v is not authorized to access this application", email)
 				}
+			} else {
+				// Existing user signed in: mark active (accepts a pending invite) and
+				// record the login time. Best-effort — don't fail sign-in on a write error.
+				now := time.Now().Format(time.RFC3339)
+				if matched.Status != StatusActive || matched.LastLoginAt == "" {
+					matched.Status = StatusActive
+				}
+				matched.LastLoginAt = now
+				if err := userManager.persist(ctx, matched); err != nil {
+					logger.Wf(ctx, "Entra: update login state for %v failed: %v", email, err)
+				}
 			}
 
 			// Issue an Oryx-compatible session JWT so all existing API calls work unchanged.

@@ -127,7 +127,10 @@ your choice) that collapses to a drawer on small screens:
   runtime only one channel streams to it at a time (the others show **blocked**),
   so a shared target is never double-sent. Editing a target propagates to its
   live forward.
-- **Users** — owner/editor user management (owner-only).
+- **Users** — owner/editor user management (owner-only), with **email invites**:
+  add a user and send a Microsoft sign-in link, track **Invited/Active** status,
+  and **resend** or **cancel** pending invites. Set `SMTP_*` + `MGMT_BASE_URL` to
+  email invites; without SMTP the UI shows a copyable invite link instead.
 
 **Authentication** is password-based by default, or **Microsoft Entra ID**
 (Azure AD) sign-in with role-based access. To enable Entra, set `ENTRA_CLIENT_ID`
