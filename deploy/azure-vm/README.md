@@ -192,3 +192,21 @@ Manual alternatives:
   `forward start to run tasks`.
 - Re-run `setup.sh` any time to pull the latest `main`, rebuild, and recreate
   the container.
+
+## Ongoing maintenance
+`setup.sh` configures two things so a long-running deployment stays healthy with
+little attention:
+- **Docker log rotation** (`--log-opt max-size=10m --log-opt max-file=3`) so
+  container logs can't fill the disk over time.
+- **Unattended security upgrades** on the host (`unattended-upgrades`) so OS/Docker
+  CVEs are patched even if the app is left untouched.
+
+Still on you, periodically:
+- **Back up `~/oryx-data`** (publish key, channels, destinations, users, TLS cert,
+  redis state) — losing the VM loses all of it otherwise.
+- **Verify cert auto-renewal**: `systemctl list-timers certbot.timer` (renews every
+  ~90 days; needs port 80 reachable).
+- **Security rebuilds**: even with no feature changes, re-run `setup.sh` every few
+  months to rebuild on a fresh base image + current FFmpeg, draining CVE drift on
+  the public ingest ports.
+- Watch disk/CPU/memory — see monitoring options if you want alerting.
