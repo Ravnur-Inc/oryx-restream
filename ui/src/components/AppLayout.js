@@ -61,7 +61,14 @@ export default function AppLayout() {
   // Navigate with the locale prefix to avoid the AppLocale redirect bounce.
   const go = (to) => { navigate(`/${Locale.current()}${to}`); close(); };
 
-  const initials = (user?.email?.[0] || (isOwner ? "O" : "E")).toUpperCase();
+  // Show the user's name in the account menu (we don't keep a separate display
+  // name), falling back to their email when no name is set, then a generic label.
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
+  const displayName = fullName || user?.email || "Account";
+  const initials = (
+    (user?.firstName?.[0] || "") + (user?.lastName?.[0] || "")
+    || user?.email?.[0] || (isOwner ? "O" : "E")
+  ).toUpperCase();
 
   return (
     <AppShell
@@ -87,7 +94,7 @@ export default function AppLayout() {
               <Menu.Target>
                 <Button variant="subtle" color="gray" rightSection={<IconChevronDown size={14}/>}
                   leftSection={<Avatar size={24} radius="xl" color="blue">{initials}</Avatar>}>
-                  <Text size="sm" visibleFrom="xs">{user?.role || "owner"}</Text>
+                  <Text size="sm" visibleFrom="xs">{displayName}</Text>
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
