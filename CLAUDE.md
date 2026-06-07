@@ -22,8 +22,10 @@ build clean) and prefer reusing what's already vendored.
 5. After all deletions in a session run: go mod tidy
 6. Every session ends with a RAVNUR-CHANGES.md entry
 7. Any user-facing change (UI screens, flows, encoder/ingest behavior) MUST
-   update docs/USER_GUIDE.md in the same PR — it's the operator reference and
-   must track the UI.
+   update the operator guide in the same PR — it's the operator reference and
+   must track the UI. The guide is the MkDocs site in docs-site/ (published to
+   GitHub Pages via .github/workflows/docs.yml); docs/USER_GUIDE.md is now just a
+   pointer stub.
 
 ## What we are keeping — do not touch without explicit instruction
 - platform/forward.go (or equivalent) — restream task manager
