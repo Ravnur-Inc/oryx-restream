@@ -42,6 +42,13 @@ export const Token = {
     const o = JSON.parse(info || '{}');
     return o?.user || null;
   },
+  // Refresh the cached user record (e.g. after a profile edit) without re-login.
+  updateUser: (user) => {
+    const info = localStorage.getItem(SRS_TERRAFORM_TOKEN);
+    const o = JSON.parse(info || '{}');
+    o.user = {...o.user, ...user};
+    localStorage.setItem(SRS_TERRAFORM_TOKEN, JSON.stringify(o));
+  },
   remove: () => {
     localStorage.removeItem(SRS_TERRAFORM_TOKEN);
   },
