@@ -22,6 +22,19 @@ export default function Login({onLogin}) {
   );
 }
 
+// The Microsoft four-square logo, placed to the left of the sign-in label.
+function MicrosoftIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="16" height="16"
+      viewBox="0 0 256 256" style={{display: "block", flexShrink: 0}}>
+      <path fill="#f1511b" d="M121.666 121.666H0V0h121.666z"/>
+      <path fill="#80cc28" d="M256 121.666H134.335V0H256z"/>
+      <path fill="#00adef" d="M121.663 256.002H0V134.336h121.663z"/>
+      <path fill="#fbbc09" d="M256 256.002H134.335V134.336H256z"/>
+    </svg>
+  );
+}
+
 function LoginImpl({onLogin}) {
   const [operating, setOperating] = React.useState(false);
   const [entraError, setEntraError] = React.useState('');
@@ -142,7 +155,10 @@ function LoginImpl({onLogin}) {
               Signing in…
             </>
           ) : (
-            'Sign in with Microsoft'
+            <>
+              <MicrosoftIcon/>
+              Sign in with Microsoft
+            </>
           )}
         </button>
 

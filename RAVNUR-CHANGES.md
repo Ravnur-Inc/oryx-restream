@@ -846,3 +846,13 @@ Owner-only health visibility, plus docs for proper VM monitoring.
   action group + CPU/memory/availability alert rules); USER_GUIDE System section.
 
 GOOS=linux go build ./... + eslint + vite build + 26 vitest pass.
+
+## 2026-06-07 — UI tweaks: sidebar order, header title, Microsoft logo on login
+
+- AppLayout: sidebar order is now Channels · Destinations · Ingest (· Users ·
+  System for owners); the header next to the logo shows the app name
+  "Ravnur Simulcast Manager" instead of the current page label.
+- Login: the Microsoft four-square logo (inline SVG) sits left of the
+  "Sign in with Microsoft" label.
+
+eslint + vite build + 26 vitest pass.
