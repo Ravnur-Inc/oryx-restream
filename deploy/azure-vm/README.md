@@ -18,10 +18,24 @@ or, if you've already cloned the repo:
 ```bash
 ./deploy/azure-vm/setup.sh
 ```
-The script clones (or updates) the repo, builds the Docker image (retrying
-transient Docker Hub pull timeouts), and (re)creates the `oryx` container with
-the right port mappings and a persistent `~/oryx-data` volume. Re-run it any
-time to update to the latest `main`.
+By default the script **pulls the published image** from GHCR
+(`ghcr.io/ravnur-inc/oryx-restream:latest`) and (re)creates the `oryx` container
+with the right port mappings and a persistent `~/oryx-data` volume. After each run
+it **prunes unused images and build cache** so repeated upgrades don't fill the
+disk. Re-run it any time to update to the latest published release.
+
+Options (env vars):
+
+```bash
+TAG=v3.5.2 ./deploy/azure-vm/setup.sh    # pin a specific version
+BUILD=1   ./deploy/azure-vm/setup.sh     # build locally from this checkout instead of pulling
+```
+
+If the GHCR package is **private**, an anonymous pull fails and the script
+**automatically falls back to a local build**. To pull instead, either
+`docker login ghcr.io` (with a PAT that has `read:packages`) once, or make the
+package public: GitHub org → **Packages → oryx-restream → Package settings →
+Change visibility → Public**.
 
 If you hit `permission denied … docker.sock`, add yourself to the docker group
 once: `sudo usermod -aG docker $USER && newgrp docker` (or the script falls back

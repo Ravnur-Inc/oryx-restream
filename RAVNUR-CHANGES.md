@@ -989,3 +989,23 @@ The top-right account button previously displayed the user's **role** ("owner" /
   email. The role is no longer shown; the dropdown keeps the email + Sign out.
 
 UI-only. eslint + vite build + 26 vitest pass.
+
+## 2026-06-07 — Deploy: pull published image by default + auto-prune disk
+
+`setup.sh` rebuilt the image locally on every run, so repeated upgrades piled up
+old/dangling images and build cache — enough to fill a small VM disk (observed
+~21 GB on a 28 GB box, none of it actually in `/data`; `/` and `/data` are the
+same filesystem via the bind mount).
+
+- deploy/azure-vm/setup.sh: **pulls the published image** by default
+  (`ghcr.io/ravnur-inc/oryx-restream:$TAG`, default `latest`) instead of building.
+  `BUILD=1` forces a local build, which is also the automatic **fallback** if the
+  pull fails (e.g. a private GHCR package). `TAG=vX.Y.Z` pins a version. Source is
+  cloned only when building. Pull mode needs no checkout at all.
+- setup.sh now **prunes after each run** (`docker image prune -a -f` +
+  `docker builder prune -f`) to reclaim old images/cache; the running image is
+  referenced so it's kept. Summary prints the image actually run.
+- deploy README: install section documents pull-by-default, `TAG`/`BUILD`, and the
+  GHCR private-package note (`docker login ghcr.io` or make the package public).
+
+Deploy-only; no app/Go/UI change. bash -n clean.
