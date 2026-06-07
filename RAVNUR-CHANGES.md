@@ -989,3 +989,21 @@ The top-right account button previously displayed the user's **role** ("owner" /
   email. The role is no longer shown; the dropdown keeps the email + Sign out.
 
 UI-only. eslint + vite build + 26 vitest pass.
+
+## 2026-06-07 — Fix: header name was a stale sign-in snapshot
+
+The account menu read the user record cached at **sign-in**, so a later name edit
+in **Users** didn't show up until re-login (e.g. the bootstrap admin shown as
+"bhudson (bootstrap admin)" while the Users card already said "Bruce Hudson").
+
+- platform/users.go: new authenticated endpoint `POST /terraform/v1/mgmt/user/self`
+  returns the caller's current record (minimal projection: firstName, lastName,
+  email, role), looked up by the email the client holds. New `getUserByEmail`
+  helper. Registered via `userManager.HandleSelf` in service.go. (The session JWT
+  carries no user identity, so the email is supplied by the client; any authed
+  user may call it and it returns only a name/role projection.)
+- ui: `Token.updateUser()` refreshes the cached user; AppLayout fetches
+  `/user/self` on mount and updates both the cache and its state, so the header
+  reflects the live name/role without a re-login.
+
+GOOS=linux go build ./... + eslint + vite build + 26 vitest pass.
