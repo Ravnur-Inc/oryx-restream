@@ -10,8 +10,9 @@ collapses to a **☰ menu** button. Sign out from the account menu (top right).
 ## Signing in & roles
 Open `https://<your-host>/mgmt`.
 
-- **Microsoft sign-in (Entra ID):** click **Sign in with Microsoft**. Only
+- **Microsoft sign-in (Entra ID):** click **Continue with Microsoft**. Only
   registered users can get in; unregistered accounts see an "access denied" page.
+  *(A **Continue with Google** button is shown but not yet active — use Microsoft.)*
 - **Password:** if Entra isn't enabled for your deployment, sign in with the
   management password.
 
