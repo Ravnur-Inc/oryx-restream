@@ -211,9 +211,10 @@ func doMain(ctx context.Context) error {
 		return errors.Wrapf(err, "start forward worker")
 	}
 
-	// Create managers for simulcast users and Entra authentication.
+	// Create managers for simulcast users and SSO authentication.
 	userManager = NewUserManager()
 	entraAuth = NewEntraAuth()
+	googleAuth = NewGoogleAuth()
 	channelManager = NewChannelManager()
 	destinationManager = NewDestinationManager()
 	srtManager = NewSrtManager()
