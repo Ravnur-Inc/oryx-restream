@@ -6,21 +6,29 @@
 #
 # One-shot deploy of the Ravnur Oryx SRT->RTMP restreamer onto a Linux VM
 # (tested on Ubuntu 22.04 / 24.04 with Docker installed). Idempotent: re-run it
-# to pull the latest main, rebuild, and recreate the container.
+# to pull the latest published image and recreate the container.
+#
+# By default it PULLS the published image from GHCR (fast, no local build churn)
+# and prunes old images/cache afterwards. Set BUILD=1 to build locally from this
+# checkout instead (also the automatic fallback if the pull fails, e.g. a private
+# GHCR package — run `docker login ghcr.io` or make the package public to pull).
 #
 # Usage:
-#   # from a fresh box (clones into ~/oryx-restream):
+#   # fresh box, pull the published image (no clone needed):
 #   curl -fsSL https://raw.githubusercontent.com/Ravnur-Inc/oryx-restream/main/deploy/azure-vm/setup.sh | bash
-#   # or, from inside an existing clone:
-#   ./deploy/azure-vm/setup.sh
+#   # pin a version:        TAG=v3.5.2 ./deploy/azure-vm/setup.sh
+#   # build locally:        BUILD=1 ./deploy/azure-vm/setup.sh
 #
-# Env overrides: REPO_URL, BRANCH, SRC_DIR, IMAGE, NAME, DATA_DIR
+# Env overrides: REPO_URL, BRANCH, SRC_DIR, IMAGE, TAG, BUILD, NAME, DATA_DIR
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/Ravnur-Inc/oryx-restream.git}"
 BRANCH="${BRANCH:-main}"
 SRC_DIR="${SRC_DIR:-$HOME/oryx-restream}"
-IMAGE="${IMAGE:-oryx-restream}"
+IMAGE="${IMAGE:-ghcr.io/ravnur-inc/oryx-restream}"  # published image repo to pull
+TAG="${TAG:-latest}"                                # tag to pull (e.g. v3.5.2 to pin)
+BUILD="${BUILD:-0}"                                 # set to 1 to build locally instead
+LOCAL_IMAGE="oryx-restream:local"                   # tag used for local builds
 NAME="${NAME:-oryx}"
 DATA_DIR="${DATA_DIR:-$HOME/oryx-data}"
 
@@ -49,33 +57,55 @@ if command -v apt-get >/dev/null 2>&1; then
     | sudo tee /etc/apt/apt.conf.d/20auto-upgrades >/dev/null || true
 fi
 
-# 1. Get the source: build in place if we're inside the repo, else clone/update.
-if [ -f "./Dockerfile" ] && [ -d "./platform" ]; then
-  SRC_DIR="$(pwd)"
-  echo "==> Using current repo checkout: $SRC_DIR"
-elif [ -d "$SRC_DIR/.git" ]; then
-  echo "==> Updating existing clone: $SRC_DIR"
-  git -C "$SRC_DIR" fetch origin "$BRANCH"
-  git -C "$SRC_DIR" checkout "$BRANCH"
-  git -C "$SRC_DIR" reset --hard "origin/$BRANCH"
-else
-  command -v git >/dev/null 2>&1 || { sudo apt-get update -y && sudo apt-get install -y git; }
-  echo "==> Cloning $REPO_URL ($BRANCH) -> $SRC_DIR"
-  git clone --branch "$BRANCH" "$REPO_URL" "$SRC_DIR"
-fi
-cd "$SRC_DIR"
+# Get the source (clone/update) — only needed when building locally.
+ensure_source() {
+  if [ -f "./Dockerfile" ] && [ -d "./platform" ]; then
+    SRC_DIR="$(pwd)"
+    echo "==> Using current repo checkout: $SRC_DIR"
+  elif [ -d "$SRC_DIR/.git" ]; then
+    echo "==> Updating existing clone: $SRC_DIR"
+    git -C "$SRC_DIR" fetch origin "$BRANCH"
+    git -C "$SRC_DIR" checkout "$BRANCH"
+    git -C "$SRC_DIR" reset --hard "origin/$BRANCH"
+    cd "$SRC_DIR"
+  else
+    command -v git >/dev/null 2>&1 || { sudo apt-get update -y && sudo apt-get install -y git; }
+    echo "==> Cloning $REPO_URL ($BRANCH) -> $SRC_DIR"
+    git clone --branch "$BRANCH" "$REPO_URL" "$SRC_DIR"
+    cd "$SRC_DIR"
+  fi
+}
 
-# 2. Build the image, retrying transient Docker Hub pull timeouts.
-echo "==> Building image: $IMAGE"
-built=0
-for attempt in 1 2 3; do
-  if $DOCKER build -t "$IMAGE" -f Dockerfile .; then built=1; break; fi
-  echo "    build attempt $attempt failed (often a transient Docker Hub pull timeout); retrying in 10s..."
-  sleep 10
-done
-if [ "$built" != 1 ]; then
+# Build the image locally, retrying transient Docker Hub pull timeouts.
+build_image() {
+  ensure_source
+  echo "==> Building image: $LOCAL_IMAGE"
+  local attempt
+  for attempt in 1 2 3; do
+    if $DOCKER build -t "$LOCAL_IMAGE" -f Dockerfile .; then return 0; fi
+    echo "    build attempt $attempt failed (often a transient Docker Hub pull timeout); retrying in 10s..."
+    sleep 10
+  done
   echo "ERROR: build failed after 3 attempts." >&2
   exit 1
+}
+
+# 1+2. Decide the image to run: pull the published image by default (fast, no
+# local build churn), or build locally when BUILD=1 or the pull fails.
+if [ "$BUILD" = "1" ]; then
+  build_image
+  RUN_IMAGE="$LOCAL_IMAGE"
+else
+  PULL_IMAGE="${IMAGE}:${TAG}"
+  echo "==> Pulling published image: $PULL_IMAGE"
+  if $DOCKER pull "$PULL_IMAGE"; then
+    RUN_IMAGE="$PULL_IMAGE"
+  else
+    echo "    pull failed — the GHCR package may be private (run 'docker login ghcr.io'"
+    echo "    or make it public), or the network is down. Falling back to a local build..."
+    build_image
+    RUN_IMAGE="$LOCAL_IMAGE"
+  fi
 fi
 
 # 3. (Re)create the container.
@@ -129,15 +159,23 @@ $DOCKER run -d --name "$NAME" --restart always \
   "${srt_enc_args[@]}" \
   "${smtp_args[@]}" \
   -v "$DATA_DIR:/data" \
-  "$IMAGE"
+  "$RUN_IMAGE"
 
-# 4. Summary + next steps.
+# 4. Reclaim disk: drop images and build cache no longer used by any container.
+# Repeated upgrades otherwise pile up old/dangling images + build cache (easily
+# many GB). The running container's image is referenced, so it's kept.
+echo "==> Pruning unused Docker images and build cache"
+$DOCKER image prune -a -f >/dev/null 2>&1 || true
+$DOCKER builder prune -f >/dev/null 2>&1 || true
+
+# 5. Summary + next steps.
 ip="$(curl -fsS --max-time 4 ifconfig.me 2>/dev/null || echo '<vm-public-ip>')"
 echo
 echo "================================================================"
 $DOCKER ps --filter "name=$NAME"
 echo "----------------------------------------------------------------"
 echo "Mgmt UI:  https://${ip}/mgmt   (accept the self-signed cert)"
+echo "Image:    ${RUN_IMAGE}"
 echo "Logs:     ${DOCKER} logs -f ${NAME}"
 echo "Data:     ${DATA_DIR}  (config/redis/password persist here)"
 echo
