@@ -55,16 +55,23 @@ RUN echo "Before UPX for $TARGETARCH" && \
 
 # Install an up-to-date, self-contained FFmpeg (the base images bundle an old
 # 5.0.2). It's a fully static amd64 build, so it has no runtime deps. To update,
-# bump FFMPEG_URL (or pass --build-arg); the default tracks the latest stable
-# release, so a fresh image build picks up the current FFmpeg automatically.
-# Alternative source: https://github.com/BtbN/FFmpeg-Builds/releases
-ARG FFMPEG_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+# bump FFMPEG_URL (or pass --build-arg); the default tracks the latest build, so
+# a fresh image build picks up the current FFmpeg automatically.
+#
+# Source: BtbN/FFmpeg-Builds on GitHub. We use GitHub (not johnvansickle.com)
+# because that host blocks datacenter/CI IP ranges — curl from GitHub Actions
+# runners gets HTTP 415, which is unrecoverable. GitHub's release CDN is reachable
+# from CI. Extraction is layout-agnostic (find the binaries) so FFMPEG_URL can be
+# overridden to either source. Alternative: https://johnvansickle.com/ffmpeg/
+ARG FFMPEG_URL="https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz"
 RUN set -eux; \
-    curl -fsSL "$FFMPEG_URL" -o /tmp/ffmpeg.tar.xz; \
+    curl -fsSL --retry 5 --retry-delay 3 --retry-connrefused -A "Mozilla/5.0" "$FFMPEG_URL" -o /tmp/ffmpeg.tar.xz; \
     mkdir -p /tmp/ffmpeg; \
-    tar -xJf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1; \
-    install -m 0755 /tmp/ffmpeg/ffmpeg  /usr/local/bin/ffmpeg; \
-    install -m 0755 /tmp/ffmpeg/ffprobe /usr/local/bin/ffprobe; \
+    tar -xJf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg; \
+    ffmpeg_bin="$(find /tmp/ffmpeg -type f -name ffmpeg | head -n1)"; \
+    ffprobe_bin="$(find /tmp/ffmpeg -type f -name ffprobe | head -n1)"; \
+    install -m 0755 "$ffmpeg_bin"  /usr/local/bin/ffmpeg; \
+    install -m 0755 "$ffprobe_bin" /usr/local/bin/ffprobe; \
     rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.xz; \
     /usr/local/bin/ffmpeg -version | head -n1
 

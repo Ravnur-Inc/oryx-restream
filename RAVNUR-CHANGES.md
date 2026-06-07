@@ -907,3 +907,22 @@ on the right.
   + note that the Google button isn't active yet.
 
 eslint + vite build + 26 vitest pass.
+
+## 2026-06-07 — Fix: FFmpeg download blocked in CI (switch to GitHub source)
+
+The static-FFmpeg fetch in the Docker build started failing on every PR/release:
+johnvansickle.com returns **HTTP 415 to GitHub Actions runner IPs** (it blocks
+datacenter/CI ranges). The same URL returns 200 from normal IPs, so it isn't
+transient — re-runs don't help, and the image build was hard-blocked.
+
+- Dockerfile: default `FFMPEG_URL` now points at **BtbN/FFmpeg-Builds** on GitHub
+  (`.../releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz`), whose
+  release CDN is reachable from CI.
+- Extraction is now **layout-agnostic** — it `find`s the `ffmpeg`/`ffprobe`
+  binaries after untarring instead of assuming a fixed strip depth, so the BtbN
+  (`…/bin/`) and johnvansickle (top-level) layouts both work and `FFMPEG_URL` can
+  still be overridden to either.
+- Added curl resilience: `--retry 5 --retry-delay 3 --retry-connrefused` and a
+  browser `User-Agent` (kept to flags curl 7.68 in the build image supports).
+
+Docker-build-only change; no app/Go/UI code touched.
