@@ -340,6 +340,24 @@ const DESTINATIONS = [
   {name: "Custom RTMP", sub: "rtmp · 1080p", bg: "#475569", glyph: <IconBroadcast size={15} color="#fff"/>},
 ];
 
+// A monospace ingest-protocol pill in the source card. `highlight` tints it the
+// brand green to call out SRT as a first-class (non-premium) protocol.
+function ProtoBadge({label, highlight}) {
+  return (
+    <Text
+      style={{
+        fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+        lineHeight: 1, padding: "4px 7px", borderRadius: 6,
+        background: highlight ? "rgba(167,216,64,.16)" : "rgba(8,12,18,.7)",
+        border: `1px solid ${highlight ? "rgba(167,216,64,.55)" : "rgba(255,255,255,.16)"}`,
+        color: highlight ? "#cde89a" : "#cdd9e6",
+      }}
+    >
+      {label}
+    </Text>
+  );
+}
+
 function BrandedPanel() {
   return (
     <Box
@@ -385,8 +403,10 @@ function BrandedPanel() {
           One contribution feed. Every audience.
         </Title>
         <Text fz={16} lh={1.6} c="#aebfd2">
-          Ingest a single live stream and restream it simultaneously to YouTube,
-          Facebook Live, Twitch or any custom RTMP target.
+          Ingest a single live stream over{" "}
+          <Text span fw={700} c="#cde89a" inherit>RTMP or SRT</Text>{" "}
+          and restream it simultaneously to YouTube, Facebook Live, Twitch or any
+          custom RTMP target.
         </Text>
       </Box>
 
@@ -410,10 +430,15 @@ function BrandedPanel() {
                 <span className="login-dot"/>
                 <Text fz={10.5} fw={700} c="#fff" style={{letterSpacing: "0.08em"}}>LIVE</Text>
               </Group>
+              {/* Ingest-protocol badges: SRT highlighted as a first-class protocol. */}
+              <Group gap={5} wrap="nowrap" style={{position: "absolute", top: 9, right: 9}}>
+                <ProtoBadge label="RTMP"/>
+                <ProtoBadge label="SRT" highlight/>
+              </Group>
               <Text style={{fontFamily: MONO}} fz={11} c="#7e93ab">contribution feed</Text>
             </Box>
             <Group justify="space-between" mt={11} wrap="nowrap">
-              <Text fz={13} fw={700} c="#eaf2fb">Main Encoder</Text>
+              <Text fz={13} fw={700} c="#eaf2fb">RTMP or SRT ingest</Text>
               <Text style={{fontFamily: MONO}} fz={11} c="#8aa0b8">1080p · 6.0 Mbps</Text>
             </Group>
           </Box>

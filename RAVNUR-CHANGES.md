@@ -963,3 +963,16 @@ The button appears only when the server is configured for Google.
 
 Authorization stays **by email**, shared across providers (no provider binding).
 GOOS=linux go build ./... + eslint + vite build + 26 vitest pass.
+
+## 2026-06-07 — Login panel copy: highlight SRT ingest (design handoff update)
+
+Marketing-copy refresh on the login right panel (design_handoff_login_1) to call
+out SRT ingest as a first-class, non-premium capability:
+
+- ui/src/pages/Login.js: headline paragraph now reads "Ingest a single live stream
+  over **RTMP or SRT** …" with "RTMP or SRT" emphasized in brand green. The
+  routing-diagram source card gains **RTMP / SRT** protocol badges (SRT
+  green-highlighted) top-right of the thumbnail, and its meta label changes from
+  "Main Encoder" to "RTMP or SRT ingest". New `ProtoBadge` helper.
+
+Right-panel cosmetic only; no auth/flow change. eslint + vite build + 26 vitest pass.
