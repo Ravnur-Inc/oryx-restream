@@ -229,6 +229,10 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 		return errors.Wrapf(err, "handle users")
 	}
 
+	if err := userManager.HandleSelf(ctx, handler); err != nil {
+		return errors.Wrapf(err, "handle user self")
+	}
+
 	if err := channelManager.Handle(ctx, handler); err != nil {
 		return errors.Wrapf(err, "handle channels")
 	}

@@ -12,6 +12,7 @@ import {
   Menu, Button, Avatar, useMantineColorScheme, useComputedColorScheme,
 } from "@mantine/core";
 import {useDisclosure} from "@mantine/hooks";
+import axios from "axios";
 import {Outlet, useLocation, useNavigate} from "react-router-dom";
 import {
   IconBroadcast, IconDeviceTv, IconServer2, IconUsers, IconLogout,
@@ -51,9 +52,23 @@ export default function AppLayout() {
   const computed = useComputedColorScheme("light", {getInitialValueInEffect: true});
   const dark = computed === "dark";
 
-  const user = Token.loadUser();
+  const [user, setUser] = React.useState(() => Token.loadUser());
   const isOwner = !user || user.role === "owner";
   const items = NAV.filter(i => !i.ownerOnly || isOwner);
+
+  // Refresh the cached identity from the server so a name/role edit shows up
+  // without a re-login (the sign-in snapshot can be stale — e.g. the bootstrap
+  // admin whose placeholder name was later changed in Users).
+  React.useEffect(() => {
+    const email = Token.loadUser()?.email;
+    if (!email) return;
+    axios.post("/terraform/v1/mgmt/user/self", {email}, {headers: Token.loadBearerHeader()})
+      .then(res => {
+        const fresh = res.data?.data;
+        if (fresh) { Token.updateUser(fresh); setUser(u => ({...u, ...fresh})); }
+      })
+      .catch(() => {});
+  }, []);
 
   const isActive = (to) => location.pathname.includes(to)
     || (to === "/routers-channels" && location.pathname.includes("/routers-monitor"));

@@ -284,6 +284,82 @@ func (v *UserManager) Handle(ctx context.Context, handler *http.ServeMux) error 
 	return nil
 }
 
+// HandleSelf registers an endpoint that returns the current user's own record
+// (name + role), looked up by the email the client holds from sign-in. This lets
+// the app shell show an up-to-date name after a profile edit without forcing a
+// re-login. Any authenticated user may call it (editors have no access to the
+// /users list); it returns a minimal projection, not the full record.
+func (v *UserManager) HandleSelf(ctx context.Context, handler *http.ServeMux) error {
+	ep := "/terraform/v1/mgmt/user/self"
+	logger.Tf(ctx, "Handle %v", ep)
+	handler.HandleFunc(ep, func(w http.ResponseWriter, r *http.Request) {
+		if err := func() error {
+			var token, email string
+			if err := ParseBody(ctx, r.Body, &struct {
+				Token *string `json:"token"`
+				Email *string `json:"email"`
+			}{
+				Token: &token, Email: &email,
+			}); err != nil {
+				return errors.Wrapf(err, "parse body")
+			}
+
+			apiSecret := envApiSecret()
+			if err := Authenticate(ctx, apiSecret, token, r.Header); err != nil {
+				return errors.Wrapf(err, "authenticate")
+			}
+			if strings.TrimSpace(email) == "" {
+				return errors.New("email is required")
+			}
+
+			user, err := v.getUserByEmail(ctx, email)
+			if err != nil {
+				return errors.Wrapf(err, "get user by email")
+			}
+
+			// Minimal projection — just what the UI needs to render identity.
+			var out *struct {
+				FirstName string `json:"firstName"`
+				LastName  string `json:"lastName"`
+				Email     string `json:"email"`
+				Role      string `json:"role"`
+			}
+			if user != nil {
+				out = &struct {
+					FirstName string `json:"firstName"`
+					LastName  string `json:"lastName"`
+					Email     string `json:"email"`
+					Role      string `json:"role"`
+				}{user.FirstName, user.LastName, user.Email, user.Role}
+			}
+			ohttp.WriteData(ctx, w, r, out)
+			return nil
+		}(); err != nil {
+			ohttp.WriteError(ctx, w, r, err)
+		}
+	})
+	return nil
+}
+
+// getUserByEmail returns the user with the given email (case-insensitive), or
+// nil if none exists.
+func (v *UserManager) getUserByEmail(ctx context.Context, email string) (*SimulcastUser, error) {
+	all, err := rdb.HGetAll(ctx, SIMULCAST_USERS).Result()
+	if err != nil && err != redis.Nil {
+		return nil, errors.Wrapf(err, "hgetall %v", SIMULCAST_USERS)
+	}
+	for _, raw := range all {
+		var u SimulcastUser
+		if err := json.Unmarshal([]byte(raw), &u); err != nil {
+			continue
+		}
+		if strings.EqualFold(u.Email, email) {
+			return &u, nil
+		}
+	}
+	return nil, nil
+}
+
 func validateUserFields(u *SimulcastUser) error {
 	if strings.TrimSpace(u.FirstName) == "" {
 		return errors.New("firstName is required")
