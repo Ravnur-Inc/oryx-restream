@@ -21,9 +21,9 @@ import {Token, Locale} from "../utils";
 import logo from "../resources/ravnur-logo.svg";
 
 const NAV = [
-  {to: "/routers-ingest", label: "Ingest", icon: IconBroadcast},
   {to: "/routers-channels", label: "Channels", icon: IconDeviceTv},
   {to: "/routers-destinations", label: "Destinations", icon: IconServer2},
+  {to: "/routers-ingest", label: "Ingest", icon: IconBroadcast},
   {to: "/routers-users", label: "Users", icon: IconUsers, ownerOnly: true},
   {to: "/routers-system", label: "System", icon: IconActivity, ownerOnly: true},
 ];
@@ -55,9 +55,6 @@ export default function AppLayout() {
 
   const isActive = (to) => location.pathname.includes(to)
     || (to === "/routers-channels" && location.pathname.includes("/routers-monitor"));
-  const current = items.find(i => isActive(i.to));
-  const title = current?.label
-    || (location.pathname.includes("/routers-monitor") ? "Monitor" : "Simulcast Manager");
 
   // Navigate with the locale prefix to avoid the AppLocale redirect bounce.
   const go = (to) => { navigate(`/${Locale.current()}${to}`); close(); };
@@ -80,7 +77,7 @@ export default function AppLayout() {
             }}>
               <img src={logo} alt="Ravnur" style={{height: 22, display: "block"}}/>
             </Box>
-            <Text fw={800} size="sm" visibleFrom="xs">{title}</Text>
+            <Text fw={800} size="sm" visibleFrom="xs">Ravnur Simulcast Manager</Text>
           </Group>
           <Group gap="xs" wrap="nowrap">
             <ColorToggle/>
