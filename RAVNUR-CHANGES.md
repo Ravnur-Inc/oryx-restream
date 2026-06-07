@@ -856,3 +856,26 @@ GOOS=linux go build ./... + eslint + vite build + 26 vitest pass.
   "Sign in with Microsoft" label.
 
 eslint + vite build + 26 vitest pass.
+
+## 2026-06-07 — Operator guide → MkDocs Material site on GitHub Pages
+
+The operator/user guide is now a published documentation site instead of a single
+long Markdown file, and is linked from inside the app.
+
+- docs-site/ (new): MkDocs Material source — 13 pages (Home, Getting started,
+  Concepts, Channels, Destinations, Ingest, Monitor, Users & invites, System
+  health, Encoder settings, Troubleshooting, Glossary, Administration) seeded from
+  the former docs/USER_GUIDE.md, restructured per section. requirements.txt pins
+  mkdocs-material.
+- mkdocs.yml (new): site config (blue brand, light/dark palette, Public Sans,
+  search, nav). site_url = https://ravnur-inc.github.io/oryx-restream/.
+- .github/workflows/docs.yml (new): builds (`mkdocs build --strict`) and deploys
+  to GitHub Pages on push to main (paths docs-site/mkdocs.yml/this workflow) or
+  manual dispatch. One-time setup: repo Settings → Pages → Source = "GitHub
+  Actions".
+- ui/src/components/AppLayout.js: bottom-of-sidebar **Documentation** link
+  (IconBook + external-link badge) opens the Pages site in a new tab.
+- docs/USER_GUIDE.md: reduced to a pointer stub → the published site + how to edit
+  docs-site/ locally. README + CLAUDE.md rule #7 updated to reference the site.
+
+eslint + vite build + 26 vitest pass.

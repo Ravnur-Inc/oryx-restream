@@ -15,10 +15,12 @@ import {useDisclosure} from "@mantine/hooks";
 import {Outlet, useLocation, useNavigate} from "react-router-dom";
 import {
   IconBroadcast, IconDeviceTv, IconServer2, IconUsers, IconLogout,
-  IconSun, IconMoon, IconChevronDown, IconActivity,
+  IconSun, IconMoon, IconChevronDown, IconActivity, IconBook, IconExternalLink,
 } from "@tabler/icons-react";
 import {Token, Locale} from "../utils";
 import logo from "../resources/ravnur-logo.svg";
+
+const DOCS_URL = "https://ravnur-inc.github.io/oryx-restream/";
 
 const NAV = [
   {to: "/routers-channels", label: "Channels", icon: IconDeviceTv},
@@ -116,6 +118,16 @@ export default function AppLayout() {
         </Box>
         <Box>
           <Divider my="sm"/>
+          <NavLink
+            component="a"
+            href={DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            label="Documentation"
+            leftSection={<IconBook size={18} stroke={1.7}/>}
+            rightSection={<IconExternalLink size={14} stroke={1.7}/>}
+            mb={2}
+          />
           <Group justify="space-between" px="sm" pb="xs">
             <Text size="xs" c="dimmed">Theme</Text>
             <ColorToggle/>

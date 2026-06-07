@@ -101,8 +101,10 @@ settings, and auto-renewing TLS, see the
 
 ## Management UI
 
-📖 **Operator/user guide:** [docs/USER_GUIDE.md](./docs/USER_GUIDE.md) — how to
-sign in, get ingest URLs, manage Destinations and Channels, and more.
+📖 **Operator/user guide:** <https://ravnur-inc.github.io/oryx-restream/> — how to
+sign in, get ingest URLs, manage Destinations and Channels, and more. Source lives
+in [`docs-site/`](./docs-site/) and is published to GitHub Pages on every push to
+`main`.
 
 A modern React UI (Vite + Mantine, React 18) for managing simulcasting — a
 responsive sidebar layout with **light/dark mode** (follows your OS, remembers
@@ -169,7 +171,7 @@ srt://<vm-ip>:10080?mode=caller&latency=1000&pkt_size=1316&rcvbuf=8388608&stream
    → attach the target(s) — add as many as you like for simultaneous restreaming.
 3. Start publishing to the channel's stream name; forwarding fires automatically.
 
-See the [User Guide](./docs/USER_GUIDE.md) for the full walkthrough.
+See the [User Guide](https://ravnur-inc.github.io/oryx-restream/) for the full walkthrough.
 
 ---
 
