@@ -976,3 +976,16 @@ out SRT ingest as a first-class, non-premium capability:
   "Main Encoder" to "RTMP or SRT ingest". New `ProtoBadge` helper.
 
 Right-panel cosmetic only; no auth/flow change. eslint + vite build + 26 vitest pass.
+
+## 2026-06-07 — Header account menu shows the user's name, not their role
+
+The top-right account button previously displayed the user's **role** ("owner" /
+"editor"). It now shows the user's **name** — the commonly expected label.
+
+- ui/src/components/AppLayout.js: the account button shows the full name
+  (`firstName lastName`), falling back to the email when no name is set (e.g. a
+  bootstrapped owner or an SSO user added without a name), then a generic
+  "Account". Avatar initials are derived from the name when available, else the
+  email. The role is no longer shown; the dropdown keeps the email + Sign out.
+
+UI-only. eslint + vite build + 26 vitest pass.
