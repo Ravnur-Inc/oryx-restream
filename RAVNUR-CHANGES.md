@@ -879,3 +879,31 @@ long Markdown file, and is linked from inside the app.
   docs-site/ locally. README + CLAUDE.md rule #7 updated to reference the site.
 
 eslint + vite build + 26 vitest pass.
+
+## 2026-06-07 — Login page redesign (two-column SSO, from design handoff)
+
+Rebuilt the sign-in screen to the high-fidelity design handoff: a two-column split
+with the SSO form on the left and an always-dark branded "simulcast routing" panel
+on the right.
+
+- ui/src/pages/Login.js: rewritten with Mantine components + theme tokens (was
+  hand-rolled inline styles). Brand lockup, "Sign in to your workspace" heading,
+  two full-width SSO buttons (icon · label · chevron, hover nudges the chevron +
+  blues the border), "Single sign-on" divider, identity-provider note, and a legal
+  line. Footer has a 3-way Light/Auto/Dark **SegmentedControl** bound to
+  `useMantineColorScheme`. Right panel: gradient + chevron watermark, LIVE pill,
+  headline, animated routing diagram (source card → SMIL signal sparks → YouTube/
+  Facebook/Twitch/Custom-RTMP chips), and a 99.98% / <2s / 20+ stat strip.
+- **Microsoft/Entra** keeps the existing MSAL popup flow unchanged. **Google** is
+  shown but wired to a placeholder ("Google sign-in isn't available yet — continue
+  with Microsoft") since there's no backend Google OAuth flow. Per-provider loading
+  state via `loadingProvider`.
+- ui/src/index.css: login styles — `.login-shell` responsive grid (panel hidden
+  ≤880px, form re-centres), `.login-sso` hover, `.login-dot` pulse keyframe,
+  `.login-spark`, and a `prefers-reduced-motion` block disabling the animations.
+- Reuses ravnur-logo.svg; the old `pattern-onboard.png` right-panel image is no
+  longer referenced.
+- docs-site/getting-started.md: button label updated to "Continue with Microsoft"
+  + note that the Google button isn't active yet.
+
+eslint + vite build + 26 vitest pass.
