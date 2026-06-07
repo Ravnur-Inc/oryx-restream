@@ -84,8 +84,17 @@ $DOCKER rm -f "$NAME" >/dev/null 2>&1 || true
 echo "==> Starting container: $NAME"
 # Microsoft Entra ID sign-in (optional). Set both env vars before running to
 # enable it; leave them unset to keep the password-only login. ENTRA_CLIENT_ID
-# is the Azure app registration (client) ID; ENTRA_BOOTSTRAP_EMAIL is the email
-# auto-provisioned as owner on its first sign-in (so the first login works).
+# is the Azure app registration (client) ID; BOOTSTRAP_EMAIL is the email
+# auto-provisioned as owner on its first SSO sign-in, any provider (so the first
+# login works). The legacy ENTRA_BOOTSTRAP_EMAIL still works as a fallback.
+# Google sign-in (optional). Set GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (a
+# Google Cloud "Web application" OAuth client) to show the Google button; unset
+# hides it. The button appears only when GOOGLE_CLIENT_ID is configured.
+sso_args=()
+for v in BOOTSTRAP_EMAIL GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
+  if [ -n "${!v:-}" ]; then sso_args+=( -e "${v}=${!v}" ); fi
+done
+if [ -n "${GOOGLE_CLIENT_ID:-}" ]; then echo "    Google sign-in: ENABLED"; fi
 # Optional SRT encryption (AES). Set SRT_PASSPHRASE (10-79 chars) to enable it;
 # every SRT publisher must then use this passphrase. SRT_PBKEYLEN selects the AES
 # strength (16=AES-128 default, 24, 32). Mapped to the env names SRS reads. Unset
@@ -116,6 +125,7 @@ $DOCKER run -d --name "$NAME" --restart always \
   -p 8000:8000/udp -p 10080:10080/udp \
   -e ENTRA_CLIENT_ID="${ENTRA_CLIENT_ID:-}" \
   -e ENTRA_BOOTSTRAP_EMAIL="${ENTRA_BOOTSTRAP_EMAIL:-}" \
+  "${sso_args[@]}" \
   "${srt_enc_args[@]}" \
   "${smtp_args[@]}" \
   -v "$DATA_DIR:/data" \

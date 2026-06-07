@@ -353,12 +353,24 @@ func envEntraClientID() string {
 	return os.Getenv("ENTRA_CLIENT_ID")
 }
 
-// envEntraBootstrapEmail is the email auto-provisioned as an owner on its first
-// Entra sign-in when no matching user exists yet. This bootstraps a freshly
-// deployed instance (empty user store). Empty disables bootstrap.
-func envEntraBootstrapEmail() string {
+// envBootstrapEmail is the email auto-provisioned as an owner on its first SSO
+// sign-in (any provider) when no matching user exists yet. This bootstraps a
+// freshly deployed instance (empty user store). Falls back to the legacy
+// ENTRA_BOOTSTRAP_EMAIL so existing deployments keep working. Empty disables
+// bootstrap.
+func envBootstrapEmail() string {
+	if v := os.Getenv("BOOTSTRAP_EMAIL"); v != "" {
+		return v
+	}
 	return os.Getenv("ENTRA_BOOTSTRAP_EMAIL")
 }
+
+// envGoogleClientID / envGoogleClientSecret are the Google OAuth 2.0 web-app
+// credentials used to exchange the SPA's authorization code for the user's
+// verified email. Both must be set to enable Google sign-in; empty disables it
+// (the UI hides the Google button when the client ID is absent).
+func envGoogleClientID() string     { return os.Getenv("GOOGLE_CLIENT_ID") }
+func envGoogleClientSecret() string { return os.Getenv("GOOGLE_CLIENT_SECRET") }
 
 // envSrtPassphrase is the optional SRT encryption passphrase (AES). It is read
 // from the same env SRS uses (SRS_SRT_SERVER_PASSPHRASE), so the platform can

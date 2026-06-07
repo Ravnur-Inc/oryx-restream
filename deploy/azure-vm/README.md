@@ -198,6 +198,30 @@ export ENTRA_BOOTSTRAP_EMAIL=<your-admin-email>
   (it's a no-op once that user exists) or remove it.
 - **Requires HTTPS** (Entra redirects to an https origin) — see the TLS section below.
 
+## Authentication — Google (optional)
+You can additionally (or instead) offer **Continue with Google**. Set a Google
+OAuth client before running `setup.sh`:
+
+```bash
+export GOOGLE_CLIENT_ID=<your-oauth-client-id>
+export GOOGLE_CLIENT_SECRET=<your-oauth-client-secret>
+export BOOTSTRAP_EMAIL=<your-admin-email>   # shared across providers
+./deploy/azure-vm/setup.sh
+```
+
+- **Google Cloud setup:** APIs & Services → Credentials → **Create OAuth client ID**
+  → type **Web application**. Add your mgmt URL (e.g. `https://restreamer.ravnur.net`)
+  under **Authorized JavaScript origins**. No redirect URI is needed — the app uses
+  the popup `postmessage` auth-code flow. Copy the **Client ID** and **Client secret**.
+- **How it works:** the SPA gets an authorization code in a popup; the server
+  exchanges it with Google (using the secret) and reads the **verified** email from
+  the returned ID token. The Google button appears only when `GOOGLE_CLIENT_ID` is set.
+- **Authorization is by email**, shared with Entra — a user added in **Users** as
+  `alice@corp.com` can sign in via Microsoft *or* Google with that address.
+- **First-run bootstrap:** `BOOTSTRAP_EMAIL` (legacy `ENTRA_BOOTSTRAP_EMAIL` still
+  works) is auto-provisioned as owner on its first sign-in via any provider.
+- **Requires HTTPS** — see the TLS section below.
+
 The management UI itself now has **Forward** (card-based simulcast manager:
 add/edit/delete destinations, custom keys, live stats), **Streams** (live
 monitoring), and **Users** (owner-only), with the legacy SRT/transcode/system

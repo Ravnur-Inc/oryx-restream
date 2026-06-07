@@ -12,8 +12,10 @@ Open `https://<your-host>/mgmt`.
 
 - **Microsoft sign-in (Entra ID):** click **Continue with Microsoft**. Only
   registered users can get in; unregistered accounts see an "access denied" page.
-  *(A **Continue with Google** button is shown but not yet active — use Microsoft.)*
-- **Password:** if Entra isn't enabled for your deployment, sign in with the
+- **Google sign-in:** click **Continue with Google** (shown only when your
+  deployment has Google configured). Same rule — your email must be a registered
+  user. Use whichever provider matches your account's email.
+- **Password:** if no SSO is enabled for your deployment, sign in with the
   management password.
 
 **Roles**

@@ -249,6 +249,10 @@ func handleHTTPService(ctx context.Context, handler *http.ServeMux) error {
 		return errors.Wrapf(err, "handle entra auth")
 	}
 
+	if err := googleAuth.Handle(ctx, handler); err != nil {
+		return errors.Wrapf(err, "handle google auth")
+	}
+
 	if err := handleHooksService(ctx, handler); err != nil {
 		return errors.Wrapf(err, "handle hooks")
 	}
@@ -620,6 +624,9 @@ func handleMgmtEnvs(ctx context.Context, handler *http.ServeMux) {
 				RTCPort string `json:"rtcPort"`
 				// The limit of the number of forwarding streams.
 				ForwardLimit int `json:"forwardLimit"`
+				// The Google OAuth client ID, empty when Google sign-in is not
+				// configured. The login page shows the Google button only when set.
+				GoogleClientID string `json:"googleClientId"`
 			}{
 				// Whether in docker.
 				MgmtDocker: true,
@@ -637,6 +644,8 @@ func handleMgmtEnvs(ctx context.Context, handler *http.ServeMux) {
 				RTCPort: envRtcListen(),
 				// The limit of the number of forwarding streams.
 				ForwardLimit: forwardLimit,
+				// The Google OAuth client ID (empty disables Google sign-in).
+				GoogleClientID: envGoogleClientID(),
 			})
 
 			logger.Tf(ctx, "mgmt envs ok, locale=%v, platformDocker=%v, candidate=%v, rtmpPort=%v, httpPort=%v, srtPort=%v, rtcPort=%v, forwardLimit=%v",

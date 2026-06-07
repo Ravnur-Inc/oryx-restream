@@ -5,8 +5,9 @@
 //
 // Sign-in screen. Two-column split: an SSO form on the left and an always-dark
 // branded "simulcast routing" panel on the right (hidden below 880px). Auth is
-// SSO-only — Microsoft Entra is wired; Google is a placeholder until a backend
-// Google OAuth flow exists. Built from the design handoff (design_handoff_login).
+// SSO-only — Microsoft Entra (MSAL popup) and Google (OAuth auth-code popup).
+// The Google button appears only when the server reports a googleClientId in
+// /envs. Built from the design handoff (design_handoff_login).
 import React from "react";
 import {
   Box, Button, Title, Text, Anchor, Divider, Group, Stack, Paper, ThemeIcon,
@@ -16,10 +17,12 @@ import {
   IconChevronRight, IconShieldCheck, IconSun, IconMoon, IconDeviceDesktop,
   IconBroadcast,
 } from "@tabler/icons-react";
+import {GoogleOAuthProvider, useGoogleLogin} from "@react-oauth/google";
 import axios from "axios";
 import {useNavigate} from "react-router-dom";
 import {Token, Tools} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
+import {SrsEnvContext} from "../components/SrsEnvContext";
 import {useErrorBoundary} from "react-error-boundary";
 import {msalInstance, loginRequest} from "../msalInstance";
 import ravnurLogo from "../resources/ravnur-logo.svg";
@@ -87,6 +90,26 @@ function SsoButton({icon, label, onClick, loading, disabled}) {
   );
 }
 
+// The Google provider button. Must render inside <GoogleOAuthProvider>; the
+// auth-code popup flow hands back a code (no ID token in the browser) that the
+// backend exchanges. Reports the code (or an error) to the parent via onCode.
+function GoogleSsoButton({onCode, loading, disabled}) {
+  const login = useGoogleLogin({
+    flow: "auth-code",
+    onSuccess: (resp) => onCode(resp.code),
+    onError: () => onCode(null, "Google sign-in failed. Please try again."),
+  });
+  return (
+    <SsoButton
+      icon={<GoogleIcon/>}
+      label="Continue with Google"
+      onClick={() => login()}
+      loading={loading}
+      disabled={disabled}
+    />
+  );
+}
+
 function ThemeToggle() {
   const {colorScheme, setColorScheme} = useMantineColorScheme();
   return (
@@ -106,12 +129,15 @@ function ThemeToggle() {
 }
 
 function LoginImpl({onLogin}) {
-  // Which provider's redirect is in flight: 'microsoft' | 'google' | null.
+  // Which provider's sign-in is in flight: 'microsoft' | 'google' | null.
   const [loadingProvider, setLoadingProvider] = React.useState(null);
   // Inline notice below the buttons: {type: 'error' | 'info', text} | null.
   const [notice, setNotice] = React.useState(null);
   const navigate = useNavigate();
   const {showBoundary: handleError} = useErrorBoundary();
+  // Server config (from /envs). Google sign-in is enabled when googleClientId is set.
+  const env = React.useContext(SrsEnvContext)?.[0];
+  const googleClientId = env?.googleClientId;
 
   // Verify an existing token on load — if valid, skip the login page.
   React.useEffect(() => {
@@ -156,13 +182,34 @@ function LoginImpl({onLogin}) {
     }
   }, [onLogin, navigate]);
 
-  // Google is not wired to a backend flow yet — show a placeholder notice.
-  const handleGoogleLogin = React.useCallback(() => {
-    setNotice({
-      type: 'info',
-      text: 'Google sign-in isn’t available yet — please continue with Microsoft.',
-    });
-  }, []);
+  // Sign in with Google — the popup returns an auth code, which the backend
+  // exchanges for the user's verified email. (code === null means the user
+  // closed the popup or the SDK errored; errText carries an optional message.)
+  const handleGoogleCode = React.useCallback(async (code, errText) => {
+    if (!code) {
+      if (errText) setNotice({type: 'error', text: errText});
+      return;
+    }
+    setLoadingProvider('google');
+    setNotice(null);
+    try {
+      const res = await axios.post('/terraform/v1/mgmt/auth/google', {code});
+      const data = res.data.data;
+      console.log(`Login: Google ok, user=${data.user?.email}, role=${data.user?.role}`);
+      Token.save(data);
+      onLogin && onLogin();
+      navigate('/routers-channels');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || '';
+      if (msg.includes('not authorized')) {
+        navigate('/routers-forbidden');
+        return;
+      }
+      setNotice({type: 'error', text: msg || 'Sign-in failed. Please try again.'});
+    } finally {
+      setLoadingProvider(null);
+    }
+  }, [onLogin, navigate]);
 
   const busy = loadingProvider !== null;
 
@@ -210,16 +257,18 @@ function LoginImpl({onLogin}) {
               loading={loadingProvider === 'microsoft'}
               disabled={busy && loadingProvider !== 'microsoft'}
             />
-            <SsoButton
-              icon={<GoogleIcon/>}
-              label="Continue with Google"
-              onClick={handleGoogleLogin}
-              loading={loadingProvider === 'google'}
-              disabled={busy}
-            />
+            {googleClientId && (
+              <GoogleOAuthProvider clientId={googleClientId}>
+                <GoogleSsoButton
+                  onCode={handleGoogleCode}
+                  loading={loadingProvider === 'google'}
+                  disabled={busy && loadingProvider !== 'google'}
+                />
+              </GoogleOAuthProvider>
+            )}
           </Stack>
 
-          {/* Inline notice (errors + the Google placeholder) */}
+          {/* Inline notice (sign-in errors) */}
           {notice && (
             <Text
               mt={14} fz={13} role={notice.type === 'error' ? 'alert' : 'status'}

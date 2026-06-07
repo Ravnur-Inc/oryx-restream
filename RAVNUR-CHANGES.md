@@ -926,3 +926,40 @@ transient — re-runs don't help, and the image build was hard-blocked.
   browser `User-Agent` (kept to flags curl 7.68 in the build image supports).
 
 Docker-build-only change; no app/Go/UI code touched.
+
+## 2026-06-07 — Google sign-in (SSO) alongside Microsoft Entra
+
+Adds **Continue with Google** to the login page, wired to a real backend flow.
+The button appears only when the server is configured for Google.
+
+**Backend**
+- platform/auth_common.go (new): `authorizeAndIssueSession()` — the
+  provider-agnostic tail of SSO (user-store lookup / first-owner bootstrap /
+  session-JWT issue / response), factored out of entra_auth.go so Entra and Google
+  behave identically.
+- platform/google_auth.go (new): `/terraform/v1/mgmt/auth/google` exchanges the
+  SPA's OAuth **authorization code** at Google's token endpoint (using
+  `GOOGLE_CLIENT_SECRET`, `redirect_uri=postmessage`), then reads the **verified**
+  email from the returned ID token (validates aud = client ID, issuer = Google,
+  expiry, `email_verified`). Signature re-verification is skipped — the token comes
+  server-to-server from Google over TLS.
+- platform/entra_auth.go: trimmed to validate-token → `authorizeAndIssueSession`.
+- platform/utils.go: `envGoogleClientID` / `envGoogleClientSecret`; bootstrap email
+  generalized to `envBootstrapEmail()` = `BOOTSTRAP_EMAIL` ?? `ENTRA_BOOTSTRAP_EMAIL`
+  (existing deployments unaffected).
+- platform/service.go: `/envs` now returns `googleClientId` (empty hides the
+  button); google handler registered. main.go: `googleAuth = NewGoogleAuth()`.
+
+**Frontend**
+- ui: add `@react-oauth/google` (0 vulns). Login.js reads `googleClientId` from
+  `SrsEnvContext` (/envs); when set, renders a real Google button inside
+  `GoogleOAuthProvider` using the **auth-code popup flow** and posts the code to
+  the backend (same shape as the Entra handler). When unset, the button is hidden.
+
+**Deploy / docs**
+- setup.sh passes `BOOTSTRAP_EMAIL` / `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+- deploy README "Authentication — Google" section (Google Cloud Web-app client,
+  authorized JS origin, postmessage flow); docs-site getting-started + administration.
+
+Authorization stays **by email**, shared across providers (no provider binding).
+GOOS=linux go build ./... + eslint + vite build + 26 vitest pass.
