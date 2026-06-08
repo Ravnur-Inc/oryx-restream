@@ -1053,3 +1053,19 @@ Also fixed a pull-mode regression: `setup.sh` now **always keeps a repo clone** 
 helper scripts (`nsg-rules.sh`, `certbot-setup.sh`) are present on the VM and
 `cd ~/oryx-restream && ./deploy/azure-vm/setup.sh` works again. Only `BUILD=1`
 compiles from the clone; pull mode just uses it for the helper scripts. bash -n clean.
+
+## 2026-06-08 — Browser tab branding: Ravnur favicon + "Ravnur Restreamer" title
+
+The tab still showed the upstream **Oryx** favicon and title.
+
+- ui/index.html: `<title>` → **Ravnur Restreamer**; added an SVG favicon
+  (`<link rel="icon" type="image/svg+xml" href="/favicon.svg">`) ahead of the .ico
+  fallback; description meta rewritten to the restreamer; `theme-color` → brand blue
+  `#228be6`.
+- ui/public: regenerated **favicon.ico** (16/24/32/48/64) and **logo192/512.png**
+  from `src/resources/ravnur-logo.svg` (the green/blue play mark), and added
+  `favicon.svg`. Replaces the Oryx-branded icons.
+- ui/public/manifest.json: name → "Ravnur Restreamer", short_name → "Ravnur",
+  added the SVG icon, theme_color → `#228be6`.
+
+UI/asset-only. eslint + vite build + 26 vitest pass.
