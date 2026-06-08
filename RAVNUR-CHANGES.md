@@ -1027,3 +1027,25 @@ same filesystem via the bind mount).
   GHCR private-package note (`docker login ghcr.io` or make the package public).
 
 Deploy-only; no app/Go/UI change. bash -n clean.
+
+## 2026-06-08 — Docs: refresh deploy guide + README to the current UI/flow
+
+Audited the deploy guide and project README and fixed stale references to
+removed/renamed features (the UI was rebuilt around Channels/Destinations/Ingest/
+Monitor and the Settings/Scenario/Streams pages were removed):
+
+- deploy/azure-vm/README.md:
+  - "Use it" + "Multiple restream destinations" now describe **Destinations →
+    Channels** (was the removed **Scenario → Forward** flow).
+  - UI-features paragraph rewritten to the real sidebar (Channels, Destinations,
+    Ingest, Monitor, Users, System) — dropped the old "Forward / Streams / legacy
+    SRT-transcode-system tabs" description.
+  - HTTPS "manual alternatives" no longer point to the removed **Settings → HTTPS →
+    SSL file** upload screen; it now documents dropping cert files at
+    `~/oryx-data/config/nginx.{key,crt}` + restart (or using `certbot-setup.sh`).
+  - "Re-run setup.sh" / "Security updates" notes updated from rebuild→**pull** the
+    published image (matches the new pull-by-default deploy).
+- README.md: Quick Start one-shot script described as **pull**-and-run (not
+  clone/build); build-locally noted as `BUILD=1`.
+
+Docs-only.

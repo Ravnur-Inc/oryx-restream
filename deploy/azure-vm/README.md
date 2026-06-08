@@ -60,11 +60,15 @@ SSH (22) is covered by Azure's default rules. Forwarding **out** to
 YouTube/Facebook (443/1935) is outbound and allowed by default.
 
 ## 3. Use it
-1. Open `https://<vm-ip>/mgmt` (accept the self-signed cert) and set the
-   mgmt password.
-2. In the **Scenario** tab, copy the **SRT publish URL** and push a stream
-   (OBS, or `ffmpeg -re -stream_loop -1 -i input.mp4 -c copy -f mpegts "<SRT-URL>"`).
-3. Add a **Forward** with your YouTube/Facebook RTMP server + stream key.
+1. Open `https://<vm-ip>/mgmt` (accept the self-signed cert) and sign in — set the
+   mgmt password on first run, or use Microsoft/Google SSO if configured (see
+   **Authentication** below).
+2. In **Destinations**, add your target(s) — YouTube/Facebook/Twitch/custom RTMP
+   server + stream key (saved once, reusable across channels).
+3. In **Channels**, create a channel, attach the destination(s), and copy its
+   **ingest URL** (RTMP or SRT). Push a stream to it (OBS, or
+   `ffmpeg -re -stream_loop -1 -i input.mp4 -c copy -f mpegts "<SRT-URL>"`);
+   forwarding to every attached destination starts automatically.
 
 ## Recommended OBS / SRT settings
 Proven-good publish settings for remote (internet) ingest:
@@ -85,11 +89,12 @@ Proven-good publish settings for remote (internet) ingest:
   RTMP ingest needs none of this.
 
 ## Multiple restream destinations
-In the mgmt UI → **Scenario → Forward**, add one entry per platform (YouTube,
-Facebook, Twitch, or a custom RTMP URL) with that platform's RTMP server +
-stream key. Oryx runs a separate FFmpeg forward task per destination from the
-single SRT ingest, so one inbound stream fans out to many outputs. Forwarding is
-a remux (`-c copy`), so CPU stays low even with several destinations.
+In the mgmt UI → **Destinations**, add one entry per platform (YouTube, Facebook,
+Twitch, or a custom RTMP URL) with that platform's RTMP server + stream key, then
+attach them to a **Channel**. Oryx runs a separate FFmpeg forward task per
+destination from the single ingest, so one inbound stream fans out to many
+outputs. Forwarding is a remux (`-c copy`), so CPU stays low even with several
+destinations.
 
 ## Run on boot
 The container runs with `--restart always`, and `setup.sh` enables the Docker
@@ -236,10 +241,12 @@ export BOOTSTRAP_EMAIL=<your-admin-email>   # shared across providers
   works) is auto-provisioned as owner on its first sign-in via any provider.
 - **Requires HTTPS** — see the TLS section below.
 
-The management UI itself now has **Forward** (card-based simulcast manager:
-add/edit/delete destinations, custom keys, live stats), **Streams** (live
-monitoring), and **Users** (owner-only), with the legacy SRT/transcode/system
-screens kept under owner-only tabs.
+The management UI has a sidebar with **Channels** (routes: an ingest plus its
+attached destinations, with start/stop and health badges), **Destinations** (the
+reusable target library), **Ingest** (publish key + SRT-encryption toggle +
+encoder reference), each channel's **Monitor** view (live preview + contribution/
+egress health), and, for owners, **Users** (access + invites) and **System**
+(host/app health).
 
 ## HTTPS / real TLS certificate for the mgmt UI
 The mgmt UI uses a **self-signed** cert by default. For a trusted, **auto-renewing**
@@ -258,8 +265,12 @@ used at issuance and each renewal). The app's built-in Let's Encrypt automation
 was removed in this fork, so renewal is driven from the host this way.
 
 Manual alternatives:
-- Paste a cert yourself in the mgmt UI → **Settings → HTTPS → SSL file** (private
-  key + full-chain). Simple, but you must re-upload every ~90 days.
+- Drop your own cert files into the persistent volume as
+  `~/oryx-data/config/nginx.key` (private key) and `~/oryx-data/config/nginx.crt`
+  (full-chain), then restart the container (`docker restart oryx`). You must
+  replace them yourself before each expiry (~90 days for Let's Encrypt). The
+  in-UI cert-upload screen was removed in this fork — use the file path or, better,
+  the automated `certbot-setup.sh` above.
 - Terminate TLS in front of the VM with **Azure Application Gateway** / a reverse
   proxy that forwards to the VM's `:443` (HTTPS) or `:2022` (HTTP).
 
@@ -267,8 +278,9 @@ Manual alternatives:
 - Config, redis state, and the mgmt password persist in `~/oryx-data`.
 - `docker logs -f oryx` to watch it; a healthy idle log shows SRS up and
   `forward start to run tasks`.
-- Re-run `setup.sh` any time to pull the latest `main`, rebuild, and recreate
-  the container.
+- Re-run `setup.sh` any time to pull the latest published image and recreate the
+  container (it also prunes old images/cache). Use `TAG=vX.Y.Z` to pin a version
+  or `BUILD=1` to build locally.
 
 ## Ongoing maintenance
 `setup.sh` configures two things so a long-running deployment stays healthy with
@@ -283,7 +295,7 @@ Still on you, periodically:
   redis state) — losing the VM loses all of it otherwise.
 - **Verify cert auto-renewal**: `systemctl list-timers certbot.timer` (renews every
   ~90 days; needs port 80 reachable).
-- **Security rebuilds**: even with no feature changes, re-run `setup.sh` every few
-  months to rebuild on a fresh base image + current FFmpeg, draining CVE drift on
-  the public ingest ports.
+- **Security updates**: even with no feature changes, re-run `setup.sh` every few
+  months to pull the latest published image (rebuilt in CI on a fresh base image +
+  current FFmpeg), draining CVE drift on the public ingest ports.
 - Watch disk/CPU/memory — see monitoring options if you want alerting.
