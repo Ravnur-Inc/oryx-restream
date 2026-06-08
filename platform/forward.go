@@ -767,8 +767,15 @@ func (v *ForwardTask) doForward(ctx context.Context, input *SrsStream) error {
 	}()
 
 	// Start FFmpeg process.
+	//
+	// Do NOT add "-re" here. The input is a LIVE source (SRS RTMP, or an RTSP
+	// camera) that already arrives in real time. "-re" throttles *reading* to the
+	// input's native rate using FFmpeg's own clock — that's meant for FILE inputs.
+	// On a live source it under-delivers on any clock drift, starving the output:
+	// YouTube then reports "not receiving enough video to maintain smooth
+	// streaming" even though the copy is otherwise healthy. Forward at the rate the
+	// live source provides instead.
 	args := []string{}
-	args = append(args, "-re")
 	// For RTSP stream source, always use TCP transport.
 	if strings.HasPrefix(inputURL, "rtsp://") {
 		args = append(args, "-rtsp_transport", "tcp")

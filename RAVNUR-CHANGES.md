@@ -1069,3 +1069,18 @@ The tab still showed the upstream **Oryx** favicon and title.
   added the SVG icon, theme_color → `#228be6`.
 
 UI/asset-only. eslint + vite build + 26 vitest pass.
+
+## 2026-06-08 — Fix: drop `-re` from forward (YouTube buffering / starved egress)
+
+YouTube Studio warned "not receiving enough video to maintain smooth streaming"
+while the destination's health badge read healthy.
+
+- platform/forward.go: removed the unconditional **`-re`** input flag from the
+  FFmpeg forward command. The forward input is a **live** source (SRS RTMP / RTSP),
+  which already arrives in real time; `-re` paces *reading* to the input's native
+  rate by FFmpeg's own clock (a FILE-input feature) and under-delivers on any clock
+  drift, starving the output (YouTube buffering) even though the `-c copy` task is
+  otherwise running fine. Forwarding now runs at the live source's rate.
+
+Touches the protected forward.go intentionally — explicit fix for a live egress
+quality bug. GOOS=linux go build ./... clean.
