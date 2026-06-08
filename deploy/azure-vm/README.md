@@ -24,6 +24,11 @@ with the right port mappings and a persistent `~/oryx-data` volume. After each r
 it **prunes unused images and build cache** so repeated upgrades don't fill the
 disk. Re-run it any time to update to the latest published release.
 
+Either way the script keeps a small repo clone at `~/oryx-restream` (it doesn't
+build from it in pull mode), so the helper scripts (`nsg-rules.sh`,
+`certbot-setup.sh`) are on the VM and you can re-run the installer from there:
+`cd ~/oryx-restream && ./deploy/azure-vm/setup.sh`.
+
 Options (env vars):
 
 ```bash

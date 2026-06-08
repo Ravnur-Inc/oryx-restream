@@ -1048,4 +1048,8 @@ Monitor and the Settings/Scenario/Streams pages were removed):
 - README.md: Quick Start one-shot script described as **pull**-and-run (not
   clone/build); build-locally noted as `BUILD=1`.
 
-Docs-only.
+Also fixed a pull-mode regression: `setup.sh` now **always keeps a repo clone** at
+`~/oryx-restream` (cloning was previously skipped when pulling), so the deploy
+helper scripts (`nsg-rules.sh`, `certbot-setup.sh`) are present on the VM and
+`cd ~/oryx-restream && ./deploy/azure-vm/setup.sh` works again. Only `BUILD=1`
+compiles from the clone; pull mode just uses it for the helper scripts. bash -n clean.

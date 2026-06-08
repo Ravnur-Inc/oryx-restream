@@ -57,7 +57,10 @@ if command -v apt-get >/dev/null 2>&1; then
     | sudo tee /etc/apt/apt.conf.d/20auto-upgrades >/dev/null || true
 fi
 
-# Get the source (clone/update) — only needed when building locally.
+# Get the source (clone/update). Always kept on disk — even in pull mode — so the
+# deploy bundle's helper scripts (nsg-rules.sh, certbot-setup.sh) are available and
+# re-running `./deploy/azure-vm/setup.sh` from the clone works. It's a small
+# checkout; only `BUILD=1` actually compiles from it.
 ensure_source() {
   if [ -f "./Dockerfile" ] && [ -d "./platform" ]; then
     SRC_DIR="$(pwd)"
@@ -78,7 +81,6 @@ ensure_source() {
 
 # Build the image locally, retrying transient Docker Hub pull timeouts.
 build_image() {
-  ensure_source
   echo "==> Building image: $LOCAL_IMAGE"
   local attempt
   for attempt in 1 2 3; do
@@ -90,8 +92,11 @@ build_image() {
   exit 1
 }
 
-# 1+2. Decide the image to run: pull the published image by default (fast, no
-# local build churn), or build locally when BUILD=1 or the pull fails.
+# 1. Always fetch the source so the helper scripts + setup.sh live on the VM.
+ensure_source
+
+# 2. Decide the image to run: pull the published image by default (fast, no local
+# build churn), or build locally when BUILD=1 or the pull fails.
 if [ "$BUILD" = "1" ]; then
   build_image
   RUN_IMAGE="$LOCAL_IMAGE"
