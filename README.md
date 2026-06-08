@@ -75,14 +75,15 @@ docker run -d --name oryx --restart always \
   ghcr.io/ravnur-inc/oryx-restream:latest
 ```
 
-On a fresh Linux VM (Ubuntu 22.04/24.04 with Docker), the one-shot script clones,
-builds, and runs the container with the correct ports and a persistent volume:
+On a fresh Linux VM (Ubuntu 22.04/24.04 with Docker), the one-shot script pulls
+the published image and runs the container with the correct ports and a
+persistent volume (re-run it to upgrade; it prunes old images afterward):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ravnur-Inc/oryx-restream/main/deploy/azure-vm/setup.sh | bash
 ```
 
-Or build the image yourself:
+Or build the image yourself (`BUILD=1 ./deploy/azure-vm/setup.sh`, or directly):
 
 ```bash
 git clone https://github.com/Ravnur-Inc/oryx-restream.git
