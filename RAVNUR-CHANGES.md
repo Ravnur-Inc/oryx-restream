@@ -1069,3 +1069,20 @@ The tab still showed the upstream **Oryx** favicon and title.
   added the SVG icon, theme_color → `#228be6`.
 
 UI/asset-only. eslint + vite build + 26 vitest pass.
+
+## 2026-06-08 — Monitor player: auto-reconnect + manual reload
+
+The Monitor preview (FlvPlayer) showed "Stream unavailable" permanently and hung on
+the first flv.js error — typically a harmless startup race (the player attaches
+before the stream's first keyframe is buffered), so the stream was healthy but the
+preview had given up with no retry.
+
+- ui/src/components/FlvPlayer.js: on a flv.js error it now **auto-reconnects** with
+  a 2.5s backoff (up to ~1 min) and shows a **"Connecting to the stream…"** state
+  instead of an instant failure, so it self-heals when the feed becomes ready; after
+  the retry budget it falls back to an **idle** state with a **Reload player**
+  button. A small **reload** button is always available (top-right) for when the
+  player hangs but the stream is good. Also stopped forcing `hasAudio/hasVideo`
+  (let flv.js auto-detect tracks) to avoid spurious demux errors.
+
+Preview-only (independent of ingest/forward). eslint + vite build + 26 vitest pass.
