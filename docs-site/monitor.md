@@ -4,7 +4,10 @@ Click **Monitor** on any channel card to open its dedicated view — the "single
 pane of glass" for one broadcast:
 
 - **Live preview** — the contribution feed plays in-browser (fitted, no cropping).
-  When the source is idle it shows a "waiting for a publisher" placeholder instead.
+  When the source is idle the placeholder explains *why*: nothing is publishing, a
+  publisher arrived under a different stream name (usually a wrong or truncated
+  encoder stream ID), or one arrived but its publish key was rejected. See
+  [Troubleshooting](troubleshooting.md) for what to do about each.
 - **Contribution health** — a HEALTHY / STALLED / IDLE badge plus video codec,
   resolution, audio codec, bitrate and uptime.
 - **Outputs** — every attached destination with its egress health badge

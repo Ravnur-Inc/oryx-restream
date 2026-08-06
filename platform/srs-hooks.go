@@ -60,12 +60,15 @@ func handleHooksService(ctx context.Context, handler *http.ServeMux) error {
 	logger.Tf(ctx, "Handle %v", ep)
 	handler.HandleFunc(ep, func(w http.ResponseWriter, r *http.Request) {
 		if err := func() error {
-			if noAuth, err := rdb.HGet(ctx, SRS_AUTH_SECRET, "pubNoAuth").Result(); err != nil && err != redis.Nil {
+			// Disabling auth must skip only the secret *check* — never the bookkeeping
+			// below. Returning early here (as this did) left SRS_STREAM_ACTIVE empty, so
+			// every channel read IDLE forever and forward.go, which picks its input from
+			// the same hash, never started a single task even though ingest worked fine.
+			var noAuth bool
+			if v, err := rdb.HGet(ctx, SRS_AUTH_SECRET, "pubNoAuth").Result(); err != nil && err != redis.Nil {
 				return errors.Wrapf(err, "hget %v pubNoAuth", SRS_AUTH_SECRET)
-			} else if noAuth == "true" {
-				ohttp.WriteData(ctx, w, r, nil)
-				logger.Tf(ctx, "srs hooks disabled")
-				return nil
+			} else if v == "true" {
+				noAuth = true
 			}
 
 			b, err := ioutil.ReadAll(r.Body)
@@ -86,7 +89,10 @@ func handleHooksService(ctx context.Context, handler *http.ServeMux) error {
 			}
 
 			verifiedBy := "noVerify"
-			if action == SrsActionOnPublish {
+			if noAuth {
+				verifiedBy = "disabled"
+			}
+			if action == SrsActionOnPublish && !noAuth {
 				// Note that we allow pass secret by params or in stream name, for example, some encoder does not support params
 				// with ?secret=xxx, so it will fail when url is:
 				//      rtmp://ip/live/livestream?secret=xxx
