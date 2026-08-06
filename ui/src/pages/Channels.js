@@ -196,6 +196,24 @@ function ChannelCard({channel, urls, dests, streamMap, sourceLive, onEdit, onDel
               <CopyField label="RTMP stream key" value={urls.rtmpKey}/>
               <CopyField label={urls.encrypted ? "SRT URL (encrypted)" : "SRT URL"} value={urls.srtUrl}/>
               <CopyField label="HLS playback" value={urls.hlsUrl}/>
+
+              {/* Hardware encoders (Makito, Teradek, …) take these separately and
+                  cannot accept the URL above — copy each field into its own box. */}
+              <div style={{marginTop: 14, paddingTop: 12, borderTop: `1px solid ${BORDER}`}}>
+                <div style={{...mono, fontSize: 10, color: MUTED, letterSpacing: "0.12em", marginBottom: 8}}>
+                  HARDWARE ENCODER (SRT CALLER)
+                </div>
+                <CopyField label="SRT address" value={urls.srtHost}/>
+                <CopyField label="SRT port" value={urls.srtPort}/>
+                <CopyField label="SRT stream ID" value={urls.srtStreamId}/>
+                <CopyField label="SRT latency (ms)" value={urls.srtLatency}/>
+                {urls.encrypted && <CopyField label="SRT passphrase" value={urls.srtPassphrase}/>}
+                <div style={{...mono, fontSize: 10, color: MUTED, lineHeight: 1.6}}>
+                  Paste the stream ID <b>exactly</b>, including the leading <code>#!::</code> and the
+                  trailing <code>,m=publish</code>. If either is dropped, the encoder still reports
+                  "connected" but the server treats it as a player and this channel stays IDLE.
+                </div>
+              </div>
             </div>
           )}
 

@@ -1101,3 +1101,56 @@ preview had given up with no retry.
   (let flv.js auto-detect tracks) to avoid spurious demux errors.
 
 Preview-only (independent of ingest/forward). eslint + vite build + 26 vitest pass.
+
+## 2026-08-06 — Fix: SRT encoder "connected" but the channel reads IDLE
+
+A Haivision Makito X4 (SRT caller → port 10080, H.264/AAC, no passphrase) reported
+**Connected**, but the channel's Monitor showed *"Source is idle"* and no video.
+
+Root of the class of failure: the live/idle badge is derived **only** from Redis
+`SRS_STREAM_ACTIVE`, which is written **only** by the `on_publish` hook. An SRT
+socket that connects but never publishes — the usual cause being a stream ID that
+lost its `#!::` prefix or its `,m=publish` suffix, so SRS treats the session as a
+*player* — leaves the encoder happily "connected" and the channel permanently idle,
+with nothing in the UI to say so.
+
+- **ui/src/components/ingestUrls.js**: `buildIngestUrls` now also returns
+  `srtHost` / `srtPort` / `srtLatency` / `srtPassphrase` alongside the existing
+  `srtStreamId`, which was computed but **never rendered anywhere in the UI** even
+  though the operator guide told hardware-encoder users to copy "the channel's
+  Stream ID". The advertised `latency=1000` is now a named constant with a comment
+  explaining why it deliberately differs from the server's `latency 200`
+  (SRT negotiates the max; the higher caller value is for lossy WAN contribution).
+- **ui/src/pages/Channels.js**: the Ingest URLs panel gained a **Hardware encoder
+  (SRT caller)** block — SRT address, port, stream ID, latency and (when enabled)
+  passphrase as individual copy fields, so a Makito/Teradek operator never
+  hand-extracts the stream ID from the middle of a URL. Pasting the whole `srt://`
+  URL is the trap: `#` is a fragment marker, so any URL-parsing field silently drops
+  `m=publish`.
+- **ui/src/pages/Monitor.js**: the idle placeholder is now self-diagnosing. It
+  cross-checks the SRS `/api/v1/streams` payload the page **already fetches** every
+  poll and distinguishes three cases: nothing publishing, a publisher registered
+  under a different `app/stream` (wrong/truncated stream ID), and a publisher SRS
+  has but the platform never registered (rejected publish key). The health badge
+  tooltip carries the same detail.
+- **ui/src/pages/Ingest.js**: hardware-encoder bullet points at the new fields and
+  warns about the `#!::` / `,m=publish` truncation.
+- **platform/srs-hooks.go**: fixed a latent bug — with `pubNoAuth=true` the verify
+  handler returned *before* recording the stream, so `SRS_STREAM_ACTIVE` stayed
+  empty: every channel read IDLE forever **and** forward.go (which picks its FFmpeg
+  input from the same hash) never started a task, even though ingest worked. Auth
+  disabled now skips only the secret check, not the bookkeeping.
+- **platform/crontab.go**: added a 10s reconciler that evicts `SRS_STREAM_ACTIVE`
+  entries with no matching live publisher in SRS (30s grace window; no-ops when the
+  SRS API is unreachable so a restart can't wipe the hash). Entries were previously
+  removed only by `on_unpublish`, so an SRS crash — or the restart `srt.go` performs
+  to apply an SRT encryption change — left phantom "live" channels. It is a garbage
+  collector only: it never *adds* entries, which would let a publish that failed
+  auth become visible and forwarded.
+
+Docs updated in the same change: `docs-site/encoder-settings.md` (encoder-field →
+ingest-field mapping table, Makito X4 section, exact-copy warning),
+`docs-site/troubleshooting.md` (new "encoder says connected but the channel stays
+IDLE" entry), `docs-site/monitor.md` (idle placeholder now explains why).
+
+GOOS=linux go build ./... clean.

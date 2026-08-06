@@ -48,6 +48,46 @@ function formatUptime(ms) {
   return [h, m, sec].map(v => String(v).padStart(2, "0")).join(":");
 }
 
+// Explain *why* a channel reads idle.
+//
+// "Idle" here means only one thing: the platform never recorded a successful
+// on_publish for this stream name (streams/query is a plain read of the
+// SRS_STREAM_ACTIVE hash the SRS hook writes). That is a much narrower fact than
+// "no video", and on its own it sends operators digging through container logs.
+//
+// SRS's own /api/v1/streams is already fetched on every poll for the codec pills,
+// so cross-check against it: it knows about publishers the hook never registered,
+// and about publishers that landed under a different app/stream than this channel.
+// The second case is the common hardware-encoder failure — a mangled SRT stream ID
+// (missing `#!::` prefix or `,m=publish` suffix) that leaves the encoder reporting
+// "connected" while the feed arrives somewhere else, or not at all.
+function idleDiagnosis({name, srsAll, channelNames}) {
+  const publishers = (srsAll || []).filter(s => s?.publish?.active);
+
+  if (publishers.some(s => s.app === "live" && s.name === name)) {
+    return {
+      title: "Publisher connected, but not registered",
+      detail: `The media server is receiving live/${name}, yet the channel was never registered. Usually a rejected publish key — check this channel's ingest URLs against the Ingest page's publish key.`,
+    };
+  }
+
+  // Only publishers that belong to no channel at all are evidence of a misaddressed
+  // encoder. Another channel being live is normal and must not be reported as one.
+  const orphans = publishers.filter(s => !(channelNames || []).includes(s.name));
+  if (orphans.length) {
+    const where = orphans.map(s => `${s.app}/${s.name}`).join(", ");
+    return {
+      title: "Publisher connected under a different name",
+      detail: `Something is publishing as ${where}, which belongs to no channel — this one expects live/${name}. Check the encoder's SRT stream ID (or RTMP stream key) against this channel's ingest URLs.`,
+    };
+  }
+
+  return {
+    title: "Source is idle",
+    detail: `Waiting for an encoder to publish ${name}`,
+  };
+}
+
 function Btn({children, onClick, variant = "dim"}) {
   const variants = {
     primary: {background: ACCENT, color: "#fff", borderColor: ACCENT},
@@ -103,6 +143,8 @@ function MonitorImpl() {
   const [sourceLive, setSourceLive] = React.useState(false);
   const [srcStream, setSrcStream] = React.useState(null); // SrsStream from streams/query (for uptime)
   const [srs, setSrs] = React.useState(null);             // /api/v1/streams entry (codec/res/bitrate)
+  const [srsAll, setSrsAll] = React.useState([]);         // every /api/v1/streams entry (idle diagnosis)
+  const [channelNames, setChannelNames] = React.useState([]); // to tell a stray publisher from another channel's
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [lastRefresh, setLastRefresh] = React.useState(null);
@@ -123,12 +165,14 @@ function MonitorImpl() {
       const srsStreams = srsR.status === "fulfilled" ? (srsR.value.streams || []) : [];
 
       setChannel(channels.find(c => c.name === name) || null);
+      setChannelNames(channels.map(c => c.name));
       setDests(Object.values(forwards).filter(f => f.stream === name));
       setStreamMap(Object.fromEntries(fwStreams.map(s => [s.platform, s])));
       const src = srcStreams.find(s => s.stream === name) || null;
       setSrcStream(src);
       setSourceLive(!!src);
       setSrs(srsStreams.find(s => s.app === "live" && s.name === name) || null);
+      setSrsAll(srsStreams);
       setLastRefresh(new Date());
     } catch (e) {
       setError(apiError(e));
@@ -156,6 +200,7 @@ function MonitorImpl() {
   const v = srs?.video;
   const resolution = v?.width && v?.height ? `${v.width}×${v.height}` : null;
   const flvUrl = `${window.location.origin}/live/${name}.flv`;
+  const idle = sourceLive ? null : idleDiagnosis({name, srsAll, channelNames});
 
   return (
     <div style={{maxWidth: 1120, margin: "0 auto", ...syne}}>
@@ -184,7 +229,7 @@ function MonitorImpl() {
                 {channel.description && <div style={{...mono, fontSize: 12, color: MUTED}}>{channel.description}</div>}
               </div>
               {sourceLive && <Btn variant="dim" onClick={handleReset}>Reset source</Btn>}
-              <HealthBadge level={health.level} label={health.label} title={health.detail}/>
+              <HealthBadge level={health.level} label={health.label} title={idle ? idle.detail : health.detail}/>
             </div>
 
             {/* Two columns: preview + info */}
@@ -194,9 +239,10 @@ function MonitorImpl() {
                 {sourceLive ? (
                   <FlvPlayer url={flvUrl} style={{border: `1px solid ${BORDER}`}}/>
                 ) : (
-                  <div style={{width: "100%", aspectRatio: "16 / 9", background: "#1a1816", borderRadius: 6, border: `1px solid ${BORDER}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8}}>
-                    <div style={{...syne, fontSize: 15, color: "#d8d4cf"}}>Source is idle</div>
-                    <div style={{...mono, fontSize: 11, color: "#9a958f"}}>Waiting for an encoder to publish <b>{name}</b></div>
+                  <div style={{width: "100%", aspectRatio: "16 / 9", background: "#1a1816", borderRadius: 6, border: `1px solid ${BORDER}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 28px", textAlign: "center"}}>
+                    <div style={{...syne, fontSize: 15, color: "#d8d4cf"}}>{idle.title}</div>
+                    <div style={{...mono, fontSize: 11, color: "#9a958f", lineHeight: 1.7}}>{idle.detail}</div>
+                    <Link to="/routers-channels" style={{...mono, fontSize: 11, color: ACCENT, textDecoration: "none"}}>Ingest URLs →</Link>
                   </div>
                 )}
                 <div style={{...mono, fontSize: 10, color: MUTED, marginTop: 8, wordBreak: "break-all"}}>{flvUrl}</div>

@@ -16,6 +16,28 @@
     destination. It takes over when the other channel stops. To force it, Stop the
     other channel's copy.
 
+??? question "The encoder says \"connected\" but the channel stays IDLE"
+    A connected SRT socket is not a publish. The **Monitor** view says which of the
+    two is happening — its idle placeholder now names the cause instead of just
+    "waiting":
+
+    - *"Publisher connected under a different name"* — the feed arrived, but under a
+      different stream than this channel expects. The encoder's **Stream ID** (or
+      RTMP stream key) is wrong or was truncated. Re-copy it from the channel's
+      **Ingest URLs → Hardware encoder** block; see
+      [Encoder settings](encoder-settings.md#hardware-teradek-prism-haivision-makito-srt).
+    - *"Publisher connected, but not registered"* — the media server has the stream
+      but the publish key was rejected. Check the channel's ingest URLs against the
+      **Ingest** page's publish key (rotating the key invalidates every old URL).
+    - *"Source is idle"* with nothing else — nothing is publishing at all. The most
+      common cause on hardware encoders is a stream ID that lost its leading
+      `#!::` or its trailing `,m=publish`, which makes the server treat the
+      encoder as a viewer: the socket connects and stays up, and no video is ever
+      ingested.
+
+    Also confirm the encoder is sending **H.264 + AAC**; HEVC and non-AAC audio
+    can't cross the SRT-to-RTMP bridge.
+
 ??? question "SRT video is blocky / frames overlap"
     The server is tuned for lossy SRT; this is usually the encoder's uplink. Use a
     wired connection, raise the encoder's SRT latency, and use the channel's SRT

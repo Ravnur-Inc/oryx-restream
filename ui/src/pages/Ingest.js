@@ -361,7 +361,11 @@ function IngestImpl() {
                   {" "}<code>latency=1000</code>, <code>pkt_size=1316</code>, <code>rcvbuf=8&nbsp;MB</code>
                   {" "}to prevent macroblocking on lossy uplinks.</li>
                 <li><b>Hardware (Teradek/Haivision) SRT:</b> Mode Caller, this host, port
-                  {" "}<code>10080</code>, Stream ID from the channel{srtEncrypted ? ", Passphrase above" : ""}.</li>
+                  {" "}<code>10080</code>, Stream ID from the channel{srtEncrypted ? ", Passphrase above" : ""}.
+                  {" "}Copy the <b>SRT address / port / stream ID</b> fields from the channel's
+                  {" "}<b>Ingest URLs</b> individually — don't paste the full <code>srt://</code> URL, and
+                  {" "}keep the stream ID's leading <code>#!::</code> and trailing <code>,m=publish</code> intact.
+                  {" "}Without them the encoder shows "connected" but never publishes.</li>
               </ul>
             </Section>
           </>
