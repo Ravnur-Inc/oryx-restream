@@ -4,6 +4,50 @@
     Set the encoder **keyframe interval to 2s** and restart the stream. Forwarding
     is pass-through, so YouTube needs the keyframes from your encoder.
 
+??? question "YouTube reconnects every few seconds / speed shows above 1.5x"
+    The destination drops and reconnects on a short loop, the framerate at YouTube
+    reads higher than the encoder is sending, and the **Monitor** looks jittery.
+
+    A speed above 1.0x means the video's timestamps are advancing faster than real
+    time. The restreamer detects this and restarts the forward, so the reconnects
+    are the symptom being reported rather than the cause. A brief spike right after
+    a channel starts is normal; sustained is not — anything held above 1.5x for
+    about 15 seconds triggers a restart.
+
+    **First, check the server version.** Deployments before August 2026 shipped
+    without the `time_jitter` setting, which let the media server rewrite timestamps
+    on the pass-through path and produced exactly this failure on 60fps sources.
+    Updating to the current release fixes it. That was the cause the first time this
+    was seen in production, and it is not an encoder problem — no encoder setting
+    works around it.
+
+    If you are on a current release and still see it, the cause is upstream on the
+    encoder. Set the frame rate to **Automatic / follow-input** rather than forcing a
+    value, confirm the encoder's video input is *locked* and detected as the format
+    you expect, and confirm the audio is 48 kHz AAC.
+
+    **Measuring it** — an operator with shell access can measure the ingest with the
+    destination taken out of the picture:
+
+    ```
+    ffmpeg -t 60 -i rtmp://localhost/live/<stream> -c copy -f null -
+    ```
+
+    Read the final line. `speed=1.0x` means ingest is healthy. Above that, divide
+    `frame=` by the `elapsed=` wall time and compare it to the encoder's configured
+    frame rate:
+
+    - **Close to the configured rate** — frames are arriving correctly and only the
+      timestamps are wrong. Repeated `Non-monotonic DTS` warnings on the audio are
+      the same fault seen from the other side.
+    - **Roughly double the configured rate** — genuinely twice as much video is
+      arriving, which means two sources are publishing to one channel. See the
+      duplicate-ingestion entry below.
+
+    To decide whether the encoder or the server is at fault, publish a known-good
+    test stream from the server itself and measure that. If a synthetic source shows
+    the same inflation, the encoder is exonerated.
+
 ??? question "YouTube: \"More than one ingestion is using the primary URL\""
     Two sources are hitting the same YouTube key. Make sure there's a **single**
     "City YouTube" in **Destinations** and attach *that* to your channels — a

@@ -1154,3 +1154,87 @@ ingest-field mapping table, Makito X4 section, exact-copy warning),
 IDLE" entry), `docs-site/monitor.md` (idle placeholder now explains why).
 
 GOOS=linux go build ./... clean.
+
+---
+
+### 2026-08-17 — Fix: SRS time_jitter corrupted timestamps on the forward path
+
+**Symptom.** Both YouTube forwards (`English_YouTube`, `Spanish_YouTube`, fed by a
+Haivision Makito over SRT) restarted every ~20s. FFmpeg reported `speed≈1.8–2.0x`,
+YouTube's framerate read above the encoder's, and the Monitor looked jittery.
+
+**Root cause — SRS, not the encoder.** The vhost never set `time_jitter`, so it ran
+at the SRS default of `full`, which rewrites playback timestamps and recalibrates
+gaps it deems large to a fixed 40ms. Forward tasks pull `rtmp://localhost/...` as
+RTMP *players*, so they received SRS's rewritten timestamps rather than the
+encoder's. On a 60fps ingest this made media time advance ~2x wall clock. Fixed by
+setting `time_jitter zero` in the `__defaultVhost__` `play {}` block: the stream
+still starts at zero (RTMP/YouTube expect that) but timing is passed through
+untouched — the only correct behaviour for a `-c copy` restreamer.
+
+**Verified on the live host.** Same channel, same encoder, before and after:
+
+    before:  frame=1942  time=00:01:00.00  speed=1.88x  elapsed=0:00:31.93
+    after:   frame=3501  time=00:01:00.01  speed=1.01x  elapsed=0:00:59.64
+
+and the ~20s `forward start` / `abnormal speed=` restart cycle stopped entirely.
+
+**How it was isolated.** Measuring at `rtmp://localhost/<stream>` with `-c copy -f
+null -` gives `frame=`, `time=` and `elapsed=` in one line. Dividing `frame=` by
+`elapsed=` separates "frames arriving at the wrong rate" from "frames arriving
+correctly with wrong timestamps" — it was always the latter (~30fps then ~60fps
+arriving correctly, timestamps inflated ~1.8–2.0x throughout). The decisive test was
+a **known-good synthetic 1080p60 SRT source generated on the host**, which
+reproduced the inflation with the encoder removed from the path entirely.
+
+**Hypotheses refuted by measurement** — recorded so they are not re-litigated:
+- *Duplicate publisher.* Would have doubled the frame *arrival* rate; it was 31.6/s
+  against a 30fps encoder, then 60.8/s against 60fps. Never doubled.
+- *SRS GOP-cache burst at reader connect.* A burst is transient; this was steady
+  state for the full 60s of every measurement.
+- *Encoder frame-rate misconfiguration.* Changing the Makito from a forced 30 to
+  follow-input moved actual delivery from ~31.6fps to ~60.8fps and left the
+  timestamp error unchanged (1.80x → 1.88x). It did usefully reveal that the source
+  is 59.94/60, not the 1080p30 assumed at the outset; leave the encoder on
+  follow-input.
+
+**The watchdog was correct throughout.** `FFmpeg: abnormal speed=1.86x, fast=31,
+mv=30, restart it` — `platform/utils.go` firing after 31 consecutive ticks above
+1.5x. It reported a real fault rather than causing one. Thresholds
+(`FFmpegAbnormalFastSpeed = 1.5`, `RestartFFmpegCountAbnormalSpeed = 30`) left
+**unchanged**; raising them would have masked the corruption and shipped 2x-timed
+media to YouTube.
+
+**Changed — platform/containers/conf/srs.release{,-local,-mac}.conf**: added
+`play { time_jitter zero; }` to `__defaultVhost__`, with a comment recording why the
+SRS default is wrong here. Dev variants kept in step so local testing matches prod.
+
+**Changed — platform/forward.go** (`doForward`), incidental hardening, independent
+of the fix above:
+- `-analyzeduration 1000000 -probesize 2000000` — the defaults (5s/5MB) spent up to
+  5s buffering before a byte reached the destination on every (re)start.
+- `-max_muxing_queue_size 2048`, `-flvflags no_duration_filesize` on RTMP output.
+
+**Deliberately NOT changed — no read pacing.** `-readrate 1.0
+-readrate_initial_burst 2` was drafted while the fast `speed=` was still unexplained,
+then removed. Pacing the read to 1x of *media* time cannot repair upstream
+timestamps; it only makes FFmpeg consume frames more slowly than they arrive, moving
+the backlog into SRS until the reader is dropped. The existing "do not add `-re`"
+comment now covers `-readrate` too and records the reasoning, because a fast
+`speed=` reading will tempt the next reader to add pacing at this layer again.
+
+**Also considered and dropped:** `mw_latency 100`, `gop_cache_max_frames 60`,
+`tcp_nodelay on` and `-fflags +discardcorrupt` were staged against the burst and
+lossy-SRT hypotheses. Both were refuted before deploy, so they were removed rather
+than shipped as unverified tuning. (`gop_cache_max_frames` was additionally unverified
+against the SRS 5 base image.)
+
+Docs updated in the same change: `docs-site/troubleshooting.md`.
+
+GOOS=linux go build ./... clean.
+
+**Deploy note:** the live host was patched in-container for verification
+(`/usr/local/oryx/platform/containers/conf/srs.release.conf`, backup at
+`.bak`). That survives `docker restart` but **not** a re-run of `setup.sh` or an
+image pull, since the config is baked into the image — this repo change must be
+built and deployed to make it durable.

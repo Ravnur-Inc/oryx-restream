@@ -768,18 +768,30 @@ func (v *ForwardTask) doForward(ctx context.Context, input *SrsStream) error {
 
 	// Start FFmpeg process.
 	//
-	// Do NOT add "-re" here. The input is a LIVE source (SRS RTMP, or an RTSP
-	// camera) that already arrives in real time. "-re" throttles *reading* to the
-	// input's native rate using FFmpeg's own clock — that's meant for FILE inputs.
-	// On a live source it under-delivers on any clock drift, starving the output:
-	// YouTube then reports "not receiving enough video to maintain smooth
-	// streaming" even though the copy is otherwise healthy. Forward at the rate the
-	// live source provides instead.
+	// Do NOT add "-re" or "-readrate" here. Both throttle *reading* to a rate derived
+	// from the input's own timestamps — that's meant for FILE inputs. A live source
+	// already arrives in real time, so pacing it can only ever under-deliver:
+	// YouTube then reports "not receiving enough video to maintain smooth streaming"
+	// even though the copy is otherwise healthy.
+	//
+	// This is worth spelling out because a fast "speed=" reading tempts you to add
+	// pacing here. It is the wrong layer. When timestamps advance faster than wall
+	// clock, something upstream is producing bad ones — in the 2026-08-17 case, SRS
+	// itself, via time_jitter (see RAVNUR-CHANGES.md). Pacing the read to 1x of
+	// *media* time does not repair those timestamps; it just makes FFmpeg consume
+	// frames more slowly than they arrive, moving the backlog into SRS until the
+	// reader is dropped. Forward at the rate the live source provides, fix the
+	// timestamps at their source, and let the speed watchdog surface a bad one.
 	args := []string{}
 	// For RTSP stream source, always use TCP transport.
 	if strings.HasPrefix(inputURL, "rtsp://") {
 		args = append(args, "-rtsp_transport", "tcp")
 	}
+	// Cut the input probe short. The defaults (5s / 5MB) mean every (re)start spends
+	// up to 5s buffering before a single byte reaches the destination, which is both
+	// dead air at the destination and the bulk of the burst that has to be caught up
+	// afterwards. A live H.264/AAC stream is fully described well inside 1s.
+	args = append(args, "-analyzeduration", "1000000", "-probesize", "2000000")
 	// Rebuild the stream url, because it may contain special characters.
 	if strings.Contains(inputURL, "://") {
 		if u, err := RebuildStreamURL(inputURL); err != nil {
@@ -792,9 +804,15 @@ func (v *ForwardTask) doForward(ctx context.Context, input *SrsStream) error {
 		args = append(args, "-i", inputURL)
 	}
 	args = append(args, "-c", "copy")
+	// Keep the muxer from aborting if one stream briefly runs ahead of the other
+	// during a burst; the default queue is small enough to overflow on catch-up.
+	args = append(args, "-max_muxing_queue_size", "2048")
 	// If RTMP use flv, if SRT use mpegts, otherwise do not set.
 	if strings.HasPrefix(outputURL, "rtmp://") || strings.HasPrefix(outputURL, "rtmps://") {
-		args = append(args, "-f", "flv")
+		// no_duration_filesize: don't rewrite duration/filesize into the FLV header on
+		// exit. There is no header to seek back to on a live RTMP socket, and the
+		// attempt makes teardown noisier than it needs to be.
+		args = append(args, "-flvflags", "no_duration_filesize", "-f", "flv")
 	} else if strings.HasPrefix(outputURL, "srt://") {
 		args = append(args, "-pes_payload_size", "0", "-f", "mpegts")
 	}
