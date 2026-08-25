@@ -6,11 +6,17 @@ for full setup, hardening, and upgrades.*
 
 - **Install / upgrade** — `deploy/azure-vm/setup.sh` (clone/build/run); pull the
   latest and re-run to upgrade.
+- **Deploy configuration** — keep `ENTRA_CLIENT_ID`, `BOOTSTRAP_EMAIL`, `SMTP_*`
+  and friends in `~/.oryx-env` on the VM (template:
+  [`oryx-env.example`](https://github.com/Ravnur-Inc/oryx-restream/blob/main/deploy/azure-vm/oryx-env.example)),
+  not in shell `export`s. Every `setup.sh` run recreates the container from that
+  file; a run without it would drop the settings and lock everyone out of the UI.
 - **HTTPS / TLS** — auto-renewing Let's Encrypt via
   [`certbot-setup.sh`](https://github.com/Ravnur-Inc/oryx-restream/blob/main/deploy/azure-vm/README.md#https--real-tls-certificate-for-the-mgmt-ui).
 - **Microsoft Entra sign-in** — set `ENTRA_CLIENT_ID` (+ `BOOTSTRAP_EMAIL`
-  for the first owner) before running setup; add the SPA redirect URI in the Azure
-  app registration. See
+  for the first owner) in `~/.oryx-env` before running setup; add the SPA redirect
+  URI in the Azure app registration. Sign-in is SSO-only — there is no password
+  fallback, so setup refuses to deploy with no provider configured. See
   [Authentication](https://github.com/Ravnur-Inc/oryx-restream/blob/main/deploy/azure-vm/README.md#authentication--microsoft-entra-id-optional).
 - **Google sign-in** — set `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (a Google
   Cloud "Web application" OAuth client) before running setup; add your mgmt URL as

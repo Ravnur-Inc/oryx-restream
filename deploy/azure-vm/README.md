@@ -200,21 +200,46 @@ Azure Monitor — managed, nothing to run on the box.
    "Logical Disk % Free Space" metric once VM insights is on, or watch it in the
    in-app System tab.
 
-## Authentication — Microsoft Entra ID (optional)
-By default the mgmt UI uses a single password (`MGMT_PASSWORD`). To sign in with
-**Microsoft Entra ID** (Azure AD) and manage authorized users with owner/editor
-roles, set two env vars before running `setup.sh`:
+## Deploy configuration — `~/.oryx-env`
+`setup.sh` sources `~/.oryx-env` (override with `ENV_FILE=`) on every run, and that
+is where deploy settings belong. **Do not rely on `export` in your shell:** env
+vars cannot be changed on a running container, so every run recreates it — and a
+run from a shell that lacks the exports recreates it *without* them. Because the
+mgmt UI is SSO-only, that silently produces a container nobody can log into.
 
 ```bash
-export ENTRA_CLIENT_ID=<your-app-registration-client-id>
-export ENTRA_BOOTSTRAP_EMAIL=<your-admin-email>
+cp deploy/azure-vm/oryx-env.example ~/.oryx-env
+chmod 600 ~/.oryx-env      # contains secrets
+$EDITOR ~/.oryx-env        # set ENTRA_CLIENT_ID + BOOTSTRAP_EMAIL
 ./deploy/azure-vm/setup.sh
+```
+
+`setup.sh` refuses to deploy when neither `ENTRA_CLIENT_ID` nor `GOOGLE_CLIENT_ID`
+is set, rather than bringing up an unreachable UI. (`ALLOW_NO_SSO=1` overrides this
+for an ingest-only box with no mgmt access.) Verify what the container actually got:
+
+```bash
+docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' oryx | grep -E 'ENTRA|BOOTSTRAP|GOOGLE'
+```
+
+## Authentication — Microsoft Entra ID
+The mgmt UI has **no password login** — Entra (and optionally Google) is the only
+way in. To sign in with **Microsoft Entra ID** (Azure AD) and manage authorized
+users with owner/editor roles, set these in `~/.oryx-env`:
+
+```bash
+ENTRA_CLIENT_ID=<your-app-registration-client-id>
+BOOTSTRAP_EMAIL=<your-admin-email>
 ```
 
 - **Azure app registration:** add a **Single-page application (SPA)** platform with
   the redirect URI matching your mgmt URL (e.g. `https://restreamer.ravnur.net`),
   and grant the `openid`, `profile`, `email` delegated permissions. The validator
   is multi-tenant (`/common`) and checks the token audience against `ENTRA_CLIENT_ID`.
+- **The client ID must match the one the UI is built with** (`ui/src/msalInstance.js`).
+  It is baked into the SPA bundle at build time, not served from `/envs`, so a
+  server-side `ENTRA_CLIENT_ID` that differs (or is empty) fails every sign-in with
+  a 500 — check `docker logs oryx | grep auth/entra` for the exact reason.
 - **First-run bootstrap:** with an empty user store, the first Microsoft sign-in is
   auto-provisioned as an **owner only if the email equals `ENTRA_BOOTSTRAP_EMAIL`**
   (everyone else is rejected). Sign in once with that email, then add teammates in
@@ -227,10 +252,10 @@ You can additionally (or instead) offer **Continue with Google**. Set a Google
 OAuth client before running `setup.sh`:
 
 ```bash
-export GOOGLE_CLIENT_ID=<your-oauth-client-id>
-export GOOGLE_CLIENT_SECRET=<your-oauth-client-secret>
-export BOOTSTRAP_EMAIL=<your-admin-email>   # shared across providers
-./deploy/azure-vm/setup.sh
+# in ~/.oryx-env
+GOOGLE_CLIENT_ID=<your-oauth-client-id>
+GOOGLE_CLIENT_SECRET=<your-oauth-client-secret>
+BOOTSTRAP_EMAIL=<your-admin-email>   # shared across providers
 ```
 
 - **Google Cloud setup:** APIs & Services → Credentials → **Create OAuth client ID**
