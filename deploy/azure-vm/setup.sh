@@ -32,6 +32,20 @@ LOCAL_IMAGE="oryx-restream:local"                   # tag used for local builds
 NAME="${NAME:-oryx}"
 DATA_DIR="${DATA_DIR:-$HOME/oryx-data}"
 
+# Persistent deploy config. Env vars set only in an interactive shell are lost on
+# the next run - and because the mgmt UI is SSO-only, silently recreating the
+# container without ENTRA_CLIENT_ID locks everyone out of it. Keep the settings in
+# this file instead so every run (including an unattended one) picks them up.
+# Anything exported in the calling shell still wins over the file.
+ENV_FILE="${ENV_FILE:-$HOME/.oryx-env}"
+if [ -f "$ENV_FILE" ]; then
+  echo "==> Loading deploy config: $ENV_FILE"
+  set -a
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+  set +a
+fi
+
 # Use sudo for docker only if the daemon isn't reachable as the current user.
 DOCKER="docker"
 if ! docker info >/dev/null 2>&1; then
@@ -118,7 +132,8 @@ mkdir -p "$DATA_DIR"
 $DOCKER rm -f "$NAME" >/dev/null 2>&1 || true
 echo "==> Starting container: $NAME"
 # Microsoft Entra ID sign-in (optional). Set both env vars before running to
-# enable it; leave them unset to keep the password-only login. ENTRA_CLIENT_ID
+# enable it. There is no password login, so at least one SSO provider (Entra or
+# Google) must be configured or the mgmt UI cannot be signed into. ENTRA_CLIENT_ID
 # is the Azure app registration (client) ID; BOOTSTRAP_EMAIL is the email
 # auto-provisioned as owner on its first SSO sign-in, any provider (so the first
 # login works). The legacy ENTRA_BOOTSTRAP_EMAIL still works as a fallback.
@@ -126,10 +141,26 @@ echo "==> Starting container: $NAME"
 # Google Cloud "Web application" OAuth client) to show the Google button; unset
 # hides it. The button appears only when GOOGLE_CLIENT_ID is configured.
 sso_args=()
-for v in BOOTSTRAP_EMAIL GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
+for v in ENTRA_CLIENT_ID ENTRA_BOOTSTRAP_EMAIL BOOTSTRAP_EMAIL GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
   if [ -n "${!v:-}" ]; then sso_args+=( -e "${v}=${!v}" ); fi
 done
+if [ -n "${ENTRA_CLIENT_ID:-}" ]; then echo "    Microsoft Entra sign-in: ENABLED"; fi
 if [ -n "${GOOGLE_CLIENT_ID:-}" ]; then echo "    Google sign-in: ENABLED"; fi
+
+# The mgmt UI has no password login - Entra and Google are the only ways in. A
+# container started with neither configured comes up healthy and serves a sign-in
+# page whose buttons cannot succeed, so refuse rather than deploy a locked-out UI.
+if [ -z "${ENTRA_CLIENT_ID:-}" ] && [ -z "${GOOGLE_CLIENT_ID:-}" ]; then
+  echo "ERROR: no SSO provider configured - the mgmt UI would be unreachable." >&2
+  echo "       Set ENTRA_CLIENT_ID (and BOOTSTRAP_EMAIL for the first owner) in" >&2
+  echo "       $ENV_FILE, then re-run. For example:" >&2
+  echo "         ENTRA_CLIENT_ID=179489ef-ded5-451e-9a4d-a6a8e47d8217" >&2
+  echo "         BOOTSTRAP_EMAIL=you@example.com" >&2
+  echo "       Ingest-only deploy with no mgmt UI: ALLOW_NO_SSO=1" >&2
+  [ "${ALLOW_NO_SSO:-0}" = "1" ] || exit 1
+  echo "       ALLOW_NO_SSO=1 set - continuing without a usable mgmt login." >&2
+fi
+
 # Optional SRT encryption (AES). Set SRT_PASSPHRASE (10-79 chars) to enable it;
 # every SRT publisher must then use this passphrase. SRT_PBKEYLEN selects the AES
 # strength (16=AES-128 default, 24, 32). Mapped to the env names SRS reads. Unset
@@ -158,8 +189,6 @@ $DOCKER run -d --name "$NAME" --restart always \
   --log-opt max-size=10m --log-opt max-file=3 \
   -p 2022:2022 -p 443:2443 -p 1935:1935 \
   -p 8000:8000/udp -p 10080:10080/udp \
-  -e ENTRA_CLIENT_ID="${ENTRA_CLIENT_ID:-}" \
-  -e ENTRA_BOOTSTRAP_EMAIL="${ENTRA_BOOTSTRAP_EMAIL:-}" \
   "${sso_args[@]}" \
   "${srt_enc_args[@]}" \
   "${smtp_args[@]}" \

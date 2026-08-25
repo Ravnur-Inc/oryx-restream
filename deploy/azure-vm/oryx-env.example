@@ -1,0 +1,46 @@
+# Persistent deploy config for setup.sh. Copy to ~/.oryx-env on the VM:
+#
+#   cp deploy/azure-vm/oryx-env.example ~/.oryx-env
+#   chmod 600 ~/.oryx-env       # contains secrets
+#   $EDITOR ~/.oryx-env
+#
+# setup.sh sources this file on every run, so the container is recreated with the
+# same configuration whether it's run by hand, from cron, or by someone else.
+# Variables exported in the calling shell override what's set here.
+#
+# Override the location with ENV_FILE=/path/to/file ./deploy/azure-vm/setup.sh
+
+# --- Sign-in (REQUIRED) ------------------------------------------------------
+# The mgmt UI is SSO-only. With neither provider set, setup.sh refuses to deploy
+# because nobody would be able to log in.
+
+# Microsoft Entra ID application (client) ID. Must match the client ID the UI is
+# built with (ui/src/msalInstance.js).
+ENTRA_CLIENT_ID=179489ef-ded5-451e-9a4d-a6a8e47d8217
+
+# Email auto-provisioned as owner on its first SSO sign-in, any provider. Needed
+# to get the first user in; harmless to leave set afterwards.
+BOOTSTRAP_EMAIL=
+
+# Google sign-in (optional). Both are needed to show the Google button.
+#GOOGLE_CLIENT_ID=
+#GOOGLE_CLIENT_SECRET=
+
+# --- Ingest (optional) -------------------------------------------------------
+# SRT AES encryption. 10-79 chars; every SRT publisher must then use it.
+#SRT_PASSPHRASE=
+#SRT_PBKEYLEN=16
+
+# --- Invite email (optional) -------------------------------------------------
+# Without SMTP_HOST, invites still work but the UI shows a copyable link instead.
+#SMTP_HOST=
+#SMTP_PORT=587
+#SMTP_USER=
+#SMTP_PASS=
+#SMTP_FROM=
+#MGMT_BASE_URL=https://mecknc.restreamer.ravnur.com
+
+# --- Deploy (optional) -------------------------------------------------------
+#TAG=latest
+#NAME=oryx
+#DATA_DIR=/home/ravadmin/oryx-data

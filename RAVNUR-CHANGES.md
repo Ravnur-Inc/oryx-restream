@@ -1238,3 +1238,56 @@ GOOS=linux go build ./... clean.
 `.bak`). That survives `docker restart` but **not** a re-run of `setup.sh` or an
 image pull, since the config is baked into the image — this repo change must be
 built and deployed to make it durable.
+
+---
+
+### 2026-08-25 — Fix: Entra sign-in 500 (unconfigured `ENTRA_CLIENT_ID`) + deploy config durability
+
+**Symptom.** Entra sign-in on the live host completed MFA, then the login page showed
+only `Request failed with status code 500`. It had worked a week earlier with no code
+change.
+
+**Root cause.** The container was running with an empty `ENTRA_CLIENT_ID`, so
+`validateToken` (`platform/entra_auth.go`) returned `ENTRA_CLIENT_ID must be
+configured` before any signature check. `setup.sh` passed
+`-e ENTRA_CLIENT_ID="${ENTRA_CLIENT_ID:-}"` unconditionally, so a run from a shell
+without the `export` (e.g. the documented `curl … | bash` upgrade one-liner) recreated
+the container with an empty value and no warning. Config was only ever held in an
+interactive shell, so it could not survive a re-deploy.
+
+**Changed — ui/src/pages/Login.js:** both SSO catch blocks read
+`err?.response?.data?.message`, but `ohttp.WriteError` sends unknown errors as a
+**plain-text** body via `http.Error`, so `.message` was always `undefined` and the
+real server message was replaced by axios's generic `Request failed with status
+code 500`. Switched to the existing `apiError()` helper (`components/useToast.js`),
+which already handles both the plain-text body and the oryx `{code, data}` envelope.
+This also repairs the `not authorized` → `/routers-forbidden` redirect, which never
+fired for either provider because the string it matched was never populated.
+
+**Changed — deploy/azure-vm/setup.sh:**
+- Sources `~/.oryx-env` (override: `ENV_FILE=`) on every run, so deploy config lives
+  on disk instead of in shell history. Calling-shell exports still win.
+- `ENTRA_CLIENT_ID` / `ENTRA_BOOTSTRAP_EMAIL` moved into the same conditional loop as
+  the other SSO vars — an unset var is now omitted rather than injected as an empty
+  override of the image default.
+- Refuses to deploy when neither `ENTRA_CLIENT_ID` nor `GOOGLE_CLIENT_ID` is set
+  (escape hatch: `ALLOW_NO_SSO=1`). Login is SSO-only with no password fallback, so
+  that combination produces a healthy container serving a UI nobody can enter.
+- Echoes `Microsoft Entra sign-in: ENABLED`, matching the existing Google line.
+- Corrected a stale comment claiming a "password-only login" default.
+
+**Added — deploy/azure-vm/oryx-env.example:** annotated template for `~/.oryx-env`.
+
+**Not changed (candidate follow-up):** the Entra client ID is baked into the SPA at
+build time (`ui/src/msalInstance.js`) and is not served from `/envs` the way
+`googleClientId` is, so UI and server copies can still drift apart; and the Microsoft
+button renders unconditionally, advertising a provider the server may not have
+configured. Serving it from `/envs` and hiding the button when unset would make this
+class of misconfiguration impossible rather than merely loud.
+
+Docs updated in the same change: `deploy/azure-vm/README.md` (new "Deploy
+configuration — `~/.oryx-env`" section; Entra/Google sections no longer teach the
+`export` pattern; notes that the client ID must match the SPA build),
+`docs-site/administration.md`.
+
+`bash -n deploy/azure-vm/setup.sh` clean. No Go changes.

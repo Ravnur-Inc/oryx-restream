@@ -24,6 +24,7 @@ import {Token, Tools} from "../utils";
 import {SrsErrorBoundary} from "../components/SrsErrorBoundary";
 import {SrsEnvContext} from "../components/SrsEnvContext";
 import {useErrorBoundary} from "react-error-boundary";
+import {apiError} from "../components/useToast";
 import {msalInstance, loginRequest} from "../msalInstance";
 import ravnurLogo from "../resources/ravnur-logo.svg";
 
@@ -171,7 +172,7 @@ function LoginImpl({onLogin}) {
       navigate('/routers-channels');
     } catch (err) {
       if (err?.errorCode === 'user_cancelled' || err?.errorCode === 'popup_window_error') return;
-      const msg = err?.response?.data?.message || err?.message || '';
+      const msg = apiError(err);
       if (msg.includes('not authorized')) {
         navigate('/routers-forbidden');
         return;
@@ -200,7 +201,7 @@ function LoginImpl({onLogin}) {
       onLogin && onLogin();
       navigate('/routers-channels');
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || '';
+      const msg = apiError(err);
       if (msg.includes('not authorized')) {
         navigate('/routers-forbidden');
         return;
